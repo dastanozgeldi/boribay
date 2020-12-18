@@ -59,16 +59,6 @@ class Misc(commands.Cog):
         embed.add_field(name=f"**➤ Memory**", value="\n".join(memory), inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=["pp"])
-    async def penis(self, ctx):
-        if ctx.author.id == self.bot.owner_id:
-            size = 100
-            await ctx.send(f"ur pp size is 8{'=' * size}D 😎")
-        else:
-            size = random.randint(1, 10)
-            pp = f"8{'=' * size}D"
-            await ctx.send(f"ur pp size is {pp} 😎")
-
     @commands.command()
     async def ping(self, ctx):
         start = time()
@@ -79,25 +69,8 @@ class Misc(commands.Cog):
         embed.add_field(name='<a:typing:787357087843745792> Typing:', value=f'{round((end - start) * 1000)}ms')
         await message.edit(embed=embed)
 
-    @commands.command(brief="percent answer for a question")
-    async def percent(self, ctx, *, question):
-        await ctx.send(f'{random.randint(0, 100)}%')
-
-    @commands.command(aliases=['rc', 'rancho', 'randomchoice'], brief="random choice between options")
-    async def randchoice(self, ctx, question, *options):
-        choices_limit = 9
-        if len(options) > choices_limit:
-            await ctx.send('Error 667: Too many options')
-            return
-        elif len(options) < 1:
-            await ctx.send('Error 45: How can I do a random choice here?')
-            return
-        random_choice = random.choice(options)
-        await ctx.send(f'My choice is: {random_choice}.')
-
     @commands.command(aliases=['vote'], brief="create a cool poll!")
     async def poll(self, ctx, question, *options):
-        # await ctx.channel.purge(limit=1)
         limit = 10
         if len(options) > limit:
             await ctx.send('You can only add a maximum of 10 responses per vote!')
@@ -122,26 +95,6 @@ class Misc(commands.Cog):
 
         for emoji in reactions[:len(options)]:
             await message.add_reaction(emoji)
-
-    @commands.command(brief="repeats the word given amount of times")
-    async def repeat(self, ctx, amount: int, *, word):
-        user_list = [word] * amount
-        string = ''.join(user_list)
-        await ctx.send(string)
-
-    @commands.command(brief="reverses the given word | sentence")
-    async def reverse(self, ctx, *, word):
-        reversed_word = word[::-1]
-        await ctx.send(reversed_word)
-
-    @commands.command(name="memberperms", brief="displays information of a specific role")
-    async def send_permissions(self, ctx, member: Optional[discord.Member]):
-        embed = discord.Embed(color=discord.Color.dark_theme())
-        if not member:
-            embed.add_field(name=f'Permissions {ctx.author} have in this guild', value=' • '.join(k for k, v in ctx.author.guild_permissions if v))
-        else:
-            embed.add_field(name=f'Permissions {member} have in this guild:', value=' • '.join(k for k, v in member.guild_permissions if v))
-        await ctx.send(embed=embed)
 
 
 def setup(bot):
