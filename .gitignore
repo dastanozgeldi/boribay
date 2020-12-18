@@ -1,0 +1,22 @@
+###########
+# Folders #
+###########
+jdk-11/
+.vscode/
+__pycache__/
+logs/
+trash/
+
+#########
+# Files #
+#########
+cogs/economics.py
+cogs/music.py
+cogs/todo.py
+cogs/owner.py
+cogs/piltest.py
+cogs/events.py
+Procfile
+Music.url
+runtime.txt
+.env
