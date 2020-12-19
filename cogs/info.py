@@ -57,9 +57,11 @@ class Info(Cog):
 
 	@command(name="serverinfo", aliases=["guildinfo", "si", "gi"], brief="displays server information")
 	async def server_info(self, ctx):
-		serv_embed = Embed(title="Server information", color=discord.Color.blue(), timestamp=datetime.utcnow())
-
-		serv_embed.set_thumbnail(url=ctx.guild.icon_url)
+		serv_embed = Embed(
+			title="Server information",
+			color=discord.Color.dark_theme(),
+			timestamp=datetime.utcnow()
+		).set_thumbnail(url=ctx.guild.icon_url)
 
 		statuses = [
 			len(list(filter(lambda m: str(m.status) == "online", ctx.guild.members))),
@@ -69,19 +71,19 @@ class Info(Cog):
 		]
 
 		fields = [
-			("ID🔢", ctx.guild.id, False),
-			("Owner😎", ctx.guild.owner, False),
-			("Region🚩", ctx.guild.region, False),
-			("Created at📅", ctx.guild.created_at.strftime("%d/%m/%Y %H:%M:%S"), False),
-			("Members", len(ctx.guild.members), False),
-			("Humans🧑", len(list(filter(lambda m: not m.bot, ctx.guild.members))), False),
-			("Bots🤖", len(list(filter(lambda m: m.bot, ctx.guild.members))), False),
+			# ("ID🔢", ctx.guild.id, True),
+			("Owner", ctx.guild.owner, True),
+			("Region", ctx.guild.region, True),
+			("Created at", ctx.guild.created_at.strftime("%d/%m/%Y %H:%M:%S"), True),
+			("Members", len(ctx.guild.members), True),
+			("Humans", len(list(filter(lambda m: not m.bot, ctx.guild.members))), True),
+			("Bots", len(list(filter(lambda m: m.bot, ctx.guild.members))), True),
 			# ("Banned members🤕", len(await ctx.guild.bans()), False),
-			("Statuses😴", f"🟢{statuses[0]}, 🌙{statuses[1]}, ⭕{statuses[2]}, ⚪{statuses[3]}", False),
-			("Text channels💬", len(ctx.guild.text_channels), False),
-			("Voice channels🔊", len(ctx.guild.voice_channels), False),
-			("Categories🎩", len(ctx.guild.categories), False),
-			("Roles👷‍♂️", len(ctx.guild.roles), False),
+			("Statuses", f"<:status_online:596576749790429200>{statuses[0]} <:status_idle:596576773488115722>{statuses[1]} <:status_dnd:596576774364856321>{statuses[2]} <:status_offline:596576752013279242>{statuses[3]}", False),
+			("Text channels", len(ctx.guild.text_channels), True),
+			("Voice channels", len(ctx.guild.voice_channels), True),
+			("Categories", len(ctx.guild.categories), True),
+			("Roles", len(ctx.guild.roles), True),
 			# ("Invites🎫", len(await ctx.guild.invites()), False)
 		]
 		for name, value, inline in fields:
