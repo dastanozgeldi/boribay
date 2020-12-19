@@ -5,7 +5,6 @@ import praw
 import aiohttp
 import random
 from discord.ext import commands, menus
-import requests
 import async_cse
 from utils.EmbedPagination import EmbedPageSource
 from dotenv import load_dotenv
@@ -75,61 +74,29 @@ class Networks(commands.Cog):
             embed.set_footer(text=f"Written by 🎓[ {js['list'][0]['author']} ] | {source['written_on'][0:10]}", icon_url=ctx.author.avatar_url)
             await ctx.send(embed=embed)
 
-    @commands.command(brief="find subreddit how posts")
+    @commands.command(brief='find post from subreddit you want to.')
     @commands.is_nsfw()
-    async def hot(self, ctx, subreddit: str):
-        async with ctx.channel.typing():
-            subreddit = reddit.subreddit(subreddit)
-            all_subs = []
-            hot = subreddit.hot(limit=25)
-            for submission in hot:
-                all_subs.append(submission)
-            # Subreddit Data
-            random_sub = random.choice(all_subs)
-            title = random_sub.title
-            url = random_sub.url
-            # Embed
-            embed = discord.Embed(description=f"**[{title}]({url})**", color=ctx.author.color)
-            embed.set_image(url=url)
-            embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-            embed.set_footer(text=f"post from r/{subreddit}", icon_url="https://cdn.icon-icons.com/icons2/1906/PNG/512/iconfinder-reddit-4550872_121349.png")
-            await ctx.send(embed=embed)
-
-    @commands.command(brief="find subreddit new posts")
-    @commands.is_nsfw()
-    async def new(self, ctx, subreddit: str):
-        async with ctx.channel.typing():
-            subreddit = reddit.subreddit(subreddit)
-            all_subs = []
-            new = subreddit.new(limit=25)
-            for submission in new:
-                all_subs.append(submission)
-            random_sub = random.choice(all_subs)
-            title = random_sub.title
-            url = random_sub.url
-            embed = discord.Embed(description=f"**[{title}]({url})**", color=ctx.author.color)
-            embed.set_image(url=url)
-            embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-            embed.set_footer(text=f"post from {subreddit}", icon_url="https://cdn.icon-icons.com/icons2/1906/PNG/512/iconfinder-reddit-4550872_121349.png")
-            await ctx.send(embed=embed)
-
-    @commands.command(brief="find subreddit new posts")
-    @commands.is_nsfw()
-    async def top(self, ctx, subreddit: str):
-        async with ctx.channel.typing():
-            subreddit = reddit.subreddit(subreddit)
-            all_subs = []
-            new = subreddit.top(limit=25)
-            for submission in new:
-                all_subs.append(submission)
-            random_sub = random.choice(all_subs)
-            title = random_sub.title
-            url = random_sub.url
-            embed = discord.Embed(description=f"**[{title}]({url})**", color=ctx.author.color)
-            embed.set_image(url=url)
-            embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-            embed.set_footer(text=f"post from {subreddit}", icon_url="https://cdn.icon-icons.com/icons2/1906/PNG/512/iconfinder-reddit-4550872_121349.png")
-            await ctx.send(embed=embed)
+    async def reddit(self, ctx, subreddit: str):
+        try:
+            async with ctx.channel.typing():
+                subreddit = reddit.subreddit(subreddit)
+                all_subs = []
+                hot = subreddit.hot(limit=50)
+                for submission in hot:
+                    all_subs.append(submission)
+                random_sub = random.choice(all_subs)
+                embed = discord.Embed(
+                    title=random_sub.title,
+                    color=discord.Color.dark_theme(),
+                    url=random_sub.url
+                ).set_author(
+                    name=ctx.author.display_name, icon_url=ctx.author.avatar_url
+                ).set_footer(
+                    text=f'From r/{subreddit}', icon_url='https://cdn.icon-icons.com/icons2/1906/PNG/512/iconfinder-reddit-4550872_121349.png'
+                )
+                await ctx.send(embed=embed)
+        except:
+            await ctx.send(f'Could not find subreddit **{subreddit}**')
 
 
 def setup(bot):
