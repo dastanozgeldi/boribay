@@ -1,9 +1,9 @@
 import asyncio
 import re
-from datetime import datetime
 from typing import Optional
 
 import discord
+from utils.CustomEmbed import Embed
 from discord.ext import commands
 
 time_regex = re.compile("(?:(\d{1,5})(h|s|m|d))+?")
@@ -25,14 +25,23 @@ class TimeConverter(commands.Converter):
         return time
 
 
-class Administration(commands.Cog):
+class Administration(commands.Cog, command_attrs=dict(hidden=True)):
     def __init__(self, bot):
         self.bot = bot
+
+    async def cog_check(self, ctx):
+        return commands.guild_only()
 
     @commands.command(name="mute", aliases=["block"], brief="mutes member (admins only). also you can specify the time")
     @commands.has_permissions(administrator=True)
     async def mute_user(self, ctx, member: discord.Member, time: TimeConverter = None):
-        """Mutes a member for a given amount of time. Ex: .mute @someone"""
+        """Mutes a member for time you specify (role 'Muted' required).
+        Example:
+            **mute Dosek 1d2h3m4s**
+        Args:
+            member (discord.Member): a member you want to mute.
+            time (int, optional): time a user going to be muted. Defaults to None.
+        """
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         await member.add_roles(role)
         await ctx.send(f"Muted **{member}** for **{time}s**" if time else f"Muted **{member}**")
@@ -45,7 +54,10 @@ class Administration(commands.Cog):
 
     @commands.command(name="unmute", aliases=["unblock"], brief="unmutes member (admins only)")
     async def unmute_user(self, ctx, member: discord.Member):
-        """Unmutes a member (removes Muted role). Ex: .unmute @someone who is already muted"""
+        """Unmutes a user (role 'Muted' required).
+        Args:
+            member (discord.Member): already muted user.
+        """
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         await member.remove_roles(role)
         await ctx.send(f"Unmuted **{member}** successfully.")
@@ -53,72 +65,76 @@ class Administration(commands.Cog):
     @commands.command(pass_context=True, brief="change someone's nickname")
     @commands.has_permissions(manage_nicknames=True)
     async def nick(self, ctx, member: discord.Member, *, new_nick: str):
-        """Changes user's nickname."""
+        """Changes member's nickname in the server.
+        Args:
+            member (discord.Member): a member whose nickname you wanna change.
+            new_nick (str): a new nickname for the member you specified.
+        """
         await member.edit(nick=new_nick)
         await ctx.message.add_reaction('✔')
 
     @commands.command(brief="kick user")
-    @commands.guild_only()
     @commands.has_guild_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason: str = None):
-        """Kicks user (reason is optional)."""
-        r = reason if reason is not None else 'Reason not specified.'
+        """Kicks a user.
+        Args:
+            member (discord.Member): a member you want to kick.
+            reason (str, optional): Reason why you considered kicking. Defaults to None.
+        """
+        r = reason or 'Reason not specified.'
         await ctx.guild.kick(user=member, reason=r)
-        embed = discord.Embed(
-            title=f"{ctx.author.display_name} kicked: {member.display_name}",
-            description=r,
-            color=discord.Color.dark_theme()
-        )
+        embed = Embed(title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
         await ctx.send(embed=embed)
 
     @commands.command(brief="ban user")
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason: str = None):
-        """Bans user (reason is optional)."""
-        r = reason if reason is not None else 'Reason not specified.'
-        embed = discord.Embed(
-            title=f'{ctx.author.display_name} banned: {member.display_name}',
-            description=r,
-            color=discord.Color.dark_theme()
-        )
+        """Bans a user.
+        Args:
+            member (discord.Member): a member you want to ban.
+            reason (str, optional): Reason why you are banning. Defaults to None.
+        """
+        r = reason or 'Reason not specified.'
+        embed = Embed(title=f'{ctx.author.display_name} banned: {member.display_name}', description=r)
         await member.ban(reason=r)
         await ctx.send(embed=embed)
 
-    @commands.command(brief="unban user")
-    @commands.has_permissions(administrator=True)
-    async def unban(self, ctx, *, member):
-        """Unbans already banned user."""
-        banned_users = await ctx.guild.bans()
-        member_name, member_discriminator = member.split('#')
-
-        for ban_entry in banned_users:
-            user = ban_entry.user
-
-            if (user.name, user.discriminator) == (member_name, member_discriminator):
-                await ctx.guild.unban(user)
-                await ctx.send(f'Unbanned {user.mention}')
-                return
+    @commands.command()
+    @commands.has_permissions(ban_members=True)
+    async def unban(self, ctx: commands.Context, user: discord.User):
+        """Unban user with their ID
+        Args: user (discord.User): Normally takes user ID.
+        Returns: Exception: If given user id isn't in server ban-list.
+        """
+        bans = await ctx.guild.bans()
+        if user not in bans:
+            return await ctx.send(f'There is not user `{user}` in ban-list.')
+        await ctx.guild.unban(user)
+        await ctx.send(f'Unbanned {user.mention}')
 
     @commands.command(aliases=['clear'], brief="clear messages")
     @commands.has_permissions(manage_messages=True)
     async def purge(self, ctx, amount=2):
-        """Purges messages of given amount (limit is 100 messages)."""
+        """Purges messages of a given amount. Limit is 100.
+        Args:
+            amount (int, optional): amount of messages to clear. Defaults to 2
+        """
         if amount > 100:
             await ctx.send("That is too big amount. The maximum is 100")
+
         elif amount <= 100:
             deleted = await ctx.channel.purge(limit=amount)
-            purge_embed = discord.Embed(title="Clear Command",
-                                        description=f"✅ Purged {len(deleted)} messages by {ctx.author.name}",
-                                        colour=discord.Color.red(),
-                                        timestamp=datetime.utcnow())
-            await ctx.send(embed=purge_embed)
+            await ctx.send(embed=Embed(title="Clear Command", description=f"✅ Purged {len(deleted)} messages by {ctx.author}"))
 
     @commands.command(brief="add a new category to the server")
-    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def categoryadd(self, ctx, role: discord.Role, *, name):
-        """Adds a category for guild (you should specify role and category name)."""
+    async def categoryadd(self, ctx, role: discord.Role, *, name: str):
+        """Adds a category for the current guild.
+        Args:
+            role (discord.Role): role that will have access to a category.
+            name (str): name of a category.
+        """
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             ctx.guild.me: discord.PermissionOverwrite(read_messages=True)
@@ -127,11 +143,14 @@ class Administration(commands.Cog):
         await ctx.send(f"Just made a new category named {category.name}!")
 
     @commands.command(brief="add a new channel to the server")
-    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def channeladd(self, ctx, role: discord.Role, *, name):
-        """Adds a channel for guild (you should specify role and channel name)."""
+    async def channeladd(self, ctx, role: discord.Role, *, name: str):
+        """Adds a channel for the current guild.
+        Args:
+            role (discord.Role): role that will have access to a category.
+            name (str): name of a channel.
+        """
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             ctx.guild.me: discord.PermissionOverwrite(read_messages=True),
@@ -141,36 +160,44 @@ class Administration(commands.Cog):
         await ctx.send(f"Just made a new channel named {channel.name}!")
 
     @commands.command(name='delcat', brief="delete the category")
-    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def _category(self, ctx, category: discord.CategoryChannel, *, reason=Optional[str]):
-        """Deletes given category (reason is optional)."""
+    async def _category(self, ctx, category: discord.CategoryChannel, *, reason: str = None):
+        """Deletes a specififed category.
+        Args:
+            category (discord.CategoryChannel): ID of a category.
+            reason (str, optional): Reason why you are deleting a category. Defaults to None.
+        """
         await category.delete(reason=reason)
         await ctx.send(f"Deleted a channel named {category.name}!")
 
     @commands.command(name='delchan', brief="delete the channel")
-    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def _channel(self, ctx, channel: Optional[discord.TextChannel], *, reason=None):
-        """Deletes given channel (reason is optional)."""
+    async def _channel(self, ctx, channel: Optional[discord.TextChannel], *, reason: str = None):
+        """Deletes a specified channel.
+        Args:
+            channel (Optional[discord.TextChannel]): channel ID,
+            deletes current channel if argument is not specified.
+            reason (str, optional): Reason why you are deleting a channel. Defaults to None.
+        """
         channel = channel or ctx.channel
         await channel.delete(reason=reason)
         await ctx.send(f"Deleted a channel named {channel.name}!")
 
     @commands.command(aliases=['ld'], brief="channel lockdown")
-    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def lockdown(self, ctx, channel: Optional[discord.TextChannel]):
-        """Puts channel on lockdown. You can specify the channel, otherwise it puts the channel where the message was given."""
+        """Puts a channel on lockdown.
+        Args:
+            channel (Optional[discord.TextChannel]): channel mention,
+            puts the current channel on lockdown if argument is not specified.
+        """
         channel = channel or ctx.channel
 
         if ctx.guild.default_role not in channel.overwrites:
-            overwrites = {
-                ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False)
-            }
+            overwrites = {ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False)}
             await channel.edit(overwrites=overwrites)
             await ctx.send(f"Put `{channel.name}` on lockdown.")
 
@@ -188,29 +215,39 @@ class Administration(commands.Cog):
 
     @commands.command(aliases=['sm'], brief="slowmode for a given time")
     @commands.has_permissions(manage_guild=True)
-    async def slowmode(self, ctx, arg):
-        """Activates slowmode for a given amount of seconds."""
+    async def slowmode(self, ctx, arg: int):
+        """Enables slowmode for a given amount of seconds.
+        Args:
+            arg (int): a time in seconds users have to wait to send a message.
+        """
         if arg == "disable":
             await ctx.channel.edit(slowmode_delay=0)
-            await ctx.send("Disabled slowmode successfully")
-
-        elif int(arg):
+            await ctx.message.add_reaction('✔')
+        else:
             await ctx.channel.edit(slowmode_delay=int(arg))
-            await ctx.send(f"Slowmode has activated to {arg} seconds")
+            await ctx.send(f"Slowmode has set to {arg} seconds.")
 
     @commands.command(aliases=['add_role'], brief="add role to the user")
     @commands.has_permissions(manage_roles=True)
     async def addrole(self, ctx, role: discord.Role, user: discord.Member):
-        """Adds a given role to the user."""
+        """Adds a specified role to a user.
+        Args:
+            role (discord.Role): a role you want to give.
+            user (discord.Member): member you want to give a role to.
+        """
         await user.add_roles(role)
-        await ctx.send(f"Successfully given a {role.mention} role to {user.mention}.")
+        await ctx.message.add_reaction('✔')
 
     @commands.command(aliases=['remove_role'], brief="remove role from user")
     @commands.has_permissions(manage_roles=True)
     async def removerole(self, ctx, role: discord.Role, user: discord.Member):
-        """Removes given role from the user."""
+        """Removes a specified role from a user.
+        Args:
+            role (discord.Role): role you want to take.
+            user (discord.Member): memebr you want to take a role from.
+        """
         await user.remove_roles(role)
-        await ctx.send(f"Successfully removed a {role.mention} role from {user.mention}.")
+        await ctx.message.add_reaction('✔')
 
 
 def setup(bot):
