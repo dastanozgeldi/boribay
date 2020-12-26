@@ -1,15 +1,9 @@
-###########
-# Folders #
-###########
 jdk-11/
 .vscode/
 __pycache__/
 logs/
 trash/
-
-#########
-# Files #
-#########
+cogs/errors.py
 cogs/economics.py
 cogs/music.py
 cogs/todo.py

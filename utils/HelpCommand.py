@@ -1,4 +1,5 @@
 import discord
+from difflib import get_close_matches
 from discord.ext import commands, menus
 
 
@@ -45,9 +46,10 @@ class GroupHelp(menus.ListPageSource):
 		)
 		for cmd in cmds:
 			signature = f'{self.prefix}{cmd.qualified_name} {cmd.signature}'
+			desc = cmd.help or cmd.brief
 			embed.add_field(
 				name=signature,
-				value=cmd.brief.format(prefix=self.ctx.prefix) or 'No help provided.',
+				value=desc.format(prefix=self.ctx.prefix),
 				inline=False
 			)
 
@@ -106,8 +108,13 @@ class MainHelp(menus.ListPageSource):
 	async def format_page(self, menu, category):
 		embed = discord.Embed(
 			title='Help',
-			description=f'```diff\n- <> ← required argument\n- [] ← optional argument\n+ {self.ctx.prefix}help [Category | group] to get help for a module.```',
-			color=discord.Color.dark_theme()).set_footer(text=f'{self.ctx.prefix}help <command> to get more info about specific command.')
+			description=f'''```diff
+- <> ← required argument
+- [] ← optional argument
++ {self.ctx.prefix}help [Category | group] to get module help```
+			''',
+			color=discord.Color.dark_theme()
+		).set_footer(text=f'{self.ctx.prefix}help <command> to get command help.')
 		for k, v in category:
 			embed.add_field(name=k, value=v, inline=False)
 
@@ -131,7 +138,7 @@ class MyHelpCommand(commands.HelpCommand):
 				if cog:
 					cats.append([name, f">>> {all_cmds}\n"])
 
-		menu = MyPages(source=MainHelp(self.context, cats))
+		menu = MyPages(source=MainHelp(self.context, cats), timeout=30.0)
 		await menu.start(self.context)
 
 	async def send_cog_help(self, cog: BaseCog):
@@ -142,7 +149,8 @@ class MyHelpCommand(commands.HelpCommand):
 		entries = await self.filter_commands(cog.get_commands(), sort=True)
 		menu = MyPages(
 			GroupHelp(ctx, cog, entries, prefix=prefix),
-			clear_reactions_after=True
+			clear_reactions_after=True,
+			timeout=30.0
 		)
 		await menu.start(ctx)
 
@@ -186,14 +194,17 @@ class MyHelpCommand(commands.HelpCommand):
 		if len(entries) == 0:
 			return await self.send_command_help(group)
 		source = GroupHelp(ctx=ctx, group=group, cmds=entries, prefix=prefix)
-		menu = MyPages(source)
+		menu = MyPages(source, timeout=30.0)
 		await menu.start(ctx)
 
 	async def command_not_found(self, string):
-		if len(string) >= 50:
-			return f"Could not find the command `{string[:20]}...`."
+		bot = self.context.bot
+		commands_list = [i.name for i in bot.commands]
+		dym = '\n'.join(get_close_matches(string, commands_list))
+		if dym:
+			return f'Could not find the command `{string}`. Did you mean...\n{dym}'
 		else:
-			return f"Could not find the command `{string}`."
+			return f'Could not find the command `{string}`'
 
 	def get_command_signature(self, command: commands.Command):
 		return f'{self.clean_prefix}{command.qualified_name} {command.signature}'

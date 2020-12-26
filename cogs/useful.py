@@ -1,19 +1,15 @@
-import asyncio
 import inspect
 import os
-import random
 import re
-from datetime import datetime
-from io import BytesIO
 from typing import Optional, Union
-
+from utils.CustomEmbed import Embed
 import discord
 import requests
 import wikipedia
-from aiohttp import ClientSession
 from discord.ext import commands
 from dotenv import load_dotenv
 from googletrans import Translator
+from textwrap import wrap
 
 load_dotenv()
 
@@ -25,37 +21,74 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def gen_password(self, ctx, length: int, uppercase: bool = False, digit: bool = False, chars: bool = False):
+    @commands.command(
+        aliases=['ncov', 'coronavirus'],
+        brief='coronavirus statistics, you can also specify a country to see statistics for a given one.'
+    )
+    async def covid(self, ctx, *, country: Optional[str]):
         '''
-        Basic Password Generator.
-        Makes a password with given settings using random.
+        Coronavirus command.
+        Returns world statistics if no country is mentioned.
+            • Total and today cases;
+            • Total and today deaths;
+            • Total and today recovered;
+            • Active cases
+            • Critical cases
         '''
-        password = ''
-        lowercase_letters = 'abcdefghijklmnopqrstuvwxyz'
-        uppercase_letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        digits = '0123456789'
-        additional_chars = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
-        for _ in range(length):
-            if uppercase is True and digit is False and chars is False:
-                password += random.choice((lowercase_letters + uppercase_letters))
+        cs = self.bot.session
+        if not country:
+            r = await cs.get('https://disease.sh/v3/covid-19/all?yesterday=true&twoDaysAgo=true')
+            js = await r.json()
+            title = 'Covid-19 World Statistics'
+            field = ('Countries', str(js['affectedCountries']))
+            url = 'https://www.isglobal.org/documents/10179/7759027/Coronavirus+SARS-CoV-2+de+CDC+en+Unsplash'
+        if country:
+            r = await cs.get(f'https://disease.sh/v3/covid-19/countries/{country}?yesterday=true&twoDaysAgo=true&strict=true')
+            js = await r.json()
+            country = country.replace(' ', '+')
+            title = f'Covid-19 Statistics for {country}'
+            field = ('Continent', str(js['continent']))
+            url = str(js['countryInfo']['flag'])
 
-            if uppercase is True and digit is True and chars is False:
-                password += random.choice((lowercase_letters + uppercase_letters + digits))
+        embed = Embed(title=title).set_thumbnail(url=url)
+        fields = [
+            ('Total Cases', str(js['cases'])),
+            ('Today Cases', str(js['todayCases'])),
+            ('Deaths', str(js['deaths'])),
+            ('Today Deaths', str(js['todayDeaths'])),
+            ('Recovered', str(js['recovered'])),
+            ('Today Recov', str(js['todayRecovered'])),
+            ('Active Cases', str(js['active'])),
+            ('Critical', str(js['critical'])),
+            field
+        ]
+        for name, value in fields:
+            embed.add_field(name=name, value=value)
+        await ctx.send(embed=embed)
 
-            if uppercase is False and digit is True and chars is True:
-                password += random.choice((lowercase_letters + digits + additional_chars))
+    @commands.command(brief="specific continent's covid statistics")
+    async def continent(self, ctx, *, continent: str):
+        continent = continent.replace(' ', '+')
+        cs = self.bot.session
+        r = await cs.get(f'https://disease.sh/v3/covid-19/continents/{continent}?yesterday=true&twoDaysAgo=true')
+        js = await r.json()
 
-            if uppercase is False and digit is False and chars is True:
-                password += random.choice((lowercase_letters + additional_chars))
-
-            if uppercase is True and digit is True and chars is True:
-                password += random.choice((lowercase_letters + uppercase_letters + digits + additional_chars))
-
-            else:
-                password += random.choice(lowercase_letters)
-
-        await ctx.author.send(f'Generated password is: ```{password}```')
+        embed = Embed(
+            title=f"**Covid-19 Statistics in {str(js['continent'])}**")
+        fields = [
+            ('Total Cases', str(js['cases'])),
+            ('Today Cases', str(js['todayCases'])),
+            ('Deaths', str(js['deaths'])),
+            ('Today Deaths', str(js['todayDeaths'])),
+            ('Recovered', str(js['recovered'])),
+            ('Today Recov', str(js['todayRecovered'])),
+            ('Active Cases', str(js['active'])),
+            ('Critical', str(js['critical'])),
+            ('Tests', str(js['tests']))
+        ]
+        for name, value in fields:
+            embed.add_field(name=name, value=value)
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=['src'])
     async def source(self, ctx, *, command: str = None):
@@ -70,15 +103,14 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
         source_url = 'https://github.com/Dositan/Boribay'
         branch = 'master'
         if command is None:
-            return await ctx.send(embed=discord.Embed(
-            title='Source Code Here.',
-            description='''
-            If you are about using my code please star my repo⭐
-            You can specify a command name to get its source code.
-            ''',
-            color=discord.Color.dark_theme(),
-            url=source_url
-        ).set_thumbnail(url=self.bot.user.avatar_url))
+            return await ctx.send(embed=Embed(
+                title='Source Code Here.',
+                description='''
+                If you are about using my code please star my repo⭐
+                You can specify a command name to get its source code.
+                ''',
+                url=source_url
+            ).set_thumbnail(url=self.bot.user.avatar_url))
 
         if command == 'help':
             src = type(self.bot.help_command)
@@ -103,15 +135,14 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
             branch = 'master'
 
         final_url = f'{source_url}/blob/{branch}/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}'
-        await ctx.send(embed=discord.Embed(
+        await ctx.send(embed=Embed(
             title='Source Code Here.',
             description='If you are about using my code please star my repo⭐',
-            color=discord.Color.dark_theme(),
             url=final_url
         ).set_thumbnail(url=self.bot.user.avatar_url))
 
     @commands.command(brief='caption for an image(attachment) or user avatar.')
-    async def caption(self, ctx, member: Union[discord.Member, str] = None):
+    async def caption(self, ctx, argument: Union[discord.Member, str] = None):
         '''
         Caption for an image.
         This command describes a given image being just a piece of code.
@@ -121,43 +152,22 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
             • Image Attachment.
         Ex: caption Dosek
         '''
-        if isinstance(member, discord.Member):
-            image = str(member.avatar_url)
-        elif not isinstance(member, discord.Member) and re.match(URL_REGEX, member):
-            image = member
-        else:
+        if isinstance(argument, discord.Member):
+            image = str(argument.avatar_url)
+        elif argument and not isinstance(argument, discord.Member) and re.match(URL_REGEX, argument):
+            image = argument
+        elif not argument and ctx.message.attachments:
             image = ctx.message.attachments[0].url
+        else:
+            image = str(ctx.author.avatar_url)
         url = 'https://captionbot.azurewebsites.net/api/messages'
         headers = {'Content-Type': 'application/json; charset=utf-8'}
         payload = {'Content': image, 'Type': 'CaptionRequest'}
-        async with ClientSession() as cs:
-            async with cs.post(url, headers=headers, json=payload) as r:
-                data = await r.text()
-        await cs.close()
-        embed = discord.Embed(
-            color=discord.Color.dark_theme(),
-            title=data
-        ).set_image(url=image)
+        cs = self.bot.session
+        r = await cs.post(url, headers=headers, json=payload)
+        data = await r.text()
+        embed = Embed(title=data).set_image(url=image)
         await ctx.send(embed=embed)
-
-    '''Command below is temporarily disabled due to API death.'''
-    '''
-    @commands.command(name="read", brief="converts an image into text. you can also specify image url instead of attaching something.")
-    async def image_to_text(self, ctx, attachment: Optional[str]):
-        if attachment is None:
-            attachment = ctx.message.attachments[0].url
-        try:
-            async with ClientSession() as cs:
-                async with cs.get(f'https://api.tsu.sh/google/ocr') as r:
-                    output = await r.json()
-                    await cs.close()
-            try:
-                await ctx.send(f'**Image to text** for __{ctx.author.display_name}__```{output["text"]}```')
-            except discord.HTTPException:
-                await ctx.send("Could not get the proper text, sorry.")
-        except IndexError:
-            await ctx.send("I see no attachments here to make the text.")
-    '''
 
     @commands.command(aliases=["temp", "temperature"], brief="displays weather for a given city")
     async def weather(self, ctx, *, city: str):
@@ -177,11 +187,7 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
             async with ctx.channel.typing():
                 y = x["main"]
                 z = x["weather"]
-                weather_embed = discord.Embed(
-                    title=f"Weather in {city}",
-                    color=discord.Color.dark_theme(),
-                    timestamp=ctx.message.created_at
-                ).set_thumbnail(url="https://i.ibb.co/CMrsxdX/weather.png")
+                embed = Embed(title=f"Weather in {city}").set_thumbnail(url="https://i.ibb.co/CMrsxdX/weather.png")
                 fields = [
                     ('Description', f'**{z[0]["description"]}**', False),
                     ('Temperature', f'**{str(round(y["temp"] - 273.15))}°C**', False),
@@ -189,8 +195,8 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
                     ('Atmospheric Pressure', f'**{y["pressure"]}hPa**', False)
                 ]
                 for name, value, inline in fields:
-                    weather_embed.add_field(name=name, value=value, inline=inline)
-                await ctx.send(embed=weather_embed)
+                    embed.add_field(name=name, value=value, inline=inline)
+                await ctx.send(embed=embed)
         else:
             await ctx.send("City not found.")
 
@@ -203,41 +209,30 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
         '''
         t = Translator()
         a = t.translate(args, dest=lang)
-        trans_embed = discord.Embed(title=f"Translating from {a.src} to {a.dest}:", colour=0x0F91E8)
-        trans_embed.add_field(name="Translation:", value=f"```{a.text}```", inline=False)
-        trans_embed.add_field(name="Pronunciation:", value=f"```{a.pronunciation}```", inline=False)
-        await ctx.send(embed=trans_embed)
+        embed = Embed(title=f"Translating from {a.src} to {a.dest}:")
+        embed.add_field(name="Translation:", value=f"```{a.text}```", inline=False)
+        embed.add_field(name="Pronunciation:", value=f"```{a.pronunciation}```", inline=False)
+        await ctx.send(embed=embed)
 
-    @commands.command(aliases=['wikipedia'], brief="wikipedia definitions in english")
-    async def wiki(self, ctx, *, arg):
+    @commands.command(aliases=['wiki'])
+    async def wikipedia(self, ctx, *, search: str = None):
         '''
-        Search from wikipedia.
-        Has limits:
-            • Max sentences: 3;
-            • Max characters: 1000.
-        In case if you want to search for a whole Wikipedia article,
-        I'd recommend you to use .google command (.help google)
-        Ex: wiki Coulomb
+        Search from Wikipedia. Updated version.
+        Command shows only summary of the page,
+        so you can follow the link to see an article in your browser.
+        Ex: wikipedia Python
         '''
-        def wiki_summary(arg):
-            definition = wikipedia.summary(arg, sentences=3, chars=1000, auto_suggest=True, redirect=True)
-            return definition
-        wiki_embed = discord.Embed(colour=ctx.author.color, title=f"Definition for {arg}", description=wiki_summary(arg))
-        await ctx.send(embed=wiki_embed)
+        async with ctx.typing():
+            results = wikipedia.search(search)
+            if not len(results):
+                await ctx.channel.send("Sorry, could not find any results.")
 
-    @commands.command(aliases=['cd'], brief="countdown for a given time")
-    async def countdown(self, ctx, time: int, *, args):
-        '''
-        A very simple countdown function.
-        Ex: countdown 10 A new day starts
-        '''
-        starting_time = time
-        cd_embed = discord.Embed(title=args, description=f"{time} seconds left...", colour=discord.Color.gold(), timestamp=datetime.utcnow())
-        await ctx.send(embed=cd_embed)
-        while time > 0:
-            time -= 1
-            await asyncio.sleep(1)
-        await ctx.send(f"{ctx.author}, a countdown for {starting_time} seconds has ended!")
+            else:
+                new_search = results[0]
+                wiki = wikipedia.page(new_search)
+                text = wrap(wiki.summary, 500, break_long_words=True, replace_whitespace=False)
+                embed = Embed(title=wiki.title, description=f'{text[0]}...', url=wiki.url)
+                await ctx.send(embed=embed)
 
 
 def setup(bot):

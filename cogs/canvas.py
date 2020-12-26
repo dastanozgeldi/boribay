@@ -4,10 +4,10 @@ import re
 import textwrap
 from io import BytesIO
 
-import aiohttp
 import discord
-from discord.ext import commands
 from typing import Optional
+from discord.ext import commands
+from utils.CustomEmbed import Embed
 from dotenv import load_dotenv
 from utils.EmbedPagination import EmbedPageSource
 from utils.HelpCommand import MyPages
@@ -21,34 +21,32 @@ class Canvas(commands.Cog):
         self.bot = bot
         self.dagpi_token = os.getenv('dagpi_token')
         self.alex_token = os.getenv('alex_token')
-        self.all_colors = ["black", "blue", "brown", "cyan", "darkgreen", "lime", "orange", "pink", "purple", "red", "white", "yellow"]
 
     async def dagpi_image(self, url, fn: str = None):
-        async with aiohttp.ClientSession() as cs:
-            async with cs.get(url, headers={'Authorization': self.dagpi_token}) as r:
-                io = BytesIO(await r.read())
-        await cs.close()
-        file = discord.File(fp=io, filename=fn if fn is not None else 'dagpi.png')
-        return file
+        cs = self.bot.session
+        r = await cs.get(url, headers={'Authorization': self.dagpi_token})
+        io = BytesIO(await r.read())
+        f = discord.File(fp=io, filename=fn or 'dagpi.png')
+        return f
 
     async def alex_image(self, url, fn: str = None):
-        async with aiohttp.ClientSession() as cs:
-            async with cs.get(url, headers={'Authorization': self.alex_token}) as r:
-                io = BytesIO(await r.read())
-        await cs.close()
-        file = discord.File(fp=io, filename=fn if fn is not None else 'alex.png')
-        return file
+        cs = self.bot.session
+        r = await cs.get(url, headers={'Authorization': self.alex_token})
+        io = BytesIO(await r.read())
+        f = discord.File(fp=io, filename=fn or 'alex.png')
+        return f
 
     @commands.command(
         aliases=['ph'],
         brief='make a pornhub logo with text you want.'
     )
-    async def pornhub(self, ctx, text_1: str, text_2: str):
+    async def pornhub(self, ctx, text_1: str, text_2: Optional[str]):
         '''
         Pornhub logo maker.
         No matter how long is text, API returns image perfectly (hope so).
         Ex: pornhub Bori bay.
         '''
+        text_2 = text_2 or 'Hub'
         text_1 = text_1.replace(' ', '+')
         text_2 = text_2.replace(' ', '+')
         file = await self.alex_image(
@@ -74,12 +72,13 @@ class Canvas(commands.Cog):
         await ctx.send(file=file)
 
     @commands.command(brief="shows user's avatar")
-    async def avatar(self, ctx, member: discord.Member = None):
+    async def avatar(self, ctx, member: Optional[discord.Member]):
         '''
         Returns either author or member avatar if specified.
         Ex: avatar Dosek.
         '''
-        await ctx.send(str(member.avatar_url) if member is not None else str(ctx.author.avatar_url))
+        member = member or ctx.author
+        await ctx.send(str(member.avatar_url))
 
     @commands.command(brief="minecraft achievements maker")
     async def achieve(self, ctx, *, text):
@@ -120,31 +119,31 @@ class Canvas(commands.Cog):
         if not re.match(URL_REGEX, url):
             await ctx.send('Please provide a normal URL.')
         else:
-            async with aiohttp.ClientSession() as cs:
-                async with cs.get(f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={url}") as r:
-                    io = BytesIO(await r.read())
-            await cs.close()
+            cs = self.bot.session
+            r = await cs.get(f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={url}")
+            io = BytesIO(await r.read())
             await ctx.send(file=discord.File(fp=io, filename='qr.png'))
 
-    @commands.command(brief="among us image!", description=f"among us ejecting image command\n")
-    async def eject(self, ctx, color: str, is_impostor: bool, *, name: str):
+    @commands.command(brief="among us image!", description="among us ejecting image command")
+    async def eject(self, ctx, color: str, is_impostor: bool, *, name: Optional[str]):
         '''
         Among Us ejected meme maker.
         Colors: black • blue • brown • cyan • darkgreen • lime • orange • pink • purple • red • white • yellow.
         Ex: eject blue True Dosek.
         '''
-        async with aiohttp.ClientSession() as cs:
-            async with cs.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}') as r:
-                io = BytesIO(await r.read())
-        await cs.close()
+        name = name or ctx.author.display_name
+        cs = self.bot.session
+        r = await cs.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
+        io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
     @commands.command(brief="trigger someone", aliases=['trigger'])
-    async def triggered(self, ctx, member: discord.Member):
+    async def triggered(self, ctx, member: Optional[discord.Member]):
         '''
         Makes "TRIGGERED" meme with an user avatar.
         Ex: triggered Dosek
         '''
+        member = member or ctx.author
         file = await self.dagpi_image(
             url=f'https://api.dagpi.xyz/image/triggered/?url={member.avatar_url}',
             fn='triggered.gif'
@@ -152,14 +151,14 @@ class Canvas(commands.Cog):
         await ctx.send(file=file)
 
     @commands.command(name='ascii', brief="cool hackerman filter")
-    async def ascii_command(self, ctx, member: discord.Member):
+    async def ascii_command(self, ctx, member: Optional[discord.Member]):
         '''
         Makes ASCII version of an user avatar.
         Ex: ascii Dosek
         '''
+        member = member or ctx.author
         file = await self.dagpi_image(
-            url=f'https://api.dagpi.xyz/image/ascii/?url={member.avatar_url}',
-            fn='ascii.png'
+            url=f'https://api.dagpi.xyz/image/ascii/?url={member.avatar_url}'
         )
         await ctx.send(file=file)
 
@@ -177,15 +176,15 @@ class Canvas(commands.Cog):
         await ctx.send(file=file)
 
     @commands.command(brief="five guys with one girl meme", aliases=['wayg'])
-    async def whyareyougay(self, ctx, member: discord.Member = None):
+    async def whyareyougay(self, ctx, member: Optional[discord.Member]):
         '''
         A legendary "Why are you gay?" meme maker.
         Member argument is optional, so if you call for a command
         without specifying a member you just wayg yourself.
         '''
-        url2 = member.avatar_url if member is not None else ctx.author.avatar_url
+        member = member or ctx.author
         file = await self.dagpi_image(
-            url=f'https://api.dagpi.xyz/image/whyareyougay/?url={ctx.author.avatar_url}&url2={url2}',
+            url=f'https://api.dagpi.xyz/image/whyareyougay/?url={ctx.author.avatar_url}&url2={member.avatar_url}',
             fn='wayg.png'
         )
         await ctx.send(file=file)
@@ -200,22 +199,20 @@ class Canvas(commands.Cog):
         Raises an exception if song does not exist in API data.
         '''
         args = args.replace(' ', '+')
-        async with aiohttp.ClientSession() as cs:
-            async with cs.get(f'https://some-random-api.ml/lyrics?title={args}') as r:
-                js = await r.json()
-        await cs.close()
+        cs = self.bot.session
+        r = await cs.get(f'https://some-random-api.ml/lyrics?title={args}')
+        js = await r.json()
         try:
             song = str(js['lyrics'])
             song = textwrap.wrap(song, 1000, drop_whitespace=False, replace_whitespace=False)
             embed_list = []
             for lyrics in song:
-                embed = discord.Embed(
+                embed = Embed(
                     title=f'{js["author"]} — {js["title"]}',
-                    description=lyrics,
-                    color=discord.Color.dark_theme()
+                    description=lyrics
                 ).set_thumbnail(url=js['thumbnail']['genius'])
                 embed_list.append(embed)
-            p = MyPages(source=EmbedPageSource(embed_list, per_page=1))
+            p = MyPages(source=EmbedPageSource(embed_list))
             await p.start(ctx)
         except KeyError:
             await ctx.send(f'Could not find lyrics for **{args}**')

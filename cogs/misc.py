@@ -1,12 +1,10 @@
 import platform
-import random
 from datetime import datetime, timedelta
 from time import time
-from typing import Optional
 
-import discord
 import psutil as p
 from discord.ext import commands
+from utils.CustomEmbed import Embed
 
 
 class Misc(commands.Cog):
@@ -18,19 +16,17 @@ class Misc(commands.Cog):
 
     @commands.command(name='invite', brief='invite me to your server!')
     async def invite_command(self, ctx):
-        embed = discord.Embed(
+        embed = Embed(
             description='''
             To invite me to your server click [here](https://discord.com/api/oauth2/authorize?client_id=735397931355471893&permissions=8&scope=bot)
             If you have some issues you can join to my support server clicking [here](https://discord.gg/cZy6TvDg79)
-            ''',
-            color=discord.Color.dark_theme()
+            '''
         )
         await ctx.send(embed=embed)
 
-    @commands.command(name="system", brief="shows the characteristics of my system")
+    @commands.command(name="system", aliases=['sys'], brief="shows the characteristics of my system")
     async def system_info(self, ctx):
-        embed = discord.Embed(title="System Info", color=discord.Color.dark_theme())
-        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/735725378433187901/776524927708692490/data-server.png")
+        embed = Embed(title="System Info").set_thumbnail(url="https://cdn.discordapp.com/attachments/735725378433187901/776524927708692490/data-server.png")
         pr = p.Process()
         info = {
             'System': {
@@ -54,9 +50,9 @@ class Misc(commands.Cog):
         system = [f"**{key}** : {value}" for key, value in info['System'].items()]
         cpu = [f"**{key}** : {value}" for key, value in info['CPU'].items()]
         memory = [f"**{key}** : {value}" for key, value in info['Memory'].items()]
-        embed.add_field(name=f"**➤ System**", value="\n".join(system), inline=False)
-        embed.add_field(name=f"**➤ CPU**", value="\n".join(cpu), inline=False)
-        embed.add_field(name=f"**➤ Memory**", value="\n".join(memory), inline=False)
+        embed.add_field(name="**➤ System**", value="\n".join(system), inline=False)
+        embed.add_field(name="**➤ CPU**", value="\n".join(cpu), inline=False)
+        embed.add_field(name="**➤ Memory**", value="\n".join(memory), inline=False)
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -64,9 +60,10 @@ class Misc(commands.Cog):
         start = time()
         message = await ctx.send("Pinging...")
         end = time()
-        embed = discord.Embed(color=discord.Color.dark_theme())
+        embed = Embed()
         embed.add_field(name='<a:loading:787357834232332298> Websocket:', value=f'{round(self.bot.latency * 1000)}ms')
         embed.add_field(name='<a:typing:787357087843745792> Typing:', value=f'{round((end - start) * 1000)}ms')
+        embed.add_field(name='<:mongo:791421726915297290> Database:', value=(await self.bot.db_latency()))
         await message.edit(embed=embed)
 
     @commands.command(aliases=['vote'], brief="create a cool poll!")
@@ -87,7 +84,7 @@ class Misc(commands.Cog):
         description = []
         for x, option in enumerate(options):
             description += '\n {} {}'.format(reactions[x], option.replace('\n', ''))
-        vote_embed = discord.Embed(colour=discord.Colour.dark_blue(), title=question.replace('\n', ''), description=''.join(description), timestamp=datetime.utcnow())
+        vote_embed = Embed(title=question.replace('\n', ''), description=''.join(description))
         if ctx.message.attachments:
             vote_embed.set_image(url=ctx.message.attachments[0].url)
         vote_embed.set_thumbnail(url="https://cdn0.iconfinder.com/data/icons/kirrkle-internet-and-websites/60/12_-_Poll-256.png")
