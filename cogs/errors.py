@@ -35,6 +35,9 @@ class CommandErrorHandler(commands.Cog, command_attrs={"hidden": True}):
         if isinstance(error, commands.errors.NSFWChannelRequired):
             error_embed.description = f'{error}'
 
+        if isinstance(error, commands.errors.CheckFailure):
+            error_embed.description = f'{error}\nPerhaps this is not NSFW-enabled channel.'
+
         if isinstance(error, commands.errors.NotOwner):
             error_embed.description = f'Access denied to use command __{ctx.command}__'
 

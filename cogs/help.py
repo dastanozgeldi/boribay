@@ -1,7 +1,7 @@
-from utils.HelpCommand import BaseCog, MyHelpCommand
+from utils.HelpCommand import Cog, MyHelpCommand
 
 
-class Help(BaseCog):
+class Help(Cog):
     """Subclassed help command."""
 
     def __init__(self, bot):

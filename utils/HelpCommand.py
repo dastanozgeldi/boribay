@@ -1,30 +1,8 @@
 import discord
 from difflib import get_close_matches
 from discord.ext import commands, menus
-
-
-class BaseCog(commands.Cog):
-
-	def __init__(self, bot, show_name):
-		super().__init__()
-		self.bot = bot
-		self.show_name = show_name
-
-
-class MyPages(menus.MenuPages):
-	'''My own paginator class.'''
-
-	def __init__(self, source, **kwargs):
-		super().__init__(source=source, check_embeds=True, **kwargs)
-
-	async def finalize(self, timed_out):
-		try:
-			if timed_out:
-				await self.message.clear_reactions()
-			else:
-				await self.message.delete()
-		except discord.HTTPException:
-			pass
+from utils.CustomCog import Cog
+from utils.Paginators import MyPages
 
 
 class GroupHelp(menus.ListPageSource):
@@ -107,17 +85,17 @@ class MainHelp(menus.ListPageSource):
 
 	async def format_page(self, menu, category):
 		embed = discord.Embed(
-			title='Help',
 			description=f'''```diff
 - <> ← required argument
 - [] ← optional argument
-+ {self.ctx.prefix}help [Category | group] to get module help```
++ {self.ctx.prefix}help [Category | group] to get module help
+```[Invite]({self.ctx.bot.invite_url}) | [Support]({self.ctx.bot.support_url}) | [Source]({self.ctx.bot.github_url})
 			''',
 			color=discord.Color.dark_theme()
 		).set_footer(text=f'{self.ctx.prefix}help <command> to get command help.')
+		embed.set_author(name=self.ctx.author, icon_url=self.ctx.author.avatar_url_as(size=128))
 		for k, v in category:
 			embed.add_field(name=k, value=v, inline=False)
-
 		return embed
 
 
@@ -129,9 +107,9 @@ class MyHelpCommand(commands.HelpCommand):
 	async def send_bot_help(self, mapping):
 		cats = []
 		for cog, cmds in mapping.items():
-			if not hasattr(cog, "qualified_name"):
+			if not hasattr(cog, "name"):
 				continue
-			name = "No Category" if cog is None else cog.qualified_name
+			name = "No Category" if cog is None else cog.name
 			filtered = await self.filter_commands(cmds, sort=True)
 			if filtered:
 				all_cmds = " ─ ".join(f"`{c.name}`" for c in cmds)
@@ -141,10 +119,10 @@ class MyHelpCommand(commands.HelpCommand):
 		menu = MyPages(source=MainHelp(self.context, cats), timeout=30.0)
 		await menu.start(self.context)
 
-	async def send_cog_help(self, cog: BaseCog):
+	async def send_cog_help(self, cog: Cog):
 		ctx = self.context
 		prefix = self.clean_prefix
-		if not hasattr(cog, 'show_name'):
+		if not hasattr(cog, 'name'):
 			pass
 		entries = await self.filter_commands(cog.get_commands(), sort=True)
 		menu = MyPages(

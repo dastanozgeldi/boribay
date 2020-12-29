@@ -4,23 +4,27 @@ from time import time
 
 import psutil as p
 from discord.ext import commands
+from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
 
 
-class Misc(commands.Cog):
+class Misc(Cog):
     '''Misc commands extension. Here owner includes commands that aren't related to other categories.'''
 
     def __init__(self, bot):
         self.bot = bot
+        self.name = '💫 Miscellaneous'
         self.numbers = ('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟')
+
+    @commands.command(aliases=['hi', 'hey'], brief="greeting, nothing else.")
+    async def hello(self, ctx):
+        await ctx.send(f'Hello there! I am {self.bot.user}, created by {self.bot.dosek}')
 
     @commands.command(name='invite', brief='invite me to your server!')
     async def invite_command(self, ctx):
         embed = Embed(
-            description='''
-            To invite me to your server click [here](https://discord.com/api/oauth2/authorize?client_id=735397931355471893&permissions=8&scope=bot)
-            If you have some issues you can join to my support server clicking [here](https://discord.gg/cZy6TvDg79)
-            '''
+            description=f'''To invite me to your server click [here]({self.bot.invite_url})
+            If you have some issues you can join to my support server clicking [here]({self.bot.support_url})'''
         )
         await ctx.send(embed=embed)
 
@@ -47,12 +51,9 @@ class Misc(commands.Cog):
                 'Disk Free': f"{p.disk_usage('/').free/(1024**3):,.3f} GB",
             }
         }
-        system = [f"**{key}** : {value}" for key, value in info['System'].items()]
-        cpu = [f"**{key}** : {value}" for key, value in info['CPU'].items()]
-        memory = [f"**{key}** : {value}" for key, value in info['Memory'].items()]
-        embed.add_field(name="**➤ System**", value="\n".join(system), inline=False)
-        embed.add_field(name="**➤ CPU**", value="\n".join(cpu), inline=False)
-        embed.add_field(name="**➤ Memory**", value="\n".join(memory), inline=False)
+        embed.add_field(name="**➤ System**", value="\n".join([f"**{key}** : {value}" for key, value in info['System'].items()]), inline=False)
+        embed.add_field(name="**➤ CPU**", value="\n".join([f"**{key}** : {value}" for key, value in info['CPU'].items()]), inline=False)
+        embed.add_field(name="**➤ Memory**", value="\n".join([f"**{key}** : {value}" for key, value in info['Memory'].items()]), inline=False)
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -63,7 +64,7 @@ class Misc(commands.Cog):
         embed = Embed()
         embed.add_field(name='<a:loading:787357834232332298> Websocket:', value=f'{round(self.bot.latency * 1000)}ms')
         embed.add_field(name='<a:typing:787357087843745792> Typing:', value=f'{round((end - start) * 1000)}ms')
-        embed.add_field(name='<:mongo:791421726915297290> Database:', value=(await self.bot.db_latency()))
+        embed.add_field(name='<:mongo:791421726915297290> Database:', value=await self.bot.db_latency())
         await message.edit(embed=embed)
 
     @commands.command(aliases=['vote'], brief="create a cool poll!")
@@ -83,12 +84,12 @@ class Misc(commands.Cog):
 
         description = []
         for x, option in enumerate(options):
-            description += '\n {} {}'.format(reactions[x], option.replace('\n', ''))
-        vote_embed = Embed(title=question.replace('\n', ''), description=''.join(description))
+            description += f'\n {reactions[x]} {option}'
+        embed = Embed(title=question.replace('\n', ''), description=''.join(description))
         if ctx.message.attachments:
-            vote_embed.set_image(url=ctx.message.attachments[0].url)
-        vote_embed.set_thumbnail(url="https://cdn0.iconfinder.com/data/icons/kirrkle-internet-and-websites/60/12_-_Poll-256.png")
-        message = await ctx.send(embed=vote_embed)
+            embed.set_image(url=ctx.message.attachments[0].url)
+        embed.set_thumbnail(url="https://cdn0.iconfinder.com/data/icons/kirrkle-internet-and-websites/60/12_-_Poll-256.png")
+        message = await ctx.send(embed=embed)
 
         for emoji in reactions[:len(options)]:
             await message.add_reaction(emoji)

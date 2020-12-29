@@ -2,25 +2,26 @@ import asyncio
 import os
 import re
 from datetime import datetime, timedelta
+from time import perf_counter
 
 import aiohttp
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from pymongo import MongoClient
-from time import perf_counter
+from motor.motor_asyncio import AsyncIOMotorClient
+
 from utils.CustomContext import CustomContext
 
 load_dotenv()
 
 
-cluster = MongoClient(f"mongodb+srv://{os.getenv('db_username')}:{os.getenv('db_password')}@{os.getenv('db_project')}.xyuwh.mongodb.net/{os.getenv('db')}?retryWrites=true&w=majority")
-prefixes = cluster.Boribay.prefixes
+cluster = AsyncIOMotorClient(f"mongodb+srv://{os.getenv('db_username')}:{os.getenv('db_password')}@{os.getenv('db_project')}.xyuwh.mongodb.net/{os.getenv('db')}?retryWrites=true&w=majority")
 
 
 async def get_prefix(bot: commands.Bot, message: discord.Message):
 	if message.guild:
-		prefix = prefixes.find_one({"_id": message.guild.id})['prefix']
+		prefixes = await cluster.Boribay.prefixes.find_one({"_id": message.guild.id})
+		prefix = prefixes['prefix']
 	else:
 		prefix = '.'
 	return commands.when_mentioned_or(prefix)(bot, message)
@@ -31,7 +32,7 @@ class Bot(commands.Bot):
 		super().__init__(get_prefix, *args, **kwargs)
 		# Database related variables
 		self.db = cluster
-		self.prefixes = prefixes
+		self.prefixes = self.db.Boribay.prefixes
 		self.collection = self.db.Boribay.colldb
 		self.todos = self.db.Boribay.todos
 		# Additional variables
@@ -49,7 +50,7 @@ class Bot(commands.Bot):
 
 	async def db_latency(self):
 		start = perf_counter()
-		self.db.Boribay.command('ping')
+		await self.db.Boribay.command('ping')
 		end = perf_counter()
 		return f'{round((end - start) * 1000)} ms'
 
@@ -79,15 +80,17 @@ class Bot(commands.Bot):
 			"_id": guild.id,
 			"prefix": "."
 		}
-		if self.prefixes.count_documents({"_id": guild.id}) == 0:
-			prefixes.insert_one(post)
+		if await self.prefixes.count_documents({"_id": guild.id}) == 0:
+			await self.prefixes.insert_one(post)
 
 	async def on_guild_remove(self, guild: discord.Guild):
-		self.prefixes.delete_one({'_id': guild.id})
+		await self.prefixes.delete_one({'_id': guild.id})
 
+	'''
 	async def on_message_edit(self, before, after):
 		if await self.is_owner(before.author):
 			await self.process_commands(after)
+	'''
 
 	async def get_uptime(self) -> timedelta:
 		# return timedelta(seconds=int((datetime.now() - self.start_time).total_seconds()))

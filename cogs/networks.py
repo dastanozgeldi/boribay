@@ -1,27 +1,20 @@
 import os
 import re
-import praw
-import random
 from discord.ext import commands, menus
 import async_cse
+from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
-from utils.EmbedPagination import EmbedPageSource
+from utils.Paginators import EmbedPageSource
 from dotenv import load_dotenv
 load_dotenv()
 
 client = async_cse.Search(os.getenv('GOOGLE_KEY'))
 
-reddit = praw.Reddit(
-    client_id=os.getenv('client_id'),
-    client_secret=os.getenv('client_secret'),
-    username=os.getenv('username'),
-    user_agent=os.getenv('user_agent')
-)
 
-
-class Networks(commands.Cog):
+class Networks(Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.name = '🕸 Networks'
 
     @commands.command(aliases=['g'], brief="google outside google.")
     async def google(self, ctx, *, query: str):
@@ -63,36 +56,11 @@ class Networks(commands.Cog):
             source = js['list'][0]
             description = source['definition'].replace('[', '').replace(']', '')
             example = js['list'][0]['example'].replace('[', '').replace(']', '')
-            embed = Embed(
-                title=f'Explanation for {word}',
-                url=source['permalink'],
-                description=f'**{description}**'
-            ).set_thumbnail(url='https://slack-files2.s3-us-west-2.amazonaws.com/avatars/2018-01-11/297387706245_85899a44216ce1604c93_512.jpg')
-            embed.add_field(name='Example🤓', value=f"{example}", inline=False)
-            embed.add_field(name='Stats📈', value=f"**{source['thumbs_up']}👍 | {source['thumbs_down']}👎**", inline=False)
-            embed.set_footer(text=f"Written by {js['list'][0]['author']} | {source['written_on'][0:10]}", icon_url=ctx.author.avatar_url)
+            embed = Embed(description=f'**{description}**').set_author(name=word, url=source['permalink'], icon_url='https://is4-ssl.mzstatic.com/image/thumb/Purple111/v4/7e/49/85/7e498571-a905-d7dc-26c5-33dcc0dc04a8/source/64x64bb.jpg')
+            embed.add_field(name='Example:', value=f"{example}", inline=False)
+            embed.add_field(name='Stats:', value=f"**{source['thumbs_up']}👍 | {source['thumbs_down']}👎**", inline=False)
+            embed.set_footer(text=f"Written by {js['list'][0]['author']} | {source['written_on'][0:10]}")
             await ctx.send(embed=embed)
-
-    @commands.command(brief='find post from subreddit you want to.')
-    @commands.is_nsfw()
-    async def reddit(self, ctx, subreddit: str):
-        try:
-            async with ctx.channel.typing():
-                subreddit = reddit.subreddit(subreddit)
-                all_subs = []
-                hot = subreddit.hot(limit=50)
-                for submission in hot:
-                    all_subs.append(submission)
-                random_sub = random.choice(all_subs)
-                embed = Embed(
-                    title=random_sub.title,
-                    url=random_sub.url
-                ).set_footer(
-                    text=f'{ctx.author.display_name} | From r/{subreddit}', icon_url=ctx.author.avatar_url
-                ).set_image(url=random_sub.url)
-                await ctx.send(embed=embed)
-        except:
-            await ctx.send(f'Could not find subreddit **{subreddit}**')
 
 
 def setup(bot):

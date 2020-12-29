@@ -1,36 +1,33 @@
 import asyncio
-import re
 from typing import Optional
 
 import discord
+from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
+from utils.Converters import TimeConverter
+from utils.CustomContext import CustomContext
 from discord.ext import commands
 
-time_regex = re.compile("(?:(\d{1,5})(h|s|m|d))+?")
-time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
 
-
-class TimeConverter(commands.Converter):
-    async def convert(self, ctx, argument):
-        args = argument.lower()
-        matches = re.findall(time_regex, args)
-        time = 0
-        for v, k in matches:
-            try:
-                time += time_dict[k] * float(v)
-            except KeyError:
-                raise commands.BadArgument(f"{k} is an invalid time-key! h/m/s/d are valid.")
-            except ValueError:
-                raise commands.BadArgument(f"{v} is not a number!")
-        return time
-
-
-class Administration(commands.Cog, command_attrs=dict(hidden=True)):
+class Administration(Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.name = '⚒ Administration'
 
     async def cog_check(self, ctx):
         return commands.guild_only()
+        return commands.bot_has_permissions(administrator=True)
+
+    @commands.command(name='setprefix', brief='Change prefix.')
+    @commands.has_permissions(administrator=True)
+    async def change_prefix(self, ctx, prefix):
+        """Set Prefix command
+        Args: prefix (str): a new prefix that you want to set."""
+        await self.bot.prefixes.update_one(
+            {'_id': ctx.guild.id},
+            {"$set": {"prefix": prefix}}
+        )
+        await ctx.send(f"Prefix has been changed to: {prefix}")
 
     @commands.command(name="mute", aliases=["block"], brief="mutes member (admins only). also you can specify the time")
     @commands.has_permissions(administrator=True)
@@ -101,7 +98,7 @@ class Administration(commands.Cog, command_attrs=dict(hidden=True)):
 
     @commands.command()
     @commands.has_permissions(ban_members=True)
-    async def unban(self, ctx: commands.Context, user: discord.User):
+    async def unban(self, ctx: CustomContext, user: discord.User):
         """Unban user with their ID
         Args: user (discord.User): Normally takes user ID.
         Returns: Exception: If given user id isn't in server ban-list.
@@ -224,7 +221,7 @@ class Administration(commands.Cog, command_attrs=dict(hidden=True)):
             await ctx.channel.edit(slowmode_delay=0)
             await ctx.message.add_reaction('✔')
         else:
-            await ctx.channel.edit(slowmode_delay=int(arg))
+            await ctx.channel.edit(slowmode_delay=arg)
             await ctx.send(f"Slowmode has set to {arg} seconds.")
 
     @commands.command(aliases=['add_role'], brief="add role to the user")

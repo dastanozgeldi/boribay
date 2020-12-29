@@ -1,15 +1,19 @@
 import inspect
 import os
 import re
+from textwrap import wrap
+import numexpr
 from typing import Optional, Union
-from utils.CustomEmbed import Embed
+
 import discord
 import requests
 import wikipedia
 from discord.ext import commands
 from dotenv import load_dotenv
 from googletrans import Translator
-from textwrap import wrap
+from utils.CustomCog import Cog
+from utils.Converters import ColorConverter
+from utils.CustomEmbed import Embed
 
 load_dotenv()
 
@@ -17,24 +21,50 @@ URL_REGEX = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a
 USER_REGEX = '<@[!]?\d*>'
 
 
-class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, commands.BucketType.user))):
+class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.BucketType.user))):
     def __init__(self, bot):
         self.bot = bot
+        self.name = '📐 Useful'
+
+    @commands.command(aliases=['calculate', 'calculator'])
+    async def calc(self, ctx, *, equation: str):
+        try:
+            solution = numexpr.evaluate(str(equation)).item()
+            embed = Embed.default(ctx)
+            embed.add_field(name='Input:', value=f'```{equation}```', inline=False)
+            embed.add_field(name='Output:', value=f'```{solution}```', inline=False)
+            await ctx.send(embed=embed)
+        except ZeroDivisionError:
+            await ctx.send('Infinity')
+        except Exception as e:
+            await ctx.send(e)
+
+    @commands.command(aliases=['colour'])
+    async def color(self, ctx, *, color: ColorConverter):
+        """Color command.
+        Example: **color green**
+        Args: color (ColorConverter): Color that you specify. It can be either RGB, HEX, or even a word.
+        """
+        rgb = color.to_rgb()
+        embed = Embed.default(
+            ctx=ctx, color=discord.Color.from_rgb(*rgb)
+        ).set_thumbnail(url=f'https://kal-byte.co.uk/colour/{"/".join(str(i) for i in rgb)}')
+        embed.add_field(name='Hex', value=str(color), inline=False)
+        embed.add_field(name='RGB', value=str(rgb), inline=False)
+        await ctx.send(embed=embed)
 
     @commands.command(
         aliases=['ncov', 'coronavirus'],
         brief='coronavirus statistics, you can also specify a country to see statistics for a given one.'
     )
     async def covid(self, ctx, *, country: Optional[str]):
-        '''
-        Coronavirus command.
+        '''Coronavirus command.
         Returns world statistics if no country is mentioned.
-            • Total and today cases;
-            • Total and today deaths;
-            • Total and today recovered;
-            • Active cases
-            • Critical cases
-        '''
+        • Total and today cases;
+        • Total and today deaths;
+        • Total and today recovered;
+        • Active cases
+        • Critical cases'''
         cs = self.bot.session
         if not country:
             r = await cs.get('https://disease.sh/v3/covid-19/all?yesterday=true&twoDaysAgo=true')
@@ -92,14 +122,12 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
 
     @commands.command(aliases=['src'])
     async def source(self, ctx, *, command: str = None):
-        '''
-        Displays my full source code or for a specific command.
+        '''Displays my full source code or for a specific command.
         Able to show source code of a:
             • command;
             • group
         To display the source code of a subcommand you can separate it by periods.
-        Ex: todo.add — for the add subcommand of the todo command.
-        '''
+        Ex: **source todo.add** — for the add subcommand of the todo command.'''
         source_url = 'https://github.com/Dositan/Boribay'
         branch = 'master'
         if command is None:
@@ -143,15 +171,13 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
 
     @commands.command(brief='caption for an image(attachment) or user avatar.')
     async def caption(self, ctx, argument: Union[discord.Member, str] = None):
-        '''
-        Caption for an image.
+        '''Caption for an image.
         This command describes a given image being just a piece of code.
         Can handle:
             • Image URL;
             • Member Avatar;
             • Image Attachment.
-        Ex: caption Dosek
-        '''
+        Ex: **caption Dosek**'''
         if isinstance(argument, discord.Member):
             image = str(argument.avatar_url)
         elif argument and not isinstance(argument, discord.Member) and re.match(URL_REGEX, argument):
@@ -171,20 +197,18 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
 
     @commands.command(aliases=["temp", "temperature"], brief="displays weather for a given city")
     async def weather(self, ctx, *, city: str):
-        '''
-        Simply gets weather statistics of a given city.
+        '''Simply gets weather statistics of a given city.
         Gives:
             • Description of weather in city;
             • Temperature in °C;
             • Humidity % in city;
-            • Atmospheric Pressure data (hPa) in a current city.
-        '''
+            • Atmospheric Pressure data (hPa) in a current city.'''
         city = city.capitalize()
         appid = os.getenv('app_id')
         response = requests.get(f'http://api.openweathermap.org/data/2.5/weather?appid={appid}&q={city}')
         x = response.json()
         if x["cod"] != "404":
-            async with ctx.channel.typing():
+            async with ctx.typing():
                 y = x["main"]
                 z = x["weather"]
                 embed = Embed(title=f"Weather in {city}").set_thumbnail(url="https://i.ibb.co/CMrsxdX/weather.png")
@@ -202,11 +226,9 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
 
     @commands.command(aliases=['t'], brief="translates text to given language")
     async def translate(self, ctx, lang, *, args):
-        '''
-        Translates a given text to language you want.
+        '''Translates a given text to language you want.
         It also shows the pronunciation of a text.
-        Ex: translate ru hello world!
-        '''
+        Ex: **translate ru hello world!**'''
         t = Translator()
         a = t.translate(args, dest=lang)
         embed = Embed(title=f"Translating from {a.src} to {a.dest}:")
@@ -216,12 +238,10 @@ class Useful(commands.Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 10, 
 
     @commands.command(aliases=['wiki'])
     async def wikipedia(self, ctx, *, search: str = None):
-        '''
-        Search from Wikipedia. Updated version.
+        '''Search from Wikipedia. Updated version.
         Command shows only summary of the page,
         so you can follow the link to see an article in your browser.
-        Ex: wikipedia Python
-        '''
+        Ex: **wikipedia Python**'''
         async with ctx.typing():
             results = wikipedia.search(search)
             if not len(results):

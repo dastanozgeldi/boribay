@@ -1,87 +1,63 @@
+from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
-from discord.ext.commands import command, Cog, is_nsfw
+from discord.ext.commands import command
 
 
 class Anime(Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.name = '✨ Anime'
 
-    async def command_creator(self, topic: str, description: str):
+    async def command_creator(self, ctx, topic: str, description: str):
         cs = self.bot.session
         r = await cs.get(f'https://nekos.life/api/v2/img/{topic}')
         json = await r.json()
         url = str(json['url'])
-        embed = Embed(description=f'**[{description}]({url})**').set_image(url=url)
+        embed = Embed.default(ctx=ctx, description=f'**[{description}]({url})**').set_image(url=url)
         return embed
-
-    @command(brief="random waifu image")
-    @is_nsfw()
-    async def waifu(self, ctx):
-        async with ctx.channel.typing():
-            embed = await self.command_creator('waifu', 'See in browser')
-            await ctx.send(embed=embed)
 
     @command(brief="pat")
     async def pat(self, ctx):
-        async with ctx.channel.typing():
-            embed = await self.command_creator('pat', 'Good gui')
-            await ctx.send(embed=embed)
+        embed = await self.command_creator(ctx, 'pat', 'See in browser')
+        await ctx.send(embed=embed)
 
     @command(brief="baka")
     async def baka(self, ctx):
-        async with ctx.channel.typing():
-            embed = await self.command_creator('baka', 'Baka')
-            await ctx.send(embed=embed)
-
-    @command(brief="random neko image")
-    @is_nsfw()
-    async def neko(self, ctx):
-        async with ctx.channel.typing():
-            embed = await self.command_creator('neko', 'See in browser')
-            await ctx.send(embed=embed)
-
-    @command(brief="random anime wallpaper")
-    @is_nsfw()
-    async def wallpaper(self, ctx):
-        async with ctx.channel.typing():
-            embed = await self.command_creator('wallpaper', 'See in browser')
-            await ctx.send(embed=embed)
+        embed = await self.command_creator(ctx, 'baka', 'Baka')
+        await ctx.send(embed=embed)
 
     @command(brief="slap-slap")
     async def slap(self, ctx, member: str):
-        async with ctx.channel.typing():
-            embed = await self.command_creator('slap', f'Slapping {member}')
-            await ctx.send(embed=embed)
+        embed = await self.command_creator(ctx, 'slap', f'Slapping {member}')
+        await ctx.send(embed=embed)
 
-    @command(
-        name='anime',
-        brief='search for some info of anime that you want.'
-    )
-    async def anime_command(self, ctx, *, anime: str):
-        anime = anime.replace(' ', '+')
+    @command(brief='search for some info of anime that you want.')
+    async def anime(self, ctx, *, anime: str):
+        anime = anime.replace(' ', '%20')
         async with ctx.channel.typing():
             # Data from API
             cs = self.bot.session
-            r = await cs.get(f'https://kitsu.io/api/edge/anime?filter[text]={anime}')
+            r = await cs.get(f'https://kitsu.io/api/edge/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
             js = await r.json()
             _id = js['data'][0]['id']
-            g = await cs.get(f'https://kitsu.io/api/edge/anime/{_id}/genres')
-            gs = await g.json()
             attributes = js['data'][0]['attributes']
-            # Collecting Genres List
             genres_list = []
-            for i in range(0, len(gs['data'])):
-                genres_list.append(gs['data'][i]['attributes']['name'])
+            try:
+                for i in range(len(js['included'])):
+                    genres_list.append(js['included'][i]['attributes']['name'])
+                genres = ' • '.join(genres_list)
+            except KeyError:
+                genres = 'Not specified.'
             fields = [
-                ('Type', f"{js['data'][0]['type']} | {attributes['status']}", True),
+                ('Status', attributes['status'], True),
                 ('Rating', f"{attributes['averageRating']}/100⭐", True),
                 ('Aired', f"from **{attributes['startDate']}** to **{attributes['endDate']}**", True),
-                ('NSFW', attributes['nsfw'], True),
+                ('NSFW', str(attributes['nsfw']), True),
                 ('Episodes', attributes['episodeCount'], True),
                 ('Duration', attributes['episodeLength'], True),
                 ('Rank', attributes['ratingRank'], True),
                 ('Age Rating', attributes['ageRatingGuide'], True),
-                ('Genres', 'Not specified.' if not genres_list else ' • '.join(genres_list), True)
+                ('Genres', genres, True)
             ]
             embed = Embed(
                 title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
@@ -89,59 +65,47 @@ class Anime(Cog):
                 url=f'https://kitsu.io/anime/{_id}'
             ).set_thumbnail(url=attributes['posterImage']['small'])
             for name, value, inline in fields:
-                embed.add_field(name=name, value=value, inline=inline)
+                embed.add_field(name=name, value=value or 'Not specified.', inline=inline)
             await ctx.send(embed=embed)
 
-    '''
-    @command(brief="manga find command", description="get information about manga that you want!")
+    @command(brief="manga find command")
     async def manga(self, ctx, *, manga: str):
         async with ctx.channel.typing():
             cs = self.bot.session
-            r = cs.get(f'https://kitsu.io/api/edge/manga?filter[text]={manga}')
+            r = await cs.get(f'https://kitsu.io/api/edge/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
+            try:
+                manga = manga.replace(" ", "%20")
+                js = await r.json()
+                attributes = js['data'][0]['attributes']
+                description = attributes['description']
+                genres_list = []
                 try:
-                    manga = manga.replace(" ", "+")
-                    # creating json file and getting data
-                    js = await r.json()
-                    # the data of anime
-                    attributes = js['data'][0]['attributes']
-                    title = attributes['titles']
-                    en_title = title['en_jp']
-                    ja_title = title['ja_jp']
-                    thumbnail = attributes['posterImage']['small']
-                    description = attributes['description']
-                    # rating
-                    avg_rating = attributes['averageRating']
-                    # start — end field
-                    from_date = attributes['startDate']
-                    end_date = attributes['endDate']
-                    # type field
-                    manga_type = js['data'][0]['type']
-                    status = attributes['status']
-                    chapters = attributes['chapterCount']
-                    volume = attributes['volumeCount']
-                    rank = attributes['ratingRank']
-                    # fields
-                    fields = [("Rating📊", avg_rating, True),
-                                ("Chapters🎫", chapters, True),
-                                ("Volume⏲", f"{volume}📖", True),
-                                ("Rank🎊", rank, True)]
+                    for i in range(len(js['included'])):
+                        genres_list.append(js['included'][i]['attributes']['name'])
+                    genres = ' • '.join(genres_list)
+                except KeyError:
+                    genres = 'Not specified.'
+                fields = [
+                    ("Status", attributes['status'], True),
+                    ("Rating", attributes['averageRating'], True),
+                    ("Aired", f"from **{attributes['startDate']}** to **{attributes['endDate']}**", True),
+                    ("Chapters", attributes['chapterCount'], True),
+                    ("Volume", attributes['volumeCount'], True),
+                    ("Rank", attributes['ratingRank'], True),
+                    ("Age Rating", attributes['ageRatingGuide'], True),
+                    ("Genres", genres, True)
+                ]
+                embed = Embed(
+                    title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
+                    description=description[0:1500],
+                    url=f"https://kitsu.io/manga/{manga}"
+                ).set_thumbnail(url=attributes['posterImage']['small'])
+                for name, value, inline in fields:
+                    embed.add_field(name=name, value=value or 'Not specified.', inline=inline)
+                await ctx.send(embed=embed)
 
-                    manga_link = f"https://kitsu.io/manga/{manga}"
-
-                    # embed including data
-                    manga_embed = Embed(title=f"{en_title} ({ja_title})", description=description[0:1500], color=0x68BAF1, url=manga_link)
-                    manga_embed.add_field(name="Type | Status📺", value=f"{manga_type} | {status}")
-                    manga_embed.add_field(name="Start | End🐧", value=f"{from_date}\n{end_date}")
-                    for name, value, inline in fields:
-                        manga_embed.add_field(name=name, value=value if value is not None else '\u200b', inline=inline)
-
-                    manga_embed.set_thumbnail(url=thumbnail)
-                    manga_embed.set_footer(text=f"Requested by: {ctx.author.name}", icon_url=ctx.author.avatar_url)
-                    await ctx.send(embed=manga_embed)
-
-                except Exception as e:
-                    await ctx.send(f"Error: {e}")
-    '''
+            except Exception as e:
+                await ctx.send(f"Error: {e}")
 
 
 def setup(bot):
