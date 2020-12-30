@@ -17,6 +17,7 @@ class Administration(Cog):
     async def cog_check(self, ctx):
         return commands.guild_only()
         return commands.bot_has_permissions(administrator=True)
+        return ctx.author.has_permissions(administrator=True)
 
     @commands.command(name='setprefix', brief='Change prefix.')
     @commands.has_permissions(administrator=True)
@@ -33,12 +34,10 @@ class Administration(Cog):
     @commands.has_permissions(administrator=True)
     async def mute_user(self, ctx, member: discord.Member, time: TimeConverter = None):
         """Mutes a member for time you specify (role 'Muted' required).
-        Example:
-            **mute Dosek 1d2h3m4s**
+        Example: **mute Dosek 1d2h3m4s**
         Args:
             member (discord.Member): a member you want to mute.
-            time (int, optional): time a user going to be muted. Defaults to None.
-        """
+            time (int, optional): time a user going to be muted. Defaults to None."""
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         await member.add_roles(role)
         await ctx.send(f"Muted **{member}** for **{time}s**" if time else f"Muted **{member}**")
@@ -50,10 +49,10 @@ class Administration(Cog):
             await member.remove_roles(role)
 
     @commands.command(name="unmute", aliases=["unblock"], brief="unmutes member (admins only)")
+    @commands.has_permissions(administrator=True)
     async def unmute_user(self, ctx, member: discord.Member):
         """Unmutes a user (role 'Muted' required).
-        Args:
-            member (discord.Member): already muted user.
+        Args: member (discord.Member): already muted user.
         """
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         await member.remove_roles(role)
@@ -113,8 +112,7 @@ class Administration(Cog):
     @commands.has_permissions(manage_messages=True)
     async def purge(self, ctx, amount=2):
         """Purges messages of a given amount. Limit is 100.
-        Args:
-            amount (int, optional): amount of messages to clear. Defaults to 2
+        Args: amount (int, optional): amount of messages to clear. Defaults to 2
         """
         if amount > 100:
             await ctx.send("That is too big amount. The maximum is 100")
@@ -214,9 +212,7 @@ class Administration(Cog):
     @commands.has_permissions(manage_guild=True)
     async def slowmode(self, ctx, arg: int):
         """Enables slowmode for a given amount of seconds.
-        Args:
-            arg (int): a time in seconds users have to wait to send a message.
-        """
+        Args: arg (int): a time in seconds users have to wait to send a message."""
         if arg == "disable":
             await ctx.channel.edit(slowmode_delay=0)
             await ctx.message.add_reaction('✔')
@@ -230,8 +226,7 @@ class Administration(Cog):
         """Adds a specified role to a user.
         Args:
             role (discord.Role): a role you want to give.
-            user (discord.Member): member you want to give a role to.
-        """
+            user (discord.Member): member you want to give a role to."""
         await user.add_roles(role)
         await ctx.message.add_reaction('✔')
 
@@ -241,8 +236,7 @@ class Administration(Cog):
         """Removes a specified role from a user.
         Args:
             role (discord.Role): role you want to take.
-            user (discord.Member): memebr you want to take a role from.
-        """
+            user (discord.Member): memebr you want to take a role from."""
         await user.remove_roles(role)
         await ctx.message.add_reaction('✔')
 

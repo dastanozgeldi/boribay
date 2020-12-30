@@ -2,17 +2,17 @@ import inspect
 import os
 import re
 from textwrap import wrap
-import numexpr
 from typing import Optional, Union
 
 import discord
+import numexpr
 import requests
 import wikipedia
 from discord.ext import commands
 from dotenv import load_dotenv
 from googletrans import Translator
-from utils.CustomCog import Cog
 from utils.Converters import ColorConverter
+from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
 
 load_dotenv()
@@ -26,7 +26,7 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         self.bot = bot
         self.name = '📐 Useful'
 
-    @commands.command(aliases=['calculate', 'calculator'])
+    @commands.command(aliases=['calculate', 'calculator'], brief='calculator command.')
     async def calc(self, ctx, *, equation: str):
         try:
             solution = numexpr.evaluate(str(equation)).item()
@@ -36,8 +36,6 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
             await ctx.send(embed=embed)
         except ZeroDivisionError:
             await ctx.send('Infinity')
-        except Exception as e:
-            await ctx.send(e)
 
     @commands.command(aliases=['colour'])
     async def color(self, ctx, *, color: ColorConverter):
@@ -53,10 +51,7 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         embed.add_field(name='RGB', value=str(rgb), inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command(
-        aliases=['ncov', 'coronavirus'],
-        brief='coronavirus statistics, you can also specify a country to see statistics for a given one.'
-    )
+    @commands.command(aliases=['ncov', 'coronavirus'])
     async def covid(self, ctx, *, country: Optional[str]):
         '''Coronavirus command.
         Returns world statistics if no country is mentioned.
@@ -155,7 +150,6 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
 
         lines, firstlineno = inspect.getsourcelines(src)
         if not module.startswith('discord'):
-            # not a built-in command
             location = os.path.relpath(filename).replace('\\', '/')
         else:
             location = module.replace('.', '/') + '.py'

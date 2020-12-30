@@ -1,7 +1,7 @@
 import functools
 import os
-import random
 import re
+import random
 import textwrap
 from io import BytesIO
 from typing import Optional
@@ -25,11 +25,13 @@ class Canvas(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.name = '🖼 Image Manipulation'
-        self.ahb_cache = {}
         self.drake_cache = {}
         self.theory_cache = {}
         self.dagpi_token = os.getenv('dagpi_token')
         self.alex_token = os.getenv('alex_token')
+        self.asset = './data/assets/'
+        self.image = './data/images/'
+        self.font = './data/fonts/'
 
     async def dagpi_image(self, url, fn: str = None):
         cs = self.bot.session
@@ -50,9 +52,9 @@ class Canvas(Cog):
         """Colors of the avatar. Displays Top5 colors of a given image.
         Args: member (Optional[discord.Member]): member, which is either specified one or author."""
         member = member or ctx.author
-        avatar = member.avatar_url_as(size=512)
+        image = member.avatar_url_as(size=256)
         file = await self.dagpi_image(
-            url=f'colors/?url={str(avatar)}',
+            url=f'colors/?url={image}',
             fn='colors.png'
         )
         await ctx.send(file=file)
@@ -89,7 +91,7 @@ class Canvas(Cog):
         await ctx.send(file=file)
 
     @commands.command(brief="shows user's avatar")
-    async def avatar(self, ctx, member: Optional[discord.Member]):
+    async def avatar(self, ctx, member: discord.Member):
         '''Returns either author or member avatar if specified.
         Ex: avatar Dosek.'''
         async with ctx.timeit:
@@ -121,17 +123,18 @@ class Canvas(Cog):
         await ctx.send(file=file)
 
     @commands.command(name='qr')
-    async def QR_code(self, ctx, url: str):
+    async def QR_code(self, ctx, url: Optional[str]):
         '''Makes QR-code of a given URL.
         A great way to make your friends get rickrolled!
         P.S: this command accepts only URLs and raises an exception when it does not see URL.'''
-        if not re.match(URL_REGEX, url):
-            await ctx.send('Please provide a normal URL.')
+        if re.match(URL_REGEX, url):
+            url
         else:
-            cs = self.bot.session
-            r = await cs.get(f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={url}")
-            io = BytesIO(await r.read())
-            await ctx.send(file=discord.File(fp=io, filename='qr.png'))
+            return await ctx.send('Please, specify a valid URL.')
+        cs = self.bot.session
+        r = await cs.get(f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={url}")
+        io = BytesIO(await r.read())
+        await ctx.send(file=discord.File(fp=io, filename='qr.png'))
 
     @commands.command(brief="among us image!", description="among us ejecting image command")
     async def eject(self, ctx, color: str, is_impostor: BoolConverter, *, name: Optional[str]):
@@ -149,8 +152,9 @@ class Canvas(Cog):
         '''Makes "TRIGGERED" meme with an user avatar.
         Ex: triggered Dosek'''
         member = member or ctx.author
+        image = member.avatar_url_as(size=512)
         file = await self.dagpi_image(
-            url=f'triggered/?url={member.avatar_url}',
+            url=f'triggered/?url={image}',
             fn='triggered.gif'
         )
         await ctx.send(file=file)
@@ -160,7 +164,8 @@ class Canvas(Cog):
         '''Makes ASCII version of an user avatar.
         Ex: ascii Dosek'''
         member = member or ctx.author
-        file = await self.dagpi_image(url=f'ascii/?url={member.avatar_url}')
+        image = member.avatar_url_as(size=512)
+        file = await self.dagpi_image(url=f'ascii/?url={image}')
         await ctx.send(file=file)
 
     @commands.command(name="discord", brief="generate realistic discord messages")
@@ -168,6 +173,7 @@ class Canvas(Cog):
         '''Discord message maker.
         Returns an image with text and user avatar you specified.
         Ex: discord Dosek this command is cool ngl.'''
+        member = member or ctx.author
         file = await self.dagpi_image(
             url=f'discord/?url={member.avatar_url}&username={member.name}&text={text}',
             fn='discord.png'
@@ -180,8 +186,9 @@ class Canvas(Cog):
         Member argument is optional, so if you call for a command
         without specifying a member you just wayg yourself.'''
         member = member or ctx.author
+        image = member.avatar_url_as(size=256)
         file = await self.dagpi_image(
-            url=f'whyareyougay/?url={ctx.author.avatar_url}&url2={member.avatar_url}',
+            url=f'whyareyougay/?url={ctx.author.avatar_url}&url2={image}',
             fn='wayg.png'
         )
         await ctx.send(file=file)
@@ -213,7 +220,7 @@ class Canvas(Cog):
             await ctx.send(f'Could not find lyrics for **{args}**')
 
     @commands.command(aliases=['ft'])
-    async def facetime(self, ctx: CustomContext, image: str):
+    async def facetime(self, ctx: CustomContext, image):
         """Facetime Call Maker.
         Args: image (str): whatever you want to make the image of."""
         async with ctx.timeit:
@@ -224,7 +231,7 @@ class Canvas(Cog):
             await ctx.send(file=discord.File(image_bytes, filename='facetime.png'))
 
     @commands.command(hidden=True)
-    async def swirl(self, ctx: CustomContext, image: Optional[str], degrees: Degree = 90):
+    async def swirl(self, ctx: CustomContext, image, degrees: Degree = 90):
         """Swirl Image.
         Example: **swirl Dosek 270**
         Args: image (str, optional): either user, image or url.
@@ -237,26 +244,6 @@ class Canvas(Cog):
             f = functools.partial(Manip.swirl, buffer, degrees)
             buffer = await self.bot.loop.run_in_executor(None, f)
             await ctx.send(file=discord.File(fp=buffer, filename='swirl.png'))
-
-    @commands.command(hidden=True)
-    async def ahb(self, ctx, *, text: commands.clean_content = 'am I a fool who didn\'t enter the text?'):
-        """Always Has Been meme maker.
-        Args: text (str, optional): Text you want to see in the image. Defaults to None.
-        Example: **ahb wait it's all Ohio?**
-        Raises: BadArgument if image is too large."""
-        async with ctx.timeit:
-            try:
-                cached = self.ahb_cache[text]
-                cached.seek(0)
-                await ctx.send(file=discord.File(fp=cached, filename='ahb.png'))
-            except KeyError:
-                if len(text) > 50:
-                    return await ctx.send(f'The text was too long ({len(text)}')
-
-                f = functools.partial(Manip.alwayshasbeen, text)
-                buffer = await self.bot.loop.run_in_executor(None, f)
-                self.ahb_cache[text] = buffer
-                await ctx.send(file=discord.File(fp=buffer, filename='ahb.png'))
 
     @commands.command(brief='create a legendary Drake meme.')
     async def drake(self, ctx, no: str, yes: str):
@@ -301,16 +288,14 @@ class Canvas(Cog):
                 self.theory_cache[text] = buffer
                 await ctx.send(file=discord.File(fp=buffer, filename='theory.png'))
 
-    @commands.command(
-        name='5g1g',
-        brief='[BETA] make a meme "5 guys one girl" with someone\'s avatar.'
-    )
-    async def make_5g1g_meme(self, ctx, member: discord.Member):
+    @commands.command(name='5g1g')
+    async def make_5g1g_meme(self, ctx, member: Optional[discord.Member]):
         """Legendary '5 guys 1 girl meme maker.
         Example: **5g1g Dosek** — 5 guys = author pfp; 1 girl = member pfp.
         Args: member (discord.Member): a member you'd like to 5g1g.
         Raises: MissingRequiredArgument: if member is not specified.
         """
+        member = member or ctx.author
         img = Image.open(f'{self.asset}5g1g.png')
         author = ctx.author.avatar_url_as(size=128)
         member = member.avatar_url_as(size=128)
@@ -325,8 +310,8 @@ class Canvas(Cog):
         for i in author_dir:
             img.paste(author_pfp, i)
 
-        img.save(f'{self.image}success.png', optimize=True)
-        await ctx.send(file=discord.File(f'{self.image}success.png'))
+        img.save(f'{self.image}5g1g.png', optimize=True)
+        await ctx.send(file=discord.File(f'{self.image}5g1g.png'))
 
 
 def setup(bot):

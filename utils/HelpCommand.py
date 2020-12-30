@@ -1,26 +1,25 @@
-import discord
 from difflib import get_close_matches
 from discord.ext import commands, menus
 from utils.CustomCog import Cog
 from utils.Paginators import MyPages
+from utils.CustomEmbed import Embed
 
 
 class GroupHelp(menus.ListPageSource):
 	'''Sends help for group-commands.'''
 
 	def __init__(self, ctx, group, cmds, *, prefix):
-		super().__init__(entries=cmds, per_page=5)
+		super().__init__(entries=cmds, per_page=3)
 		self.ctx = ctx
 		self.group = group
 		self.prefix = prefix
 		self.title = f'Help for category `{self.group.qualified_name}`'
-		self.description = self.group.description
+		self.description = '```fix\n<> ← required argument\n[] ← optional argument```'
 
 	async def format_page(self, menu, cmds):
-		embed = discord.Embed(
+		embed = Embed(
 			title=self.title,
-			description=self.description,
-			color=discord.Color.dark_theme()
+			description=self.description
 		)
 		for cmd in cmds:
 			signature = f'{self.prefix}{cmd.qualified_name} {cmd.signature}'
@@ -35,8 +34,8 @@ class GroupHelp(menus.ListPageSource):
 		if maximum > 1:
 			embed.set_author(
 				name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
-		embed.set_footer(
-			text=f'{self.prefix}help to see all commands list.')
+
+		embed.set_footer(text=f'{self.prefix}help to see all commands list.')
 		return embed
 
 
@@ -82,18 +81,17 @@ class MainHelp(menus.ListPageSource):
 	def __init__(self, ctx, categories: list):
 		super().__init__(entries=categories, per_page=3)
 		self.ctx = ctx
+		self.count = len(categories)
 
 	async def format_page(self, menu, category):
-		embed = discord.Embed(
-			description=f'''```diff
-- <> ← required argument
-- [] ← optional argument
-+ {self.ctx.prefix}help [Category | group] to get module help
-```[Invite]({self.ctx.bot.invite_url}) | [Support]({self.ctx.bot.support_url}) | [Source]({self.ctx.bot.github_url})
-			''',
-			color=discord.Color.dark_theme()
+		embed = Embed(
+			description=f'''{self.ctx.prefix}help [category | group] to get module help
+			[Invite]({self.ctx.bot.invite_url}) | [Support]({self.ctx.bot.support_url}) | [Source]({self.ctx.bot.github_url})''',
 		).set_footer(text=f'{self.ctx.prefix}help <command> to get command help.')
-		embed.set_author(name=self.ctx.author, icon_url=self.ctx.author.avatar_url_as(size=128))
+		embed.set_author(
+			name=f'Page {menu.current_page + 1} of {self.get_max_pages()} ({self.count} categories)',
+			icon_url=self.ctx.author.avatar_url_as(size=128)
+		)
 		for k, v in category:
 			embed.add_field(name=k, value=v, inline=False)
 		return embed
@@ -112,7 +110,7 @@ class MyHelpCommand(commands.HelpCommand):
 			name = "No Category" if cog is None else cog.name
 			filtered = await self.filter_commands(cmds, sort=True)
 			if filtered:
-				all_cmds = " ─ ".join(f"`{c.name}`" for c in cmds)
+				all_cmds = " ▬ ".join(f"`{c.name}`" for c in cmds)
 				if cog:
 					cats.append([name, f">>> {all_cmds}\n"])
 
@@ -133,24 +131,13 @@ class MyHelpCommand(commands.HelpCommand):
 		await menu.start(ctx)
 
 	async def send_command_help(self, command):
-		embed = discord.Embed(
-			title=self.get_command_signature(command),
-			color=discord.Color.dark_theme()
-		)
+		embed = Embed(title=self.get_command_signature(command))
 		aliases = ' | '.join(command.aliases)
 		category = command.cog_name
 		if command.aliases:
-			embed.add_field(
-				name='Aliases',
-				value=aliases,
-				inline=False
-			)
+			embed.add_field(name='Aliases', value=aliases, inline=True)
 		if category:
-			embed.add_field(
-				name='Category',
-				value='No category...' if not category else category,
-				inline=False
-			)
+			embed.add_field(name='Category', value=category or 'No category...', inline=True)
 		else:
 			pass
 

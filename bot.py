@@ -61,14 +61,13 @@ bot.exts = [
     'cogs.canvas',
     'cogs.misc',
     'cogs.anime',
-    # 'cogs.music',
+    'cogs.music',
     'cogs.info',
     'cogs.networks',
     'cogs.help',
     'cogs.errors',
     'cogs.economics',
     'cogs.todo',
-    'cogs.test',
     'cogs.nsfw',
     'jishaku'
 ]
