@@ -224,20 +224,6 @@ class Canvas(Cog):
             await ctx.send(file=discord.File(image_bytes, filename='facetime.png'))
 
     @commands.command(hidden=True)
-    async def floor(self, ctx: CustomContext, image=None):
-        """Floor of Images.
-        Example: **floor Dosek**
-        Args: image (str): either user, image or url. Defaults to None.
-        Raises: BadArgument if image is too large."""
-        async with ctx.timeit:
-            img = await make_image(ctx, image)
-            buffer = BytesIO(img)
-
-            f = functools.partial(Manip.floor, buffer)
-            buffer = await self.bot.loop.run_in_executor(None, f)
-            await ctx.send(file=discord.File(fp=buffer, filename='floor.png'))
-
-    @commands.command(hidden=True)
     async def swirl(self, ctx: CustomContext, image: Optional[str], degrees: Degree = 90):
         """Swirl Image.
         Example: **swirl Dosek 270**
@@ -265,7 +251,8 @@ class Canvas(Cog):
                 await ctx.send(file=discord.File(fp=cached, filename='ahb.png'))
             except KeyError:
                 if len(text) > 50:
-                    return await ctx.send(f'The text was too long ({len(text)})')
+                    return await ctx.send(f'The text was too long ({len(text)}')
+
                 f = functools.partial(Manip.alwayshasbeen, text)
                 buffer = await self.bot.loop.run_in_executor(None, f)
                 self.ahb_cache[text] = buffer
