@@ -1,12 +1,26 @@
 import textwrap
 from io import BytesIO
-from polaroid import Image as PI
+from wand.image import Image as WI
 
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
-from wand.image import Image as WI
-from utils.Converters import ImageConverter, Degree
+
+from utils.Converters import Degree, ImageConverter, ImageURLConverter
 from utils.CustomContext import CustomContext
+
+
+async def make_image_url(ctx: CustomContext, arg: str):
+    c = ImageURLConverter()
+    image = await c.convert(ctx, arg)
+    if not image:
+        if ctx.message.attachments:
+            image = ctx.message.attachments[0].url
+            return image
+        else:
+            image = str(ctx.author.avatar_url_as(static_format='png', format='png', size=512))
+            return image
+    else:
+        return image
 
 
 async def make_image(ctx: CustomContext, argument: str):
@@ -26,27 +40,6 @@ async def make_image(ctx: CustomContext, argument: str):
 
 
 class Manip:
-    @staticmethod
-    def facetime(first: bytes, second: bytes):
-        with WI(file=BytesIO(first)) as img:
-            if (img.width * img.height) >= 1200 * 1000:
-                raise commands.BadArgument('Too large image.')
-
-        image = PI(first)
-        if image.size != (512, 512):
-            image.resize(512, 512, 5)
-
-        image_two = PI(second)
-        if image_two.size != (128, 128):
-            image_two.resize(128, 128, 5)
-
-        buttons = PI('./data/assets/facetime.png')
-        buttons.resize(512, 512, 5)
-        image.watermark(image_two, 376, 8)
-        image.watermark(buttons, 0, 200)
-        io = BytesIO(image.save_bytes())
-
-        return io
 
     @staticmethod
     def swirl(image: BytesIO, degrees: Degree):
@@ -56,6 +49,18 @@ class Manip:
             img.swirl(degree=degrees)
             buffer = BytesIO()
             img.save(file=buffer)
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    def clyde(txt: str):
+        Image.MAX_IMAGE_PIXELS = (1200 * 1000)
+        with Image.open('./data/assets/clyde.png') as img:
+            font = ImageFont.truetype('./data/fonts/whitneybook.otf', 18)
+            draw = ImageDraw.Draw(img)
+            draw.text((72, 33), txt, (255, 255, 255), font=font)
+            buffer = BytesIO()
+            img.save(buffer, 'png')
         buffer.seek(0)
         return buffer
 
@@ -84,6 +89,5 @@ class Manip:
             draw.text((275, 267), '\n'.join(yes_wrapped), (0, 0, 0), font=font)
             buffer = BytesIO()
             img.save(buffer, 'png')
-
         buffer.seek(0)
         return buffer

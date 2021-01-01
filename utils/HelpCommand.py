@@ -107,7 +107,7 @@ class MyHelpCommand(commands.HelpCommand):
 		for cog, cmds in mapping.items():
 			if not hasattr(cog, "name"):
 				continue
-			name = "No Category" if cog is None else cog.name
+			name = cog.name or "No Category"
 			filtered = await self.filter_commands(cmds, sort=True)
 			if filtered:
 				all_cmds = " ▬ ".join(f"`{c.name}`" for c in cmds)

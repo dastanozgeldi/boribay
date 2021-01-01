@@ -6,9 +6,10 @@ import psutil as p
 from discord.ext import commands
 from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
+from utils.Exceptions import TooManyOptions, NotEnoughOptions
 
 
-class Misc(Cog):
+class Miscellaneous(Cog):
     '''Misc commands extension. Here owner includes commands that aren't related to other categories.'''
 
     def __init__(self, bot):
@@ -18,10 +19,12 @@ class Misc(Cog):
 
     @commands.command(aliases=['hi', 'hey'], brief="greeting, nothing else.")
     async def hello(self, ctx):
+        """Introduction"""
         await ctx.send(f'Hello there! I am {self.bot.user}, created by {self.bot.dosek}')
 
     @commands.command(name='invite', brief='invite me to your server!')
     async def invite_command(self, ctx):
+        """Some useful invites (support server and the bot itself)"""
         embed = Embed(
             description=f'''To invite me to your server click [here]({self.bot.invite_url})
             If you have some issues you can join to my support server clicking [here]({self.bot.support_url})'''
@@ -30,6 +33,7 @@ class Misc(Cog):
 
     @commands.command(name="system", aliases=['sys'], brief="shows the characteristics of my system")
     async def system_info(self, ctx):
+        """Information of the system that is running the bot."""
         embed = Embed(title="System Info").set_thumbnail(url="https://cdn.discordapp.com/attachments/735725378433187901/776524927708692490/data-server.png")
         pr = p.Process()
         info = {
@@ -58,6 +62,7 @@ class Misc(Cog):
 
     @commands.command()
     async def ping(self, ctx):
+        """Check latency of the bot and its system."""
         start = time()
         message = await ctx.send("Pinging...")
         end = time()
@@ -69,16 +74,17 @@ class Misc(Cog):
 
     @commands.command(aliases=['vote'], brief="create a cool poll!")
     async def poll(self, ctx, question, *options):
+        """Make a simple poll using this command. You can also add an image.
+        Args: question (str): title of the poll. write it in quotes.
+        options (str): maximum count is 10. separate options by quotes, I mean,
+        write each option in its own quotation marks, "like this"."""
         limit = 10
         if len(options) > limit:
-            await ctx.send('You can only add a maximum of 10 responses per vote!')
-            return
+            raise TooManyOptions('There were too many options to create a poll.')
         elif len(options) < 2:
-            await ctx.send('You should type at least 2 responses to create a vote!')
-            return
-
+            raise NotEnoughOptions('There were not enough options to create a poll.')
         elif len(options) == 2 and options[0].lower() == 'yes' and options[1].lower() == 'no':
-            reactions = ['👍', '👎']
+            reactions = ['<:thumbs_up:746352051717406740>', '<:thumbs_down:746352095510265881>']
         else:
             reactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
 
@@ -88,7 +94,6 @@ class Misc(Cog):
         embed = Embed(title=question.replace('\n', ''), description=''.join(description))
         if ctx.message.attachments:
             embed.set_image(url=ctx.message.attachments[0].url)
-        embed.set_thumbnail(url="https://cdn0.iconfinder.com/data/icons/kirrkle-internet-and-websites/60/12_-_Poll-256.png")
         message = await ctx.send(embed=embed)
 
         for emoji in reactions[:len(options)]:
@@ -96,4 +101,4 @@ class Misc(Cog):
 
 
 def setup(bot):
-    bot.add_cog(Misc(bot))
+    bot.add_cog(Miscellaneous(bot))

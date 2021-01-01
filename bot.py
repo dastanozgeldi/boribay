@@ -28,7 +28,6 @@ log.addHandler(handler)
 new_guilds = False
 my_mentions = AllowedMentions(everyone=False, roles=False)
 my_intents = Intents.all()
-my_intents.members = True
 stuff_to_cache = MemberCacheFlags.from_intents(my_intents)
 
 bot = Bot(
@@ -61,7 +60,7 @@ bot.exts = [
     'cogs.canvas',
     'cogs.misc',
     'cogs.anime',
-    'cogs.music',
+    # 'cogs.music',
     'cogs.info',
     'cogs.networks',
     'cogs.help',

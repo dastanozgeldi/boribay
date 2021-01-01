@@ -1,4 +1,5 @@
 import re
+import typing
 import discord
 import contextlib
 import twemoji_parser
@@ -7,6 +8,7 @@ from utils.CustomContext import CustomContext
 
 URL_REGEX = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 RGB_REGEX = '\(?(\d+),?\s*(\d+),?\s*(\d+)\)?'
+EMOJI_REGEX = r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>'
 time_regex = re.compile("(?:(\d{1,5})(h|s|m|d))+?")
 time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
 
@@ -55,38 +57,63 @@ class ColorConverter(commands.Converter):
         raise commands.BadArgument('Could not find any color that matches this.')
 
 
-class ImageConverter(commands.Converter):
-    async def convert(self, ctx: CustomContext, argument: str):
+class ImageURLConverter(commands.Converter):
+    async def convert(self, ctx: CustomContext, arg: typing.Union[discord.Emoji, str]):
         try:
-            member_converter = commands.MemberConverter()
-            member = await member_converter.convert(ctx, argument)
-            asset = member.avatar_url_as(static_format="png", format="png", size=512)
-            image = await asset.read()
+            mconv = commands.MemberConverter()
+            m = await mconv.convert(ctx, arg)
+            image = str(m.avatar_url_as(static_format='png', format='png', size=512))
             return image
 
-        except (commands.MemberNotFound, TypeError):
+        except (TypeError, commands.MemberNotFound):
             try:
-                emoji_regex = r"<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>"
-                url = await twemoji_parser.emoji_to_url(argument, include_check=True)
+                url = await twemoji_parser.emoji_to_url(arg, include_check=True)
                 if re.match(URL_REGEX, url):
-                    async with ctx.bot.session.get(url) as response:
-                        byte_image = await response.read()
-                        return byte_image
-
-                if re.match(URL_REGEX, argument):
-                    async with ctx.bot.session.get(argument) as response:
-                        image = await response.read()
-                        return image
-
-                elif re.match(emoji_regex, argument):
-                    emoji_converter = commands.PartialEmojiConverter()
-                    emoji = await emoji_converter.convert(ctx, argument)
-                    asset = emoji.url
-                    image = await asset.read()
+                    return url
+                if re.match(URL_REGEX, arg):
+                    return arg
+                elif re.match(EMOJI_REGEX, arg):
+                    econv = commands.PartialEmojiConverter()
+                    e = await econv.convert(ctx, arg)
+                    image = str(e.url)
                     return image
-
             except TypeError:
                 return None
+
+        return None
+
+
+class ImageConverter(commands.Converter):
+    async def convert(self, ctx: CustomContext, arg: typing.Union[discord.Emoji, str]):
+        try:
+            mconv = commands.MemberConverter()
+            m = await mconv.convert(ctx, arg)
+            pfp = m.avatar_url_as(static_format='png', format='png', size=512)
+            image = await pfp.read()
+            return image
+
+        except (TypeError, commands.MemberNotFound):
+            try:
+                url = await twemoji_parser.emoji_to_url(arg, include_check=True)
+                if re.match(URL_REGEX, url):
+                    cs = ctx.bot.session
+                    r = await cs.get(url)
+                    image = await r.read()
+                    return image
+                if re.match(URL_REGEX, arg):
+                    cs = ctx.bot.session
+                    r = await cs.get(arg)
+                    image = await r.read()
+                    return image
+                elif re.match(EMOJI_REGEX, arg):
+                    econv = commands.PartialEmojiConverter()
+                    e = await econv.convert(ctx, arg)
+                    asset = e.url
+                    image = await asset.read()
+                    return image
+            except TypeError:
+                return None
+
         return None
 
 

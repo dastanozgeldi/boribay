@@ -3,6 +3,7 @@ from discord.ext import commands
 import traceback
 import sys
 from utils.CustomEmbed import Embed
+from utils import Exceptions
 
 
 class CommandErrorHandler(commands.Cog, command_attrs={"hidden": True}):
@@ -26,6 +27,12 @@ class CommandErrorHandler(commands.Cog, command_attrs={"hidden": True}):
         if isinstance(error, ignored):
             return
 
+        if isinstance(error, Exceptions.TooManyOptions):
+            error_embed.description = 'There were too many options to create a poll.'
+
+        if isinstance(error, Exceptions.NotEnoughOptions):
+            error_embed.description = 'There were not enough options to create a poll.'
+
         if isinstance(error, commands.DisabledCommand):
             error_embed.description = f'{ctx.command} has been disabled.'
 
@@ -40,6 +47,9 @@ class CommandErrorHandler(commands.Cog, command_attrs={"hidden": True}):
 
         if isinstance(error, commands.errors.NotOwner):
             error_embed.description = f'Access denied to use command __{ctx.command}__'
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            error_embed.description = f"This command is missing mandatory argument **{error.param.name}**. Type `{ctx.prefix}help {ctx.command}` to see where is the problem."
 
         if isinstance(error, commands.CommandOnCooldown):
             error_embed.description = f'{ctx.author.display_name}, you are on cooldown. Try again in {round(error.retry_after, 2)}s.'
@@ -59,9 +69,6 @@ class CommandErrorHandler(commands.Cog, command_attrs={"hidden": True}):
 
         if isinstance(error, commands.MemberNotFound):
             error_embed.description = f"{error}"
-
-        if isinstance(error, commands.MissingRequiredArgument):
-            error_embed.description = f"This command is missing mandatory argument **{error.param.name}**. Type `{ctx.prefix}help {ctx.command}` to see where is the problem."
 
         if isinstance(error, commands.CommandNotFound):
             error_embed.description = "I have no commands like that. Сheck the command for spelling errors, otherwise tell to the admins. To see commands list, type `.help`"
