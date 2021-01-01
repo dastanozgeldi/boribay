@@ -19,7 +19,3 @@ class Embed(discord.Embed):
 	@classmethod
 	def error(cls, color=0xe74c3c, **kwargs):
 		return cls(color=color, **kwargs)
-
-	@classmethod
-	def warning(cls, color=0xffff00, **kwargs):
-		return cls(color=color, **kwargs)
