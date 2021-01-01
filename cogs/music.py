@@ -8,7 +8,6 @@ import wavelink
 from discord.ext import commands
 from dotenv import load_dotenv
 from utils.CustomCog import Cog
-from utils.CustomContext import CustomContext
 from utils.CustomEmbed import Embed
 
 load_dotenv()
@@ -238,7 +237,7 @@ class Music(Cog, wavelink.WavelinkMixin):
             await self.wavelink.initiate_node(**node)
 
     def get_player(self, obj):
-        if isinstance(obj, CustomContext):
+        if isinstance(obj, commands.Context):
             return self.wavelink.get_player(obj.guild.id, cls=Player, context=obj)
         elif isinstance(obj, discord.Guild):
             return self.wavelink.get_player(obj.id, cls=Player)

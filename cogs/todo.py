@@ -2,7 +2,6 @@ from discord.ext import commands, menus
 from utils.HelpCommand import Cog, MyPages
 from dotenv import load_dotenv
 from utils.CustomEmbed import Embed
-from utils.CustomContext import CustomContext
 load_dotenv()
 
 
@@ -34,14 +33,14 @@ class Todo(Cog, name='To-Do'):
         self.name = '📃 To-Do'
 
     @commands.group(invoke_without_command=True, aliases=['to-do'], brief='todo help command.')
-    async def todo(self, ctx: CustomContext):
+    async def todo(self, ctx):
         """Todo commands parent.
         It just basically sends the help for its category.
         Call for this command to learn how to use to-do commands."""
         await ctx.send_help('todo')
 
     @todo.command(name='list')
-    async def list_todo(self, ctx: CustomContext):
+    async def list_todo(self, ctx):
         '''Basically, shows author's todo list.
         Have nothing to explain, so try it and see.'''
         todos = await self.bot.todos.find_one({'_id': ctx.author.id})

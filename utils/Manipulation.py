@@ -1,15 +1,12 @@
 import textwrap
 from io import BytesIO
-from wand.image import Image as WI
 
-from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 
-from utils.Converters import Degree, ImageConverter, ImageURLConverter
-from utils.CustomContext import CustomContext
+from utils.Converters import ImageConverter, ImageURLConverter
 
 
-async def make_image_url(ctx: CustomContext, arg: str):
+async def make_image_url(ctx, arg: str):
     c = ImageURLConverter()
     image = await c.convert(ctx, arg)
     if not image:
@@ -23,7 +20,7 @@ async def make_image_url(ctx: CustomContext, arg: str):
         return image
 
 
-async def make_image(ctx: CustomContext, argument: str):
+async def make_image(ctx, argument: str):
     converter = ImageConverter()
     image = await converter.convert(ctx, argument)
     if not image:
@@ -40,17 +37,6 @@ async def make_image(ctx: CustomContext, argument: str):
 
 
 class Manip:
-
-    @staticmethod
-    def swirl(image: BytesIO, degrees: Degree):
-        with WI(file=image) as img:
-            if(img.width * img.height) >= (1200 * 1000):
-                raise commands.BadArgument('Too large image.')
-            img.swirl(degree=degrees)
-            buffer = BytesIO()
-            img.save(file=buffer)
-        buffer.seek(0)
-        return buffer
 
     @staticmethod
     def clyde(txt: str):

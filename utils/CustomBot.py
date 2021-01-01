@@ -10,8 +10,6 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from utils.CustomContext import CustomContext
-
 load_dotenv()
 
 
@@ -44,10 +42,6 @@ class Bot(commands.Bot):
 		self.invite_url = 'https://discord.com/api/oauth2/authorize?client_id=735397931355471893&permissions=8&scope=bot'
 		self.github_url = 'https://github.com/Dositan/boribay/'
 
-	@property
-	def dosek(self):
-		return self.get_user(682950658671902730)
-
 	async def db_latency(self):
 		start = perf_counter()
 		await self.db.Boribay.command('ping')
@@ -58,7 +52,7 @@ class Bot(commands.Bot):
 		await super().close()
 		await self.session.close()
 
-	async def get_context(self, message, *, cls=CustomContext):
+	async def get_context(self, message, *, cls=commands.Context):
 		return await super().get_context(message, cls=cls)
 
 	async def on_message(self, message):
@@ -86,11 +80,12 @@ class Bot(commands.Bot):
 	async def on_guild_remove(self, guild: discord.Guild):
 		await self.prefixes.delete_one({'_id': guild.id})
 
-	'''
 	async def on_message_edit(self, before, after):
-		if await self.is_owner(before.author):
-			await self.process_commands(after)
-	'''
+		if before.content != after.content:
+			if after.author.id in self.owner_ids:
+				return await self.process_commands(after)
+		if before.embeds:
+			return
 
 	async def get_uptime(self) -> timedelta:
 		# return timedelta(seconds=int((datetime.now() - self.start_time).total_seconds()))
@@ -100,33 +95,6 @@ class Bot(commands.Bot):
 		message = self._connection._get_message(message_id)
 		await message.reply(content, **kwargs)
 
-	async def add_delete_reaction(self, ctx: CustomContext, channel_id, message_id):
-		channel = self.get_channel(channel_id)
-
-		if channel is None:
-			return
-
-		message = await channel.fetch_message(message_id)
-
-		if message is None:
-			return
-
-		await message.add_reaction('\N{WASTEBASKET}')
-
-		def _check(_reaction, _user):
-			return _user != self.user and str(_reaction.emoji) == '\N{WASTEBASKET}' and _user == ctx.author
-
-		try:
-			reaction, user = await self.wait_for(
-				'reaction_add',
-				timeout=10.0,
-				check=_check
-			)
-		except asyncio.TimeoutError:
-			pass
-
-		else:
-			try:
-				await message.delete()
-			except (discord.Forbidden, discord.HTTPException):
-				pass
+	@property
+	def dosek(self):
+		return self.get_user(682950658671902730)

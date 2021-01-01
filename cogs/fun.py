@@ -1,3 +1,4 @@
+import re
 import discord
 import asyncio
 import random
@@ -10,7 +11,6 @@ from PIL import Image, ImageFont, ImageDraw
 from discord.ext import commands
 from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
-from utils.CustomContext import CustomContext
 
 
 class Fun(Cog):
@@ -18,8 +18,19 @@ class Fun(Cog):
         self.bot = bot
         self.name = '🏓 Fun'
 
+    @commands.command(aliases=['ss'], brief="see a screenshot of a given url.")
+    async def screenshot(self, ctx, url: str):
+        """Screenshot command.
+        Args: url (str): a web-site that you want to get a screenshot from."""
+        if not re.search("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", url):
+            return await ctx.send("Please leave a valid url!")
+        cs = self.bot.session
+        r = await cs.get(f'https://image.thum.io/get/width/1920/crop/675/maxAge/1/noanimate/{url}')
+        io = BytesIO(await r.read())
+        await ctx.send(file=discord.File(fp=io, filename="screenshot.png"))
+
     @commands.command(aliases=['tr'], brief='typeracer command! compete with others using this.')
-    async def typeracer(self, ctx: CustomContext):
+    async def typeracer(self, ctx):
         """Typeracer Command. Compete with others!
         Returns: Average WPM of the winner, time spent to type and original text."""
         cs = self.bot.session

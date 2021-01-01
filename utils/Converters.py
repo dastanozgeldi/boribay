@@ -4,7 +4,6 @@ import discord
 import contextlib
 import twemoji_parser
 from discord.ext import commands
-from utils.CustomContext import CustomContext
 
 URL_REGEX = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 RGB_REGEX = '\(?(\d+),?\s*(\d+),?\s*(\d+)\)?'
@@ -29,7 +28,7 @@ class TimeConverter(commands.Converter):
 
 
 class Degree(commands.Converter):
-    async def convert(self, ctx: CustomContext, degree: int = 90):
+    async def convert(self, ctx, degree: int = 90):
         if int(degree) > 360:
             degree = 360
         elif int(degree) < -360:
@@ -40,7 +39,7 @@ class Degree(commands.Converter):
 
 
 class ColorConverter(commands.Converter):
-    async def convert(self, ctx: CustomContext, arg: str):
+    async def convert(self, ctx, arg: str):
         with contextlib.suppress(AttributeError):
             match = re.match(RGB_REGEX, arg)
             check = all(0 <= int(x) <= 255 for x in match.groups())
@@ -58,7 +57,7 @@ class ColorConverter(commands.Converter):
 
 
 class ImageURLConverter(commands.Converter):
-    async def convert(self, ctx: CustomContext, arg: typing.Union[discord.Emoji, str]):
+    async def convert(self, ctx, arg: typing.Union[discord.Emoji, str]):
         try:
             mconv = commands.MemberConverter()
             m = await mconv.convert(ctx, arg)
@@ -84,7 +83,7 @@ class ImageURLConverter(commands.Converter):
 
 
 class ImageConverter(commands.Converter):
-    async def convert(self, ctx: CustomContext, arg: typing.Union[discord.Emoji, str]):
+    async def convert(self, ctx, arg: typing.Union[discord.Emoji, str]):
         try:
             mconv = commands.MemberConverter()
             m = await mconv.convert(ctx, arg)
@@ -118,13 +117,13 @@ class ImageConverter(commands.Converter):
 
 
 class MemberRoles(commands.MemberConverter):
-    async def convert(self, ctx: CustomContext, argument: str):
+    async def convert(self, ctx, argument: str):
         member = await super().convert(ctx, argument)
         return [role.name for role in member.roles[1:]]
 
 
 class BoolConverter(commands.Converter):
-    async def convert(self, ctx: CustomContext, argument: str):
+    async def convert(self, ctx, argument: str):
         if argument in ('yes', 'y', 'true', 't', '1', 'enable', 'on'):
             return True
         elif argument in ('no', 'n', 'false', 'f', '0', 'disable', 'off'):

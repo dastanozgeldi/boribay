@@ -103,9 +103,8 @@ class Canvas(Cog, name='Images'):
     async def avatar(self, ctx, member: Optional[discord.Member]):
         '''Returns either author or member avatar if specified.
         Ex: avatar Dosek.'''
-        async with ctx.timeit:
-            member = member or ctx.author
-            await ctx.send(str(member.avatar_url))
+        member = member or ctx.author
+        await ctx.send(str(member.avatar_url))
 
     @commands.command(brief="minecraft achievements maker")
     async def achieve(self, ctx, *, text):
@@ -231,39 +230,37 @@ class Canvas(Cog, name='Images'):
         Example: **drake "discord.js" "discord.py"**
         Args: no (str): argument for 'no' side of image.
         yes (str): argument for 'yes' side of image."""
-        async with ctx.timeit:
-            try:
-                cached = self.drake_cache[no]
-                cached.seek(0)
-                await ctx.send(file=discord.File(fp=cached, filename='drake.png'))
+        try:
+            cached = self.drake_cache[no]
+            cached.seek(0)
+            await ctx.send(file=discord.File(fp=cached, filename='drake.png'))
 
-            except KeyError:
-                if len(yes) > 90 or len(no) > 90:
-                    return await ctx.send('The text was too long to render.')
+        except KeyError:
+            if len(yes) > 90 or len(no) > 90:
+                return await ctx.send('The text was too long to render.')
 
-                f = functools.partial(Manip.drake, no, yes)
-                buffer = await self.bot.loop.run_in_executor(None, f)
-                self.drake_cache[no] = buffer
-                await ctx.send(file=discord.File(fp=buffer, filename='drake.png'))
+            f = functools.partial(Manip.drake, no, yes)
+            buffer = await self.bot.loop.run_in_executor(None, f)
+            self.drake_cache[no] = buffer
+            await ctx.send(file=discord.File(fp=buffer, filename='drake.png'))
 
     @commands.command()
     async def clyde(self, ctx, *, text: str):
         """Make an image with text that Clyde bot sends.
         Args: text (str): the text you want to be displayed."""
-        async with ctx.timeit:
-            try:
-                cached = self.clyde_cache[text]
-                cached.seek(0)
-                await ctx.send(file=discord.File(fp=cached, filename='clyde.png'))
+        try:
+            cached = self.clyde_cache[text]
+            cached.seek(0)
+            await ctx.send(file=discord.File(fp=cached, filename='clyde.png'))
 
-            except KeyError:
-                if len(text) > 75:
-                    return await ctx.send('The text was too long to render.')
+        except KeyError:
+            if len(text) > 75:
+                return await ctx.send('The text was too long to render.')
 
-                f = functools.partial(Manip.clyde, text)
-                buffer = await self.bot.loop.run_in_executor(None, f)
-                self.clyde_cache[text] = buffer
-                await ctx.send(file=discord.File(fp=buffer, filename='clyde.png'))
+            f = functools.partial(Manip.clyde, text)
+            buffer = await self.bot.loop.run_in_executor(None, f)
+            self.clyde_cache[text] = buffer
+            await ctx.send(file=discord.File(fp=buffer, filename='clyde.png'))
 
     @commands.command(aliases=['lisa'])
     async def theory(self, ctx, *, text: str):
@@ -272,20 +269,19 @@ class Canvas(Cog, name='Images'):
         Example: **theory its better using your own commands than someone's API.**
         Args: text (str): text to pass on the board.
         Raises: Exception when text > 144 symbols."""
-        async with ctx.timeit:
-            try:
-                cached = self.theory_cache[text]
-                cached.seek(0)
-                await ctx.send(file=discord.File(fp=cached, filename='theory.png'))
+        try:
+            cached = self.theory_cache[text]
+            cached.seek(0)
+            await ctx.send(file=discord.File(fp=cached, filename='theory.png'))
 
-            except KeyError:
-                if len(text) > 144:
-                    return await ctx.send('The text was too long to render.')
+        except KeyError:
+            if len(text) > 144:
+                return await ctx.send('The text was too long to render.')
 
-                f = functools.partial(Manip.theory, text)
-                buffer = await self.bot.loop.run_in_executor(None, f)
-                self.theory_cache[text] = buffer
-                await ctx.send(file=discord.File(fp=buffer, filename='theory.png'))
+            f = functools.partial(Manip.theory, text)
+            buffer = await self.bot.loop.run_in_executor(None, f)
+            self.theory_cache[text] = buffer
+            await ctx.send(file=discord.File(fp=buffer, filename='theory.png'))
 
     @commands.command(name='5g1g', aliases=['fiveguysonegirl'])
     async def _5g1g(self, ctx, member: Optional[discord.Member]):

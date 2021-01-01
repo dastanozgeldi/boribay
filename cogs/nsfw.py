@@ -2,7 +2,7 @@ import os
 import praw
 import random
 from dotenv import load_dotenv
-from discord.ext.commands import command
+from discord.ext.commands import command, guild_only
 from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
 load_dotenv()
@@ -21,6 +21,7 @@ class NSFW(Cog, name='Maybe NSFW'):
         self.name = '🔞 Maybe NSFW'
 
     async def cog_check(self, ctx):
+        return guild_only()
         return ctx.channel.is_nsfw()
 
     async def command_creator(self, ctx, topic: str):

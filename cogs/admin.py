@@ -5,7 +5,6 @@ import discord
 from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
 from utils.Converters import TimeConverter
-from utils.CustomContext import CustomContext
 from discord.ext import commands
 
 
@@ -97,7 +96,7 @@ class Administration(Cog):
 
     @commands.command()
     @commands.has_permissions(ban_members=True)
-    async def unban(self, ctx: CustomContext, user: discord.User):
+    async def unban(self, ctx, user: discord.User):
         """Unban user with their ID
         Args: user (discord.User): Normally takes user ID.
         Returns: Exception: If given user id isn't in server ban-list.
