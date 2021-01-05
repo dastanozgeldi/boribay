@@ -5,3 +5,4 @@ data/logs/
 
 .env
 data/Music.url
+cogs/economics.py

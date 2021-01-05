@@ -3,6 +3,7 @@ import typing
 import discord
 import contextlib
 import twemoji_parser
+from PIL import ImageColor
 from discord.ext import commands
 
 URL_REGEX = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
@@ -27,17 +28,6 @@ class TimeConverter(commands.Converter):
         return time
 
 
-class Degree(commands.Converter):
-    async def convert(self, ctx, degree: int = 90):
-        if int(degree) > 360:
-            degree = 360
-        elif int(degree) < -360:
-            degree = -360
-        else:
-            degree = int(degree)
-        return degree
-
-
 class ColorConverter(commands.Converter):
     async def convert(self, ctx, arg: str):
         with contextlib.suppress(AttributeError):
@@ -48,12 +38,19 @@ class ColorConverter(commands.Converter):
             return discord.Color.from_rgb([int(i) for i in match.groups()])
 
         converter = commands.ColorConverter()
-        result = await converter.convert(ctx, arg)
+        try:
+            result = await converter.convert(ctx, arg)
+        except commands.BadColourArgument:
+            try:
+                color = ImageColor.getrgb(arg)
+                result = discord.Color.from_rgb(*color)
+            except ValueError:
+                result = None
 
         if result:
             return result
 
-        raise commands.BadArgument('Could not find any color that matches this.')
+        raise commands.BadArgument(f'Could not find any color that matches this: `{arg}`.')
 
 
 class ImageURLConverter(commands.Converter):

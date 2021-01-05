@@ -1,12 +1,10 @@
 import inspect
 import os
-import re
 from textwrap import wrap
-from typing import Optional, Union
+from typing import Optional
 
 import discord
 import numexpr
-import requests
 import wikipedia
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -14,6 +12,8 @@ from googletrans import Translator
 from utils.Converters import ColorConverter
 from utils.CustomCog import Cog
 from utils.CustomEmbed import Embed
+from utils.Manipulation import make_image_url
+from utils.Paginators import EmbedPageSource, MyPages
 
 load_dotenv()
 
@@ -25,6 +25,31 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
     def __init__(self, bot):
         self.bot = bot
         self.name = '📐 Useful'
+
+    @commands.command(aliases=['song', 'track', 'lyric'], brief='find almost every song lyrics with this command.')
+    async def lyrics(self, ctx, *, args: str):
+        '''Powerful lyrics command.
+        Ex: lyrics believer.
+        Has no limits.
+        You can find lyrics for song that you want.
+        Raises an exception if song does not exist in API data.'''
+        cs = self.bot.session
+        r = await cs.get(f'https://some-random-api.ml/lyrics?title={args.replace(" ", "%20")}')
+        js = await r.json()
+        try:
+            song = str(js['lyrics'])
+            song = wrap(song, 1000, drop_whitespace=False, replace_whitespace=False)
+            embed_list = []
+            for lyrics in song:
+                embed = Embed(
+                    title=f'{js["author"]} — {js["title"]}',
+                    description=lyrics
+                ).set_thumbnail(url=js['thumbnail']['genius'])
+                embed_list.append(embed)
+            p = MyPages(source=EmbedPageSource(embed_list))
+            await p.start(ctx)
+        except KeyError:
+            await ctx.send(f'Could not find lyrics for **{args}**')
 
     @commands.command(aliases=['calculate', 'calculator'], brief='calculator command.')
     async def calc(self, ctx, *, equation: str):
@@ -61,21 +86,22 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         • Active cases
         • Critical cases'''
         cs = self.bot.session
+        url = os.getenv('covid')
         if not country:
-            r = await cs.get('https://disease.sh/v3/covid-19/all?yesterday=true&twoDaysAgo=true')
+            r = await cs.get(f'{url}all?yesterday=true&twoDaysAgo=true')
             js = await r.json()
             title = 'Covid-19 World Statistics'
-            field = ('Countries', str(js['affectedCountries']))
+            field = ('Affected Countries', str(js['affectedCountries']))
             url = 'https://www.isglobal.org/documents/10179/7759027/Coronavirus+SARS-CoV-2+de+CDC+en+Unsplash'
         if country:
-            r = await cs.get(f'https://disease.sh/v3/covid-19/countries/{country}?yesterday=true&twoDaysAgo=true&strict=true')
+            r = await cs.get(f'{url}countries/{country}?yesterday=true&twoDaysAgo=true&strict=true')
             js = await r.json()
             country = country.replace(' ', '+')
             title = f'Covid-19 Statistics for {country}'
             field = ('Continent', str(js['continent']))
             url = str(js['countryInfo']['flag'])
 
-        embed = Embed(title=title).set_thumbnail(url=url)
+        embed = Embed().set_thumbnail(url=url)
         fields = [
             ('Total Cases', str(js['cases'])),
             ('Today Cases', str(js['todayCases'])),
@@ -87,30 +113,7 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
             ('Critical', str(js['critical'])),
             field
         ]
-        for name, value in fields:
-            embed.add_field(name=name, value=value)
-        await ctx.send(embed=embed)
-
-    @commands.command(brief="specific continent's covid statistics")
-    async def continent(self, ctx, *, continent: str):
-        continent = continent.replace(' ', '+')
-        cs = self.bot.session
-        r = await cs.get(f'https://disease.sh/v3/covid-19/continents/{continent}?yesterday=true&twoDaysAgo=true')
-        js = await r.json()
-
-        embed = Embed(
-            title=f"**Covid-19 Statistics in {str(js['continent'])}**")
-        fields = [
-            ('Total Cases', str(js['cases'])),
-            ('Today Cases', str(js['todayCases'])),
-            ('Deaths', str(js['deaths'])),
-            ('Today Deaths', str(js['todayDeaths'])),
-            ('Recovered', str(js['recovered'])),
-            ('Today Recov', str(js['todayRecovered'])),
-            ('Active Cases', str(js['active'])),
-            ('Critical', str(js['critical'])),
-            ('Tests', str(js['tests']))
-        ]
+        embed.set_author(name=title, icon_url=ctx.author.avatar_url_as(size=128))
         for name, value in fields:
             embed.add_field(name=name, value=value)
         await ctx.send(embed=embed)
@@ -118,22 +121,12 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
     @commands.command(aliases=['src'])
     async def source(self, ctx, *, command: str = None):
         '''Displays my full source code or for a specific command.
-        Able to show source code of a:
-            • command;
-            • group
+        Able to show source code of either command or a group.
         To display the source code of a subcommand you can separate it by periods.
         Ex: **source todo.add** — for the add subcommand of the todo command.'''
         source_url = 'https://github.com/Dositan/Boribay'
-        branch = 'master'
         if command is None:
-            return await ctx.send(embed=Embed(
-                title='Source Code Here.',
-                description='''
-                If you are about using my code please star my repo⭐
-                You can specify a command name to get its source code.
-                ''',
-                url=source_url
-            ).set_thumbnail(url=self.bot.user.avatar_url))
+            return await ctx.send(source_url)
 
         if command == 'help':
             src = type(self.bot.help_command)
@@ -154,42 +147,22 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         else:
             location = module.replace('.', '/') + '.py'
             source_url = 'https://github.com/Rapptz/discord.py'
-            branch = 'master'
 
-        final_url = f'{source_url}/blob/{branch}/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}'
-        await ctx.send(embed=Embed(
-            title='Source Code Here.',
-            description='If you are about using my code please star my repo⭐',
-            url=final_url
-        ).set_thumbnail(url=self.bot.user.avatar_url))
+        await ctx.send(f'{source_url}/blob/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}')
 
-    @commands.command(brief='caption for an image(attachment) or user avatar.')
-    async def caption(self, ctx, argument: Union[discord.Member, str] = None):
+    @commands.command()
+    async def caption(self, ctx, arg: Optional[str]):
         '''Caption for an image.
         This command describes a given image being just a piece of code.
-        Can handle:
-            • Image URL;
-            • Member Avatar;
-            • Image Attachment.
+        Can handle either image, member or even URL.
         Ex: **caption Dosek**'''
-        if isinstance(argument, discord.Member):
-            image = str(argument.avatar_url)
-        elif argument and not isinstance(argument, discord.Member) and re.match(URL_REGEX, argument):
-            image = argument
-        elif not argument and ctx.message.attachments:
-            image = ctx.message.attachments[0].url
-        else:
-            image = str(ctx.author.avatar_url)
-        url = 'https://captionbot.azurewebsites.net/api/messages'
-        headers = {'Content-Type': 'application/json; charset=utf-8'}
-        payload = {'Content': image, 'Type': 'CaptionRequest'}
+        image = await make_image_url(ctx, arg)
         cs = self.bot.session
-        r = await cs.post(url, headers=headers, json=payload)
-        data = await r.text()
-        embed = Embed(title=data).set_image(url=image)
-        await ctx.send(embed=embed)
+        url = os.getenv('caption')
+        r = await cs.post(url, json={'Content': image, 'Type': 'CaptionRequest'})
+        await ctx.send(embed=Embed(title=await r.text()).set_image(url=image))
 
-    @commands.command(aliases=["temp", "temperature"], brief="displays weather for a given city")
+    @commands.command(aliases=['temp', 'temperature'])
     async def weather(self, ctx, *, city: str):
         '''Simply gets weather statistics of a given city.
         Gives:
@@ -197,37 +170,35 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
             • Temperature in °C;
             • Humidity % in city;
             • Atmospheric Pressure data (hPa) in a current city.'''
-        city = city.capitalize()
-        appid = os.getenv('app_id')
-        response = requests.get(f'http://api.openweathermap.org/data/2.5/weather?appid={appid}&q={city}')
-        x = response.json()
+        cs = self.bot.session
+        r = await cs.get(f'{os.getenv("weather")}appid={os.getenv("app_id")}&q={city}')
+        x = await r.json()
         if x["cod"] != "404":
-            async with ctx.typing():
-                y = x["main"]
-                z = x["weather"]
-                embed = Embed(title=f"Weather in {city}").set_thumbnail(url="https://i.ibb.co/CMrsxdX/weather.png")
-                fields = [
-                    ('Description', f'**{z[0]["description"]}**', False),
-                    ('Temperature', f'**{str(round(y["temp"] - 273.15))}°C**', False),
-                    ('Humidity', f'**{y["humidity"]}%**', False),
-                    ('Atmospheric Pressure', f'**{y["pressure"]}hPa**', False)
-                ]
-                for name, value, inline in fields:
-                    embed.add_field(name=name, value=value, inline=inline)
-                await ctx.send(embed=embed)
+            y = x["main"]
+            z = x["weather"]
+            embed = Embed(title=f'Weather in {city.capitalize()}').set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
+            fields = [
+                ('Description', f'**{z[0]["description"]}**', False),
+                ('Temperature', f'**{str(round(y["temp"] - 273.15))}°C**', False),
+                ('Humidity', f'**{y["humidity"]}%**', False),
+                ('Atmospheric Pressure', f'**{y["pressure"]}hPa**', False)
+            ]
+            for name, value, inline in fields:
+                embed.add_field(name=name, value=value, inline=inline)
+            await ctx.send(embed=embed)
         else:
-            await ctx.send("City not found.")
+            await ctx.send(f'City `{city}` not found.')
 
-    @commands.command(aliases=['t'], brief="translates text to given language")
-    async def translate(self, ctx, lang, *, args):
+    @commands.command()
+    async def translate(self, ctx, language, *, sentence):
         '''Translates a given text to language you want.
         It also shows the pronunciation of a text.
         Ex: **translate ru hello world!**'''
         t = Translator()
-        a = t.translate(args, dest=lang)
-        embed = Embed(title=f"Translating from {a.src} to {a.dest}:")
-        embed.add_field(name="Translation:", value=f"```{a.text}```", inline=False)
-        embed.add_field(name="Pronunciation:", value=f"```{a.pronunciation}```", inline=False)
+        a = t.translate(sentence, dest=language)
+        embed = Embed(title=f'Translating from {a.src} to {a.dest}:')
+        embed.add_field(name='Translation:', value=f'```{a.text}```', inline=False)
+        embed.add_field(name='Pronunciation:', value=f'```{a.pronunciation}```', inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['wiki'])
@@ -239,14 +210,12 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         async with ctx.typing():
             results = wikipedia.search(search)
             if not len(results):
-                await ctx.channel.send("Sorry, could not find any results.")
-
-            else:
-                new_search = results[0]
-                wiki = wikipedia.page(new_search)
-                text = wrap(wiki.summary, 500, break_long_words=True, replace_whitespace=False)
-                embed = Embed(title=wiki.title, description=f'{text[0]}...', url=wiki.url)
-                await ctx.send(embed=embed)
+                return await ctx.send("Sorry, could not find any results.")
+            new_search = results[0]
+            wiki = wikipedia.page(new_search)
+            text = wrap(wiki.summary, 500, break_long_words=True, replace_whitespace=False)
+            embed = Embed(title=wiki.title, description=f'{text[0]}...', url=wiki.url)
+            await ctx.send(embed=embed)
 
 
 def setup(bot):

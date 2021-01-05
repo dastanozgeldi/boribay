@@ -20,15 +20,22 @@ class Miscellaneous(Cog):
     @commands.command(aliases=['hi', 'hey'], brief="greeting, nothing else.")
     async def hello(self, ctx):
         """Introduction"""
-        await ctx.send(f'Hello there! I am {self.bot.user}, created by {self.bot.dosek}')
+        await ctx.send(f'Hello there! I am {self.bot.user}, created by {await self.bot.dosek}')
 
-    @commands.command(name='invite', brief='invite me to your server!')
-    async def invite_command(self, ctx):
+    @commands.command()
+    async def prefix(self, ctx):
+        """See bot\'s prefix."""
+        prefixes = await self.bot.prefixes.find_one({'_id': ctx.guild.id})
+        prefix = prefixes['prefix']
+        await ctx.send(embed=Embed(description=f'''Hey, I see, someone mentioned me.
+The current prefix for this server is: `{prefix}`
+But you can still use my features by mentioning me.'''))
+
+    @commands.command()
+    async def invite(self, ctx):
         """Some useful invites (support server and the bot itself)"""
-        embed = Embed(
-            description=f'''To invite me to your server click [here]({self.bot.invite_url})
-            If you have some issues you can join to my support server clicking [here]({self.bot.support_url})'''
-        )
+        embed = Embed(description=f'''To invite me to your server click [here]({self.bot.invite_url})
+If you have some issues you can join to my support server clicking [here]({self.bot.support_url})''')
         await ctx.send(embed=embed)
 
     @commands.command(name="system", aliases=['sys'], brief="shows the characteristics of my system")
@@ -69,7 +76,7 @@ class Miscellaneous(Cog):
         embed = Embed()
         embed.add_field(name='<a:loading:787357834232332298> Websocket:', value=f'{round(self.bot.latency * 1000)}ms')
         embed.add_field(name='<a:typing:787357087843745792> Typing:', value=f'{round((end - start) * 1000)}ms')
-        embed.add_field(name='<:mongo:791421726915297290> Database:', value=await self.bot.db_latency())
+        embed.add_field(name='<:pg:795005204289421363> Database:', value=await self.bot.db_latency())
         await message.edit(embed=embed)
 
     @commands.command(aliases=['vote'], brief="create a cool poll!")

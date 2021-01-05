@@ -1,5 +1,6 @@
 import os
 import re
+import random
 from discord.ext import commands, menus
 import async_cse
 from utils.CustomCog import Cog
@@ -8,33 +9,47 @@ from utils.Paginators import EmbedPageSource
 from dotenv import load_dotenv
 load_dotenv()
 
-client = async_cse.Search(os.getenv('GOOGLE_KEY'))
-
 
 class Networks(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.name = '🕸 Networks'
 
-    @commands.command(aliases=['g'], brief="google outside google.")
+    @commands.command(hidden=True, aliases=['g'])
+    @commands.is_owner()
     async def google(self, ctx, *, query: str):
         '''Paginated embed-google-search command.'''
-        if ctx.channel.is_nsfw():
-            safesearch = False
-        else:
-            safesearch = True
-        query = query.replace(" ", "+")
-        results = await client.search(query, safesearch=safesearch)
+        cse = async_cse.Search(os.getenv('GOOGLE_KEY'))
+        safesearch = False if ctx.channel.is_nsfw() else True
+        # query = query.replace(" ", "+")
+        results = await cse.search(query, safesearch=safesearch)
         embed_list = []
         for i in range(0, 10 if len(results) >= 10 else len(results)):
             embed = Embed(
                 title=results[i].title,
                 description=results[i].description,
                 url=results[i].url
-            ).set_thumbnail(url=results[i].image_url).set_author(name=f'Page {i + 1} of {10 if len(results) >= 10 else len(results)}', icon_url=ctx.author.avatar_url)
+            ).set_thumbnail(url=results[i].image_url).set_author(
+                name=f'Page {i + 1} of {10 if len(results) >= 10 else len(results)}',
+                icon_url=ctx.author.avatar_url
+            )
             embed_list.append(embed)
+        await cse.close()
         menu = menus.MenuPages(EmbedPageSource(embed_list), delete_message_after=True)
         await menu.start(ctx)
+
+    @commands.command(brief='find post from subreddit you want to.')
+    async def reddit(self, ctx, subreddit: str):
+        cs = self.bot.session
+        r = await cs.get(f'https://www.reddit.com/r/{subreddit}/hot.json')
+        r = await r.json()
+        data = r['data']['children'][random.randint(0, 10)]['data']
+        if not ctx.channel.is_nsfw() and data['over_18'] is True:
+            raise commands.NSFWChannelRequired(ctx.channel)
+        embed = Embed().set_image(url=data['url'])
+        embed.set_author(name=data['title'], icon_url='https://icons.iconarchive.com/icons/papirus-team/papirus-apps/96/reddit-icon.png')
+        embed.set_footer(text=f'from {data["subreddit_name_prefixed"]}')
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=['yt'], brief="search from youtube, but in discord")
     async def youtube(self, ctx, *, search):

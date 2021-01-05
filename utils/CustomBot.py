@@ -1,22 +1,23 @@
 import asyncio
+import asyncpg
 import os
 import re
 from datetime import datetime, timedelta
 from time import perf_counter
-
 import aiohttp
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from utils.CustomContext import Context
 
 load_dotenv()
-
-
 cluster = AsyncIOMotorClient(f"mongodb+srv://{os.getenv('db_username')}:{os.getenv('db_password')}@{os.getenv('db_project')}.xyuwh.mongodb.net/{os.getenv('db')}?retryWrites=true&w=majority")
 
 
 async def get_prefix(bot: commands.Bot, message: discord.Message):
+	if await bot.is_owner(message.author) and message.content.startswith(('jsk', 'dev')):
+		return commands.when_mentioned_or('')(bot, message)
 	if message.guild:
 		prefixes = await cluster.Boribay.prefixes.find_one({"_id": message.guild.id})
 		prefix = prefixes['prefix']
@@ -36,6 +37,14 @@ class Bot(commands.Bot):
 		# Additional variables
 		self.start_time = datetime.now()
 		self.loop = asyncio.get_event_loop()
+		self.pool = self.loop.run_until_complete(
+			asyncpg.create_pool(
+				user=os.getenv('pg_user'),
+				password=os.getenv('pg_password'),
+				host=os.getenv('pg_host'),
+				database=os.getenv('pg_database')
+			)
+		)
 		self.session = aiohttp.ClientSession(loop=self.loop)
 		self.owner_url = 'http://discord.com/users/682950658671902730'
 		self.support_url = 'https://discord.gg/cZy6TvDg79'
@@ -44,15 +53,15 @@ class Bot(commands.Bot):
 
 	async def db_latency(self):
 		start = perf_counter()
-		await self.db.Boribay.command('ping')
+		await self.pool.fetchval('SELECT 1;')
 		end = perf_counter()
-		return f'{round((end - start) * 1000)} ms'
+		return f'{round((end - start) * 1000, 2)} ms'
 
 	async def close(self):
 		await super().close()
 		await self.session.close()
 
-	async def get_context(self, message, *, cls=commands.Context):
+	async def get_context(self, message, *, cls=Context):
 		return await super().get_context(message, cls=cls)
 
 	async def on_message(self, message):
@@ -96,5 +105,5 @@ class Bot(commands.Bot):
 		await message.reply(content, **kwargs)
 
 	@property
-	def dosek(self):
-		return self.get_user(682950658671902730)
+	async def dosek(self):
+		return await self.fetch_user(682950658671902730)

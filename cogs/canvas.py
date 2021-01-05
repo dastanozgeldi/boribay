@@ -2,7 +2,6 @@ import functools
 import os
 import re
 import random
-import textwrap
 from io import BytesIO
 from typing import Optional
 import discord
@@ -12,8 +11,6 @@ from PIL import Image
 from utils.Manipulation import Manip, make_image, make_image_url
 from utils.Converters import BoolConverter
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
-from utils.Paginators import EmbedPageSource, MyPages
 
 load_dotenv()
 EMOJI_REGEX = r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>'
@@ -26,34 +23,34 @@ class Canvas(Cog, name='Images'):
         self.name = '🖼 Images'
         self.drake_cache = {}
         self.clyde_cache = {}
+        self.spongebob_cache = {}
         self.theory_cache = {}
-        self.dagpi_token = os.getenv('dagpi_token')
-        self.alex_token = os.getenv('alex_token')
         self.asset = './data/assets/'
         self.image = './data/images/'
         self.font = './data/fonts/'
 
     async def dagpi_image(self, url, fn: str = None):
         cs = self.bot.session
-        r = await cs.get(f'https://api.dagpi.xyz/image/{url}', headers={'Authorization': self.dagpi_token})
+        r = await cs.get(f'https://api.dagpi.xyz/image/{url}', headers={'Authorization': os.getenv('dagpi_token')})
         io = BytesIO(await r.read())
         f = discord.File(fp=io, filename=fn or 'dagpi.png')
         return f
 
     async def alex_image(self, url, fn: str = None):
         cs = self.bot.session
-        r = await cs.get(f'https://api.alexflipnote.dev/{url}', headers={'Authorization': self.alex_token})
+        r = await cs.get(f'https://api.alexflipnote.dev/{url}', headers={'Authorization': os.getenv('alex_token')})
         io = BytesIO(await r.read())
         f = discord.File(fp=io, filename=fn or 'alex.png')
         return f
 
     @commands.command()
-    async def emoji(self, ctx, thing: str):
+    async def emoji(self, ctx, emoji: str):
         """Simply get an image of the given emoji.
         Args: thing (str): emoji that you want to convert to an image."""
-        image = await make_image(ctx, thing)
-        io = BytesIO(image)
-        await ctx.send(file=discord.File(io, filename='emoji.png'))
+        async with ctx.timer:
+            image = await make_image(ctx, emoji)
+            io = BytesIO(image)
+            await ctx.send(file=discord.File(io, filename='emoji.png'))
 
     @commands.command(aliases=['colours'], brief='see top 5 colors of your/user avatar.')
     async def colors(self, ctx, member: Optional[str]):
@@ -80,10 +77,8 @@ class Canvas(Cog, name='Images'):
         No matter how long is text, API returns image perfectly (hope so).
         Ex: pornhub Bori bay.'''
         text_2 = text_2 or 'Hub'
-        text_1 = text_1.replace(' ', '%20')
-        text_2 = text_2.replace(' ', '%20')
         file = await self.alex_image(
-            url=f'pornhub?text={text_1}&text2={text_2}',
+            url=f'pornhub?text={text_1.replace(" ", "%20")}&text2={text_2.replace(" ", "%20")}',
             fn='ph.png'
         )
         await ctx.send(file=file)
@@ -198,32 +193,6 @@ class Canvas(Cog, name='Images'):
         )
         await ctx.send(file=file)
 
-    @commands.command(aliases=['song', 'track', 'lyric'], brief='find almost every song lyrics with this command.')
-    async def lyrics(self, ctx, *, args: str):
-        '''Powerful lyrics command.
-        Ex: lyrics believer.
-        Has no limits.
-        You can find lyrics for song that you want.
-        Raises an exception if song does not exist in API data.'''
-        args = args.replace(' ', '%20')
-        cs = self.bot.session
-        r = await cs.get(f'https://some-random-api.ml/lyrics?title={args}')
-        js = await r.json()
-        try:
-            song = str(js['lyrics'])
-            song = textwrap.wrap(song, 1000, drop_whitespace=False, replace_whitespace=False)
-            embed_list = []
-            for lyrics in song:
-                embed = Embed(
-                    title=f'{js["author"]} — {js["title"]}',
-                    description=lyrics
-                ).set_thumbnail(url=js['thumbnail']['genius'])
-                embed_list.append(embed)
-            p = MyPages(source=EmbedPageSource(embed_list))
-            await p.start(ctx)
-        except KeyError:
-            await ctx.send(f'Could not find lyrics for **{args}**')
-
     @commands.command(brief='create a legendary Drake meme.')
     async def drake(self, ctx, no: str, yes: str):
         """Legendary 'Drake yes/no' meme maker.
@@ -245,22 +214,43 @@ class Canvas(Cog, name='Images'):
             await ctx.send(file=discord.File(fp=buffer, filename='drake.png'))
 
     @commands.command()
+    async def spongebob(self, ctx, name: str, *, text: str):
+        """Spongebob meme maker [BETA]
+        Args: name (str): A person who is described as Sponge Bob.
+        text (str): Text on the paper.
+        Returns: KeyError: If text was too long (limit 75 characters)."""
+        async with ctx.timer:
+            try:
+                cached = self.spongebob_cache[text]
+                cached.seek(0)
+                await ctx.send(file=discord.File(fp=cached, filename='spongebob.png'))
+            except KeyError:
+                if len(text) > 75:
+                    return await ctx.send('The text was too long to render.')
+
+                f = functools.partial(Manip.spongebob, name, text)
+                buffer = await self.bot.loop.run_in_executor(None, f)
+                self.spongebob_cache[text] = buffer
+                await ctx.send(file=discord.File(fp=buffer, filename='spongebob.png'))
+
+    @commands.command()
     async def clyde(self, ctx, *, text: str):
         """Make an image with text that Clyde bot sends.
         Args: text (str): the text you want to be displayed."""
-        try:
-            cached = self.clyde_cache[text]
-            cached.seek(0)
-            await ctx.send(file=discord.File(fp=cached, filename='clyde.png'))
+        async with ctx.timer:
+            try:
+                cached = self.clyde_cache[text]
+                cached.seek(0)
+                await ctx.send(file=discord.File(fp=cached, filename='clyde.png'))
 
-        except KeyError:
-            if len(text) > 75:
-                return await ctx.send('The text was too long to render.')
+            except KeyError:
+                if len(text) > 75:
+                    return await ctx.send('The text was too long to render.')
 
-            f = functools.partial(Manip.clyde, text)
-            buffer = await self.bot.loop.run_in_executor(None, f)
-            self.clyde_cache[text] = buffer
-            await ctx.send(file=discord.File(fp=buffer, filename='clyde.png'))
+                f = functools.partial(Manip.clyde, text)
+                buffer = await self.bot.loop.run_in_executor(None, f)
+                self.clyde_cache[text] = buffer
+                await ctx.send(file=discord.File(fp=buffer, filename='clyde.png'))
 
     @commands.command(aliases=['lisa'])
     async def theory(self, ctx, *, text: str):
@@ -269,43 +259,87 @@ class Canvas(Cog, name='Images'):
         Example: **theory its better using your own commands than someone's API.**
         Args: text (str): text to pass on the board.
         Raises: Exception when text > 144 symbols."""
-        try:
-            cached = self.theory_cache[text]
-            cached.seek(0)
-            await ctx.send(file=discord.File(fp=cached, filename='theory.png'))
+        async with ctx.timer:
+            try:
+                cached = self.theory_cache[text]
+                cached.seek(0)
+                await ctx.send(file=discord.File(fp=cached, filename='theory.png'))
 
-        except KeyError:
-            if len(text) > 144:
-                return await ctx.send('The text was too long to render.')
+            except KeyError:
+                if len(text) > 144:
+                    return await ctx.send('The text was too long to render.')
 
-            f = functools.partial(Manip.theory, text)
+                f = functools.partial(Manip.theory, text)
+                buffer = await self.bot.loop.run_in_executor(None, f)
+                self.theory_cache[text] = buffer
+                await ctx.send(file=discord.File(fp=buffer, filename='theory.png'))
+
+    @commands.command()
+    async def solarize(self, ctx, image: Optional[str]):
+        """Solarizes given image.
+        Args: image (str): passed image. if not specified, takes author avatar."""
+        async with ctx.timer:
+            image = await make_image(ctx, image)
+            f = functools.partial(Manip.solarize, image)
             buffer = await self.bot.loop.run_in_executor(None, f)
-            self.theory_cache[text] = buffer
-            await ctx.send(file=discord.File(fp=buffer, filename='theory.png'))
+            await ctx.send(file=discord.File(fp=buffer, filename='solarized.png'))
+
+    @commands.command()
+    async def brighten(self, ctx, image: Optional[str], quantity: Optional[int] = 69):
+        """Makes image brightened.
+        Args: image (str): passed image.
+        quantity (int): How much do you want to brighten an image. Defaults to 69."""
+        async with ctx.timer:
+            image = await make_image(ctx, image)
+            f = functools.partial(Manip.brighten, image, quantity)
+            buffer = await self.bot.loop.run_in_executor(None, f)
+            await ctx.send(file=discord.File(fp=buffer, filename='brightened.png'))
+
+    @commands.command()
+    async def swirl(self, ctx, image: Optional[str], degrees: Optional[int]):
+        """Swirl an image.
+        Args: image (str): image that you specify. it's either member/emoji/url.
+        it swirls your avatar if argument is not passed.
+        degrees (int): this is basically how much do you want to swirl an image.
+        takes random values if argument is not passed."""
+        async with ctx.timer:
+            image = await make_image(ctx, image)
+            degrees = random.randint(-360, 360) if degrees is None else degrees
+            buffer = BytesIO(image)
+            f = functools.partial(Manip.swirl, buffer, degrees)
+            buffer = await self.bot.loop.run_in_executor(None, f)
+            await ctx.send(file=discord.File(fp=buffer, filename='swirl.png'))
+
+    @commands.command(name='f')
+    async def press_f(self, ctx, image: Optional[str]):
+        """'Press F to pay respect' meme maker. F your mate using this command.
+        Args: image (optional): Image that you want to see on the canvas."""
+        async with ctx.timer:
+            image = await make_image(ctx, image)
+            buffer = BytesIO(image)
+            f = functools.partial(Manip.press_f, buffer)
+            buffer = await self.bot.loop.run_in_executor(None, f)
+            await ctx.send(file=discord.File(fp=buffer, filename='f.png'))
 
     @commands.command(name='5g1g', aliases=['fiveguysonegirl'])
-    async def _5g1g(self, ctx, member: Optional[discord.Member]):
+    async def _5g1g(self, ctx, member: Optional[str]):
         """Legendary '5 guys 1 girl meme maker.
         Example: **5g1g Dosek** — 5 guys = author pfp; 1 girl = member pfp.
         Args: member (discord.Member): a member you'd like to 5g1g.
         Raises: MissingRequiredArgument: if member is not specified."""
-        member = member or ctx.author
-        img = Image.open(f'{self.asset}5g1g.png')
-        author = ctx.author.avatar_url_as(size=128)
-        member = member.avatar_url_as(size=128)
-        author_data = BytesIO(await author.read())
-        author_pfp = Image.open(author_data)
-        author_dir = [(31, 120), (243, 53), (438, 85), (637, 90), (815, 20)]
-
-        member_data = BytesIO(await member.read())
-        member_pfp = Image.open(member_data)
-        member_pfp = member_pfp.resize((105, 105))
-        img.paste(member_pfp, (504, 279))
-        for i in author_dir:
-            img.paste(author_pfp, i)
-
-        img.save(f'{self.image}5g1g.png', optimize=True)
-        await ctx.send(file=discord.File(f'{self.image}5g1g.png'))
+        async with ctx.timer:
+            author = ctx.author.avatar_url_as(size=128)
+            member = await make_image(ctx, member)
+            a_data = BytesIO(await author.read())
+            m_data = BytesIO(member)
+            img = Image.open(f'{self.asset}5g1g.png')
+            a_pfp = Image.open(a_data)
+            m_pfp = Image.open(m_data).resize((105, 105))
+            img.paste(m_pfp, (504, 279))
+            for i in [(31, 120), (243, 53), (438, 85), (637, 90), (815, 20)]:
+                img.paste(a_pfp, i)
+            img.save(f'{self.image}5g1g.png', optimize=True)
+            await ctx.send(file=discord.File(f'{self.image}5g1g.png'))
 
 
 def setup(bot):

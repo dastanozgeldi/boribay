@@ -61,7 +61,7 @@ class CommandErrorHandler(commands.Cog, command_attrs={"hidden": True}):
                 pass
 
         else:
-            print(f'Ignoring exception in command {ctx.command}:', file=sys.stderr)
+            print(f'\nIgnoring exception in command {ctx.command}:', file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
         if isinstance(error, commands.BadArgument):

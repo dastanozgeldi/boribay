@@ -75,7 +75,7 @@ class Info(Cog):
 	@command(name="botinfo", aliases=['bi', 'about'], brief='see some information about me.')
 	async def _bot_info(self, ctx):
 		servers = self.bot.guilds
-		embed = Embed(title=f"{self.bot.user.name} Info").set_image(url='https://cdn.discordapp.com/attachments/381963689470984203/789812779040636928/ph.png')
+		embed = Embed(title=f"{self.bot.user.name} Info")
 		fields = [
 			('Invite link', f'[Here]({self.bot.invite_url})'),
 			('GitHub', f'[Here]({self.bot.github_url})'),
@@ -83,7 +83,7 @@ class Info(Cog):
 			('Latency', f'{round(self.bot.latency * 1000)}ms'),
 			('Memory', f'{round(p.virtual_memory().used/(1024**3), 2)}GB of {round(p.virtual_memory().total/(1024**3), 2)}GB'),
 			('CPU', f"{p.cpu_percent(interval=1)}%"),
-			('Owner', f'[{self.bot.dosek}]({self.bot.owner_url})'),
+			('Owner', f'[{await self.bot.dosek}]({self.bot.owner_url})'),
 			('Currently in', f'{len(servers)} servers'),
 			('Prefix', f'{ctx.prefix}'),
 			('Uptime', f'{time.precisedelta(await self.bot.get_uptime(), minimum_unit="seconds")}'),

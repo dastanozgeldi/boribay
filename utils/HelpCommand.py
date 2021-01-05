@@ -110,9 +110,9 @@ class MyHelpCommand(commands.HelpCommand):
 			name = cog.name or "No Category"
 			filtered = await self.filter_commands(cmds, sort=True)
 			if filtered:
-				all_cmds = " ▬ ".join(f"`{c.name}`" for c in cmds)
+				all_cmds = ", ".join(f"`{c.name}`" for c in cmds)
 				if cog:
-					cats.append([name, f">>> {all_cmds}\n"])
+					cats.append([name, f"> {all_cmds}\n"])
 
 		menu = MyPages(source=MainHelp(self.context, cats), timeout=30.0)
 		await menu.start(self.context)

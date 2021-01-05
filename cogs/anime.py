@@ -9,9 +9,8 @@ class Anime(Cog):
         self.name = '✨ Anime'
 
     async def command_creator(self, ctx, topic: str, description: str):
-        cs = self.bot.session
-        r = await cs.get(f'https://nekos.life/api/v2/img/{topic}')
-        json = await r.json()
+        async with self.bot.session.get(f'https://nekos.life/api/v2/img/{topic}') as r:
+            json = await r.json()
         url = str(json['url'])
         embed = Embed.default(ctx=ctx, description=f'**[{description}]({url})**').set_image(url=url)
         return embed
@@ -36,9 +35,8 @@ class Anime(Cog):
         anime = anime.replace(' ', '%20')
         async with ctx.channel.typing():
             # Data from API
-            cs = self.bot.session
-            r = await cs.get(f'https://kitsu.io/api/edge/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
-            js = await r.json()
+            async with self.bot.session.get(f'https://kitsu.io/api/edge/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres') as r:
+                js = await r.json()
             _id = js['data'][0]['id']
             attributes = js['data'][0]['attributes']
             genres_list = []

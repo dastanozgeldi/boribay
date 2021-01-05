@@ -25,19 +25,16 @@ handler = RotatingFileHandler(
 )
 
 log.addHandler(handler)
-new_guilds = False
-my_mentions = AllowedMentions(everyone=False, roles=False)
-my_intents = Intents.all()
-stuff_to_cache = MemberCacheFlags.from_intents(my_intents)
+intents = Intents.all()
 
 bot = Bot(
     status=Status.dnd,
     activity=Game(name='.help'),
     case_insensitive=True,
     max_messages=1000,
-    allowed_mentions=my_mentions,
-    intents=my_intents,
-    member_cache_flags=stuff_to_cache,
+    allowed_mentions=AllowedMentions(everyone=False, roles=False),
+    intents=intents,
+    member_cache_flags=MemberCacheFlags.from_intents(intents),
     chunk_guilds_at_startup=False
 )
 bot_ipc = Server(
@@ -55,17 +52,17 @@ bot.exts = [
     'cogs.events',
     'cogs.owner',
     'cogs.admin',
-    'cogs.fun',
+    'cogs.games',
     'cogs.useful',
     'cogs.canvas',
     'cogs.misc',
     'cogs.anime',
-    # 'cogs.music',
     'cogs.info',
     'cogs.networks',
     'cogs.help',
-    'cogs.errors',
+    'cogs.errors',  # cogs.better
     'cogs.economics',
+    'cogs.fun',
     'cogs.todo',
     'cogs.nsfw',
     'jishaku'
@@ -89,14 +86,7 @@ async def on_ready():
 
 @bot.event
 async def on_ipc_ready():
-    log.info('IPC ready')
-
-
-@bot.command(brief='See bot\'s prefix.')
-async def prefix(ctx):
-    prefixes = await bot.prefixes.find_one({'_id': ctx.guild.id})
-    prefix = prefixes['prefix']
-    await ctx.send(f'The current prefix for this server is: {prefix}')
+    log.info('IPC ready to go.')
 
 
 @bot_ipc.route()
@@ -105,7 +95,7 @@ async def get_stats_page(data):
         Guilds: {sum(1 for g in bot.guilds)}</br>
         Users: {sum(i.member_count for i in bot.guilds)}</br>
         Commands: {sum(1 for i in bot.commands)}</br>
-        Contact the Developer: {bot.dosek}</br>
+        Contact the Developer: {await bot.dosek}</br>
     '''
 
 
