@@ -242,27 +242,36 @@ class Music(Cog, wavelink.WavelinkMixin):
         elif isinstance(obj, discord.Guild):
             return self.wavelink.get_player(obj.id, cls=Player)
 
-    @commands.command(name="connect", aliases=['join'], brief='connects to the current voice channel.')
-    async def connect_command(self, ctx, *, channel: t.Optional[discord.VoiceChannel]):
+    @commands.command(aliases=['join'], brief='connects to the current voice channel.')
+    async def connect(self, ctx, *, channel: t.Optional[discord.VoiceChannel]):
+        """Connect command. Makes bot join to the current channel, and specific
+        one, if specified.
+        Args: channel (optional): Channel that you want bot to join to."""
         player = self.get_player(ctx)
         channel = await player.connect(ctx, channel)
         await ctx.send(f"Connected to `{channel.name}`.")
 
-    @connect_command.error
-    async def connect_command_error(self, ctx, exc):
+    @connect.error
+    async def connect_error(self, ctx, exc):
         if isinstance(exc, AlreadyConnectedToChannel):
             await ctx.send("Already connected to a voice channel.")
         elif isinstance(exc, NoVoiceChannel):
             await ctx.send("No suitable voice channel was provided.")
 
-    @commands.command(name="disconnect", aliases=['leave'], brief='leaves current voice channel.')
-    async def disconnect_command(self, ctx):
+    @commands.command(aliases=['leave'], brief='leaves current voice channel.')
+    async def disconnect(self, ctx):
+        """Disconnect command. Makes bot leave the current channel."""
         player = self.get_player(ctx)
         await player.teardown()
         await ctx.send("Disconnected from the current channel.")
 
-    @commands.command(name="play", brief='play command. you can search through command or provide a url (youtube-only).')
-    async def play_command(self, ctx, *, query: t.Optional[str]):
+    @commands.command(brief='play command. you can search through command or provide a url (youtube-only).')
+    async def play(self, ctx, *, query: t.Optional[str]):
+        """Play command. This lets you join youtube URL or search through bot
+        itself to the query.
+        Args: query (t.Optional[str]): The thing that you want to play. Either
+        searching words or URL.
+        Raises: QueueIsEmpty: If no query is specified."""
         player = self.get_player(ctx)
 
         if not player.is_connected:
@@ -282,13 +291,15 @@ class Music(Cog, wavelink.WavelinkMixin):
 
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
 
-    @play_command.error
-    async def play_command_error(self, ctx, exc):
+    @play.error
+    async def play_error(self, ctx, exc):
         if isinstance(exc, QueueIsEmpty):
             await ctx.send('No songs to play as the queue is empty.')
 
-    @commands.command(name='pause', brief='pauses song.')
-    async def pause_command(self, ctx):
+    @commands.command(brief='pauses song.')
+    async def pause(self, ctx):
+        """Pause command. Lets you pause the current playing query.
+        Raises: PlayerIsAlreadyPaused: If none of songs are playing."""
         player = self.get_player(ctx)
 
         if player.is_paused:
@@ -297,20 +308,23 @@ class Music(Cog, wavelink.WavelinkMixin):
         await player.set_pause(True)
         await ctx.send('Playback successfully paused.')
 
-    @pause_command.error
-    async def pause_command_error(self, ctx, exc):
+    @pause.error
+    async def pause_error(self, ctx, exc):
         if isinstance(exc, PlayerIsAlreadyPaused):
             await ctx.send('Playback is already paused.')
 
-    @commands.command(name='stop', brief='stops song (removes from queue).')
-    async def stop_command(self, ctx):
+    @commands.command(brief='stops song (removes from queue).')
+    async def stop(self, ctx):
+        """Stop command. Actually resets the queue."""
         player = self.get_player(ctx)
         player.queue.empty()
         await player.stop()
         await ctx.send('Playback successfully stopped.')
 
-    @commands.command(name='skip', aliases=['next'], brief='plays next song in queue (if queue is empty command raises an exception).')
+    @commands.command(name='skip', aliases=['next'])
     async def next_command(self, ctx):
+        """Next command. Makes bot play next song in the queue.
+        Returns: Stop Command: Stops music if no songs are incoming."""
         player = self.get_player(ctx)
 
         if not player.queue.upcoming:
@@ -327,8 +341,10 @@ class Music(Cog, wavelink.WavelinkMixin):
         elif isinstance(exc, NoMoreTracks):
             await ctx.send('There are no more tracks in the queue.')
 
-    @commands.command(name='previous', brief='plays previous song in queue (if queue is empty command raises an exception).')
-    async def previous_command(self, ctx):
+    @commands.command(brief='plays previous song in queue (if queue is empty command raises an exception).')
+    async def previous(self, ctx):
+        """Previous command. Makes bot play previous track in the queue.
+        Raises: NoPreviousTracks: If no tracks were before."""
         player = self.get_player(ctx)
 
         if not player.queue.history:
@@ -338,16 +354,20 @@ class Music(Cog, wavelink.WavelinkMixin):
         await player.stop()
         await ctx.send('Playing previous track in queue...')
 
-    @previous_command.error
-    async def previous_command_error(self, ctx, exc):
+    @previous.error
+    async def previous_error(self, ctx, exc):
         if isinstance(exc, QueueIsEmpty):
             await ctx.send('Previous track could not be executed as the queue is currently empty.')
 
         elif isinstance(exc, NoPreviousTracks):
             await ctx.send('There are no previous tracks in the queue.')
 
-    @commands.command(name='queue', aliases=['q'], brief='shows music queue.')
-    async def queue_command(self, ctx, show: t.Optional[int] = 10):
+    @commands.command(aliases=['q'], brief='shows music queue.')
+    async def queue(self, ctx, show: t.Optional[int] = 10):
+        """Queue command. Shows the current queue.
+        Args: show (optional): Number of songs you want to see in the queue.
+        Defaults to 10.
+        Raises: QueueIsEmpty: If no songs are there in the queue."""
         player = self.get_player(ctx)
 
         if player.queue.is_empty:
@@ -357,8 +377,7 @@ class Music(Cog, wavelink.WavelinkMixin):
             ctx=ctx,
             title='Queue',
             description=f'Showing up to next {show} tracks'
-        )
-        embed.set_author(name='Query Results')
+        ).set_author(name='Query Results')
         embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
         embed.add_field(name='Currently playing...', value=player.queue.current_track.title, inline=False)
         if upcoming := player.queue.upcoming:
@@ -367,11 +386,10 @@ class Music(Cog, wavelink.WavelinkMixin):
                 value='\n'.join(t.title for t in upcoming),
                 inline=False
             )
-
         await ctx.send(embed=embed)
 
-    @queue_command.error
-    async def queue_command_error(self, ctx, exc):
+    @queue.error
+    async def queue_error(self, ctx, exc):
         if isinstance(exc, QueueIsEmpty):
             await ctx.send('The queue is currently empty.')
 
