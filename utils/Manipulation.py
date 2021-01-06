@@ -78,19 +78,6 @@ class Manip:
         return buffer
 
     @staticmethod
-    def spongebob(name: str, text: str):
-        with Image.open('./data/assets/spongebob.jpg') as img:
-            wrapped = textwrap.wrap(text=text, width=14)
-            font = ImageFont.truetype('./data/fonts/whitneybook.otf', size=24)
-            draw = ImageDraw.Draw(img)
-            draw.text((60, 85), '\n'.join(wrapped), (0, 0, 0), font=font)
-            draw.text((360, 38), name, (0, 0, 0), font=font)
-            buffer = BytesIO()
-            img.save(buffer, 'png')
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
     def solarize(image: bytes):
         img = PI(image)
         img.solarize()

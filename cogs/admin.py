@@ -34,9 +34,8 @@ class Administration(Cog):
     async def mute_user(self, ctx, member: discord.Member, time: TimeConverter = None):
         """Mutes a member for time you specify (role 'Muted' required).
         Example: **mute Dosek 1d2h3m4s**
-        Args:
-            member (discord.Member): a member you want to mute.
-            time (int, optional): time a user going to be muted. Defaults to None."""
+        Args:member (discord.Member): a member you want to mute.
+        time (int, optional): time a user going to be muted. Defaults to None."""
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         await member.add_roles(role)
         await ctx.send(f"Muted **{member}** for **{time}s**" if time else f"Muted **{member}**")
@@ -51,8 +50,7 @@ class Administration(Cog):
     @commands.has_permissions(administrator=True)
     async def unmute_user(self, ctx, member: discord.Member):
         """Unmutes a user (role 'Muted' required).
-        Args: member (discord.Member): already muted user.
-        """
+        Args: member (discord.Member): already muted user."""
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         await member.remove_roles(role)
         await ctx.send(f"Unmuted **{member}** successfully.")
@@ -61,10 +59,8 @@ class Administration(Cog):
     @commands.has_permissions(manage_nicknames=True)
     async def nick(self, ctx, member: discord.Member, *, new_nick: str):
         """Changes member's nickname in the server.
-        Args:
-            member (discord.Member): a member whose nickname you wanna change.
-            new_nick (str): a new nickname for the member you specified.
-        """
+        Args: member (discord.Member): a member whose nickname you wanna change.
+        new_nick (str): a new nickname for the member you specified."""
         await member.edit(nick=new_nick)
         await ctx.message.add_reaction('✔')
 
@@ -72,10 +68,8 @@ class Administration(Cog):
     @commands.has_guild_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason: str = None):
         """Kicks a user.
-        Args:
-            member (discord.Member): a member you want to kick.
-            reason (str, optional): Reason why you considered kicking. Defaults to None.
-        """
+        Args: member (discord.Member): a member you want to kick.
+        reason (str, optional): Reason why you considered kicking. Defaults to None."""
         r = reason or 'Reason not specified.'
         await ctx.guild.kick(user=member, reason=r)
         embed = Embed(title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
@@ -85,10 +79,8 @@ class Administration(Cog):
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason: str = None):
         """Bans a user.
-        Args:
-            member (discord.Member): a member you want to ban.
-            reason (str, optional): Reason why you are banning. Defaults to None.
-        """
+        Args: member (discord.Member): a member you want to ban.
+        reason (str, optional): Reason why you are banning. Defaults to None."""
         r = reason or 'Reason not specified.'
         embed = Embed(title=f'{ctx.author.display_name} banned: {member.display_name}', description=r)
         await member.ban(reason=r)
@@ -99,8 +91,7 @@ class Administration(Cog):
     async def unban(self, ctx, user: discord.User):
         """Unban user with their ID
         Args: user (discord.User): Normally takes user ID.
-        Returns: Exception: If given user id isn't in server ban-list.
-        """
+        Returns: Exception: If given user id isn't in server ban-list."""
         bans = await ctx.guild.bans()
         if user not in bans:
             return await ctx.send(f'There is not user `{user}` in ban-list.')
@@ -111,8 +102,7 @@ class Administration(Cog):
     @commands.has_permissions(manage_messages=True)
     async def purge(self, ctx, amount=2):
         """Purges messages of a given amount. Limit is 100.
-        Args: amount (int, optional): amount of messages to clear. Defaults to 2
-        """
+        Args: amount (int, optional): amount of messages to clear. Defaults to 2"""
         if amount > 100:
             await ctx.send("That is too big amount. The maximum is 100")
 
@@ -125,10 +115,8 @@ class Administration(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def categoryadd(self, ctx, role: discord.Role, *, name: str):
         """Adds a category for the current guild.
-        Args:
-            role (discord.Role): role that will have access to a category.
-            name (str): name of a category.
-        """
+        Args: role (discord.Role): role that will have access to a category.
+        name (str): name of a category."""
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             ctx.guild.me: discord.PermissionOverwrite(read_messages=True)
@@ -141,10 +129,8 @@ class Administration(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def channeladd(self, ctx, role: discord.Role, *, name: str):
         """Adds a channel for the current guild.
-        Args:
-            role (discord.Role): role that will have access to a category.
-            name (str): name of a channel.
-        """
+        Args: role (discord.Role): role that will have access to a category.
+        name (str): name of a channel."""
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             ctx.guild.me: discord.PermissionOverwrite(read_messages=True),
@@ -158,10 +144,8 @@ class Administration(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def _category(self, ctx, category: discord.CategoryChannel, *, reason: str = None):
         """Deletes a specififed category.
-        Args:
-            category (discord.CategoryChannel): ID of a category.
-            reason (str, optional): Reason why you are deleting a category. Defaults to None.
-        """
+        Args: category (discord.CategoryChannel): ID of a category.
+        reason (str, optional): Reason why you are deleting a category. Defaults to None."""
         await category.delete(reason=reason)
         await ctx.send(f"Deleted a channel named {category.name}!")
 
@@ -170,11 +154,9 @@ class Administration(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def _channel(self, ctx, channel: Optional[discord.TextChannel], *, reason: str = None):
         """Deletes a specified channel.
-        Args:
-            channel (Optional[discord.TextChannel]): channel ID,
-            deletes current channel if argument is not specified.
-            reason (str, optional): Reason why you are deleting a channel. Defaults to None.
-        """
+        Args: channel (Optional[discord.TextChannel]): channel ID,
+        deletes current channel if argument is not specified.
+        reason (optional): Reason why you are deleting a channel. Defaults to None."""
         channel = channel or ctx.channel
         await channel.delete(reason=reason)
         await ctx.send(f"Deleted a channel named {channel.name}!")
@@ -184,10 +166,8 @@ class Administration(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def lockdown(self, ctx, channel: Optional[discord.TextChannel]):
         """Puts a channel on lockdown.
-        Args:
-            channel (Optional[discord.TextChannel]): channel mention,
-            puts the current channel on lockdown if argument is not specified.
-        """
+        Args: channel (Optional[discord.TextChannel]): channel mention,
+        puts the current channel on lockdown if argument is not specified."""
         channel = channel or ctx.channel
 
         if ctx.guild.default_role not in channel.overwrites:
@@ -223,9 +203,8 @@ class Administration(Cog):
     @commands.has_permissions(manage_roles=True)
     async def addrole(self, ctx, role: discord.Role, user: discord.Member):
         """Adds a specified role to a user.
-        Args:
-            role (discord.Role): a role you want to give.
-            user (discord.Member): member you want to give a role to."""
+        Args: role (discord.Role): a role you want to give.
+        user (discord.Member): member you want to give a role to."""
         await user.add_roles(role)
         await ctx.message.add_reaction('✔')
 
@@ -233,9 +212,8 @@ class Administration(Cog):
     @commands.has_permissions(manage_roles=True)
     async def removerole(self, ctx, role: discord.Role, user: discord.Member):
         """Removes a specified role from a user.
-        Args:
-            role (discord.Role): role you want to take.
-            user (discord.Member): memebr you want to take a role from."""
+        Args: role (discord.Role): role you want to take.
+        user (discord.Member): member you want to take a role from."""
         await user.remove_roles(role)
         await ctx.message.add_reaction('✔')
 

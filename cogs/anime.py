@@ -20,17 +20,17 @@ class Anime(Cog):
         embed = await self.command_creator(ctx, 'pat', 'See in browser')
         await ctx.send(embed=embed)
 
-    @command(brief="baka")
+    @command(brief='This baka needs to be punished')
     async def baka(self, ctx):
         embed = await self.command_creator(ctx, 'baka', 'Baka')
         await ctx.send(embed=embed)
 
-    @command(brief="slap-slap")
+    @command(brief='**Magikarp slap sounds**')
     async def slap(self, ctx, member: str):
         embed = await self.command_creator(ctx, 'slap', f'Slapping {member}')
         await ctx.send(embed=embed)
 
-    @command(brief='search for some info of anime that you want.')
+    @command(brief='Search for some info of anime that you want.')
     async def anime(self, ctx, *, anime: str):
         anime = anime.replace(' ', '%20')
         async with ctx.channel.typing():
@@ -66,7 +66,7 @@ class Anime(Cog):
                 embed.add_field(name=name, value=value or 'Not specified.', inline=inline)
             await ctx.send(embed=embed)
 
-    @command(brief="manga find command")
+    @command(brief='Search for some info of manga that you want.')
     async def manga(self, ctx, *, manga: str):
         async with ctx.channel.typing():
             cs = self.bot.session

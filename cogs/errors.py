@@ -1,93 +1,109 @@
+from typing import Optional
+
 import discord
+import prettify_exceptions
 from discord.ext import commands
-import traceback
-import sys
-from utils.CustomEmbed import Embed
 from utils import Exceptions
+from utils.CustomCog import Cog
+from utils.CustomEmbed import Embed
 
 
-class CommandErrorHandler(commands.Cog, command_attrs={"hidden": True}):
+class CommandErrorHandler(Cog, command_attrs={'hidden': True}):
     def __init__(self, bot):
         self.bot = bot
 
+    async def send(self, ctx, exc: str = None, *args, **kwargs) -> Optional[discord.Message]:
+        try:
+            return await ctx.reply(exc, *args, **kwargs)
+        except discord.Forbidden:
+            try:
+                return await ctx.author.send(exc, *args, **kwargs)
+            except discord.Forbidden:
+                pass
+        except discord.NotFound:
+            pass
+        return None
+
+    async def send_error(self, ctx, exc):
+        log_channel = self.bot.get_channel(781874343868629073)
+        embed = Embed.error(description=f'```py\nAn error occurred:\n{exc}\n```')
+        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+        if ctx.guild:
+            command = 'None' if isinstance(ctx.command, type(None)) else ctx.command.qualified_name
+            embed.set_thumbnail(url=ctx.guild.icon_url_as(size=256))
+            embed.add_field(
+                name='Information',
+                value=f'Channel: {ctx.channel.mention}\n'
+                f'Guild: {ctx.guild}\n'
+                f'Command: {command}\n'
+                f'Message: {ctx.message.content}'
+            )
+        await log_channel.send(embed=embed)
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        cog = ctx.cog
-        error_embed = Embed.error(title="⚠ | Error!")
-        if hasattr(ctx.command, "on_error") and cog.qualified_name != 'Music':
-            await ctx.send("Error occurred on doing this command.")
-
-        if cog:
-            if cog._get_overridden_method(cog.cog_command_error) is not None:
-                return
-
-        ignored = (commands.CommandNotFound, )
-
-        error = getattr(error, "original", error)
+        ignored = (commands.CommandNotFound)
+        error = getattr(error, 'original', error)
         if isinstance(error, ignored):
             return
+        setattr(ctx, 'original_author_id', getattr(ctx, 'original_author_id', ctx.author.id))
+        invoke_errors = (
+            commands.MissingRole,
+            commands.MissingAnyRole,
+            commands.CommandOnCooldown,
+            commands.MissingPermissions,
+            commands.DisabledCommand
+        )
+
+        if isinstance(error, invoke_errors) and ctx.original_author_id in self.bot.owner_ids:
+            return await ctx.reinvoke()
 
         if isinstance(error, Exceptions.TooManyOptions):
-            error_embed.description = 'There were too many options to create a poll.'
+            return await self.send(ctx, embed=Embed.error(description='There were too many options to create a poll.'))
 
         if isinstance(error, Exceptions.NotEnoughOptions):
-            error_embed.description = 'There were not enough options to create a poll.'
+            return await self.send(ctx, embed=Embed.error(description='There were not enough options to create a poll.'))
 
-        if isinstance(error, commands.DisabledCommand):
-            error_embed.description = f'{ctx.command} has been disabled.'
+        elif isinstance(error, commands.PartialEmojiConversionFailure):
+            if ctx.command.name == 'emoji':
+                return
+            return await self.send(ctx, embed=Embed.error(description=f'{error}'), delete_after=5.0)
 
-        if isinstance(error, commands.errors.PrivateMessageOnly):
-            error_embed.description = f'{error}'
+        elif isinstance(error, commands.CommandOnCooldown):
+            return await self.send(ctx, embed=Embed.error(description=f'This command is on cooldown. **`{int(error.retry_after)}` seconds**'), delete_after=10.0)
 
-        if isinstance(error, commands.errors.NSFWChannelRequired):
-            error_embed.description = f'{error}'
+        elif isinstance(error, commands.MissingRequiredArgument):
+            return await ctx.send_help(ctx.command)
 
-        if isinstance(error, commands.errors.CheckFailure):
-            error_embed.description = f'{error}\nPerhaps this is not NSFW-enabled channel.'
+        elif isinstance(error, commands.MissingPermissions):
+            return await self.send(ctx, embed=Embed.error(description=f'You are missing permission: `{error.missing_perms[0]}`'))
 
-        if isinstance(error, commands.errors.NotOwner):
-            error_embed.description = f'Access denied to use command __{ctx.command}__'
+        elif isinstance(error, commands.BadArgument):
+            return await self.send(ctx, embed=Embed.error(description=f'{error}'))
 
-        if isinstance(error, commands.MissingRequiredArgument):
-            error_embed.description = f"This command is missing mandatory argument **{error.param.name}**. Type `{ctx.prefix}help {ctx.command}` to see where is the problem."
+        elif isinstance(error, commands.BotMissingPermissions):
+            return await self.send(ctx, embed=Embed.error(description=f'I am missing permission: `{error.missing_perms[0]}`'))
 
-        if isinstance(error, commands.CommandOnCooldown):
-            error_embed.description = f'{ctx.author.display_name}, you are on cooldown. Try again in {round(error.retry_after, 2)}s.'
+        elif isinstance(error, commands.NotOwner):
+            return await self.send(ctx, embed=Embed.error(description='You must be the owner of the bot to run this.'))
 
-        elif isinstance(error, commands.NoPrivateMessage):
-            try:
-                error_embed.description = f'{ctx.command} can not be used in Private Messages'
-            except discord.HTTPException:
-                pass
+        elif isinstance(error, commands.RoleNotFound):
+            return await self.send(ctx, embed=Embed.error(description=f'{error}'))
 
+        prettify_exceptions.DefaultFormatter().theme['_ansi_enabled'] = False
+        exc = ''.join(prettify_exceptions.DefaultFormatter().format_exception(type(error), error, error.__traceback__))
+
+        if len(exc) > 1000:
+            await ctx.send('Error content was too big so I will send it to my developer.')
+            await self.send_error(ctx, error)
         else:
-            print(f'\nIgnoring exception in command {ctx.command}:', file=sys.stderr)
-            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+            await self.send(ctx, embed=Embed.error(
+                title='An error occurred.',
+                description=f'Details: ```py\n{exc}\n```'
+            ))
+            await self.send_error(ctx, exc)
 
-        if isinstance(error, commands.BadArgument):
-            error_embed.description = f"{error}"
-
-        if isinstance(error, commands.MemberNotFound):
-            error_embed.description = f"{error}"
-
-        if isinstance(error, commands.CommandNotFound):
-            error_embed.description = "I have no commands like that. Сheck the command for spelling errors, otherwise tell to the admins. To see commands list, type `.help`"
-
-        if isinstance(error, commands.MissingPermissions):
-            error_embed.description = f"You have not permission: **{error.missing_perms[0]}** to use this command."
-
-        if isinstance(error, commands.BotMissingPermissions):
-            error_embed.description = f"I have not permission: **{error.missing_perms[0]}** to do that."
-
-        if isinstance(error, discord.Forbidden):
-            error_embed.description = f"Missing permissions to do command **{ctx.prefix}{ctx.command}**\n```{error}```"
-
-        if isinstance(error, IndexError):
-            error_embed.description = f"This command has no elements in given number.\n```{error}```"
-
-        if isinstance(error, commands.TooManyArguments):
-            error_embed.description = f"Too many arguments for this command. Type {ctx.prefix}help {ctx.command} to learn how to use the command"
-        await ctx.send(embed=error_embed)
+        raise error
 
 
 def setup(bot):
