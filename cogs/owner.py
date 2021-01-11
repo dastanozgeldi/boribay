@@ -1,6 +1,6 @@
 from discord.ext.commands import Cog, ExtensionError, command
-from dotenv import load_dotenv
-load_dotenv()
+from utils.Paginators import MyPages, SQLListPageSource
+from jishaku.codeblocks import codeblock_converter
 
 
 class Owner(Cog, command_attrs=dict(hidden=True)):
@@ -9,6 +9,17 @@ class Owner(Cog, command_attrs=dict(hidden=True)):
 
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)
+
+    @command()
+    async def sql(self, ctx, *, query: codeblock_converter):
+        """Makes an sql SELECT query"""
+        query = query.content
+        results = await self.bot.pool.fetch(query) if query.lower().startswith('select') else await self.bot.pool.execute(query)
+        data = []
+        for result in results:
+            data.append(repr(result))
+        p = MyPages(SQLListPageSource(data))
+        await p.start(ctx)
 
     @command(aliases=['l'], brief='Loads a module.')
     async def load(self, ctx, *, module: str):
