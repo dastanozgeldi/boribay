@@ -1,16 +1,10 @@
 import asyncio
-import os
 import re
 import typing as t
-
 import discord
 import wavelink
 from discord.ext import commands
-from dotenv import load_dotenv
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
-
-load_dotenv()
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 OPTIONS = {
@@ -153,7 +147,7 @@ class Player(wavelink.Player):
                 r.emoji in OPTIONS.keys() and u == ctx.author and r.message.id == msg.id
             )
 
-        embed = Embed.default(
+        embed = self.bot.embed.default(
             ctx=ctx,
             title="Choose a song",
             description=(
@@ -223,13 +217,13 @@ class Music(Cog, wavelink.WavelinkMixin):
         await self.bot.wait_until_ready()
 
         nodes = {
-            "MAIN": {
-                "host": os.getenv('lv_host'),
-                "port": os.getenv('lv_port'),
-                "rest_uri": os.getenv('rest_uri'),
-                "password": os.getenv('lv_password'),
-                "identifier": os.getenv('lv_id'),
-                "region": os.getenv('lv_region'),
+            'MAIN': {
+                'host': self.bot.config['music']['host'],
+                'port': self.bot.config['music']['port'],
+                'rest_uri': self.bot.config['music']['rest_uri'],
+                'password': self.bot.config['music']['password'],
+                'identifier': self.bot.config['music']['identifier'],
+                'region': self.bot.config['music']['region'],
             }
         }
 
@@ -328,7 +322,7 @@ class Music(Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
 
         if not player.queue.upcoming:
-            return await self.stop_command(ctx)
+            return await self.stop(ctx)
 
         await player.stop()
         await ctx.send('Playing next track in queue...')
@@ -373,7 +367,7 @@ class Music(Cog, wavelink.WavelinkMixin):
         if player.queue.is_empty:
             raise QueueIsEmpty
 
-        embed = Embed.default(
+        embed = self.bot.embed.default(
             ctx=ctx,
             title='Queue',
             description=f'Showing up to next {show} tracks'
