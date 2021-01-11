@@ -1,8 +1,5 @@
-from dotenv import load_dotenv
 from discord.ext.commands import command, guild_only
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
-load_dotenv()
 
 
 class NSFW(Cog, name='Maybe NSFW'):
@@ -19,7 +16,7 @@ class NSFW(Cog, name='Maybe NSFW'):
         r = await cs.get(f'https://nekos.life/api/v2/img/{topic}')
         json = await r.json()
         url = str(json['url'])
-        embed = Embed.default(ctx=ctx, description=f'**[See in browser]({url})**').set_image(url=url)
+        embed = self.bot.embed.default(ctx=ctx, description=f'**[See in browser]({url})**').set_image(url=url)
         return embed
 
     @command(brief="random waifu image")
