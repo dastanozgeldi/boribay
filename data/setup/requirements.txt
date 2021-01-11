@@ -17,10 +17,8 @@ Pillow==8.0.1
 praw==7.1.0
 prawcore==1.4.0
 psutil==5.7.3
-python-dotenv==0.14.0
 Quart==0.14.1
 tornado==6.0.4
 twemoji-parser==0.4.2
 wavelink==0.9.6
-wikipedia==1.4.0
 yarl==1.4.2

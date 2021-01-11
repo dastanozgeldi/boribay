@@ -1,12 +1,16 @@
-import os
+import toml
 
 from discord.ext.ipc import Client
-from dotenv import load_dotenv
 from quart import Quart, render_template
 
-load_dotenv()
+data = toml.load('./config.toml')['ipc']
 app = Quart(__name__)
-web_ipc = Client(host=os.getenv('host'), secret_key=os.getenv('secret_key'))
+web_ipc = Client(host=data['host'], secret_key=data['secret_key'])
+
+
+@app.route('/')
+async def home_page():
+	return await render_template('home.html', title='Home')
 
 
 @app.route('/about')
