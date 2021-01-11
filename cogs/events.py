@@ -1,12 +1,8 @@
-import random
 from io import BytesIO
 
 import discord
 from discord.ext.commands import Cog
-from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
-
-load_dotenv()
 
 
 class Events(Cog, command_attrs=dict(hidden=True)):
@@ -34,87 +30,14 @@ class Events(Cog, command_attrs=dict(hidden=True)):
         return file
 
     @Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot:
-            pass
-        if message.guild:
-            if message.guild.id == 735186558830772286:
-                user = message.author
-                data = await self.bot.collection.find_one({"_id": user.id})
-
-                if data["xp"] >= 500 + 100 * data["lvl"]:
-                    await self.bot.collection.update_one(
-                        {"_id": user.id},
-                        {"$set": {"lvl": data["lvl"] + 1}}
-                    )
-                    await self.bot.collection.update_one(
-                        {"_id": user.id},
-                        {"$set": {"xp": 0}}
-                    )
-                    random_cash = random.randint(50, 200)
-
-                    author = await self.bot.collection.find_one({'_id': message.author.id})
-                    author_balance = author['balance']
-                    await self.bot.collection.update_one(
-                        {"_id": message.author.id},
-                        {"$set": {"balance": author_balance + random_cash}}
-                    )
-                    await message.channel.send(f'''{user.mention} level up! Check your rank by typing `.rank @mention`\nAlso I give you {random_cash} Batyrs💂‍♂️. Have a good day!''')
-
-                else:
-                    await self.bot.collection.update_one(
-                        {"_id": user.id},
-                        {"$set": {"xp": data["xp"] + random.randint(1, 10)}}
-                    )
-
-    @Cog.listener()
-    async def on_command(self, ctx):
-        todo_post = {
-            "_id": ctx.author.id,
-            "todo": ["nothing yet."]
-        }
-        if await self.bot.todos.count_documents({"_id": ctx.author.id}) == 0:
-            await self.bot.todos.insert_one(todo_post)
-
-        if str(ctx.command).startswith('rank'):
-            post = {
-                "_id": ctx.author.id,
-                "guild_id": ctx.guild.id,
-                "balance": 300,
-                "xp": 0,
-                "lvl": 1
-            }
-            if await self.bot.collection.count_documents({"_id": ctx.author.id}) == 0:
-                await self.bot.collection.insert_one(post)
-
-    @Cog.listener()
-    async def on_guild_join(self, guild):
-        post = {"_id": guild.id, "prefix": "."}
-        if await self.bot.prefixes.count_documents({"_id": guild.id}) == 0:
-            await self.bot.prefixes.insert_one(post)
-
-    @Cog.listener()
-    async def on_guild_remove(self, guild):
-        await self.bot.prefixes.delete_one({'_id': guild.id})
+    async def on_command_completion(self, ctx):
+        self.bot.command_usage += 1
 
     @Cog.listener()
     async def on_member_join(self, member):
-        post = {
-            '_id': member.id,
-            'balance': 300,
-            'xp': 0,
-            'lvl': 1
-        }
-        if await self.bot.collection.count_documents({'_id': member.id}) == 0:
-            await self.bot.collection.insert_one(post)
-
         if member.guild.id == 765902232679481394:
             f = await self.welcome_card(member)
             await self.bot.get_channel(789161436499935242).send(file=discord.File(f))
-
-    @Cog.listener()
-    async def on_member_remove(self, member):
-        await self.bot.collection.delete_one({'_id': member.id})
 
 
 def setup(bot):
