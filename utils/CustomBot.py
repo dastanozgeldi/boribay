@@ -1,26 +1,22 @@
 import asyncio
-import asyncpg
-import os
 import re
 from datetime import datetime, timedelta
 from time import perf_counter
-import aiohttp
-import discord
-from discord.ext import commands
-from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
-from utils.CustomContext import Context
 
-load_dotenv()
-cluster = AsyncIOMotorClient(f"mongodb+srv://{os.getenv('db_username')}:{os.getenv('db_password')}@{os.getenv('db_project')}.xyuwh.mongodb.net/{os.getenv('db')}?retryWrites=true&w=majority")
+import aiohttp
+import asyncpg
+import discord
+import toml
+from discord.ext import commands
+from motor.motor_asyncio import AsyncIOMotorClient
+
+from utils.CustomContext import Context
+from utils.CustomEmbed import Embed
 
 
 async def get_prefix(bot: commands.Bot, message: discord.Message):
-	if await bot.is_owner(message.author) and message.content.startswith(('jsk', 'dev')):
-		return commands.when_mentioned_or('')(bot, message)
 	if message.guild:
-		prefixes = await cluster.Boribay.prefixes.find_one({"_id": message.guild.id})
-		prefix = prefixes['prefix']
+		prefix = await bot.pool.fetchval('SELECT prefix FROM guild_config WHERE guild_id = $1', message.guild.id)
 	else:
 		prefix = '.'
 	return commands.when_mentioned_or(prefix)(bot, message)
@@ -29,22 +25,23 @@ async def get_prefix(bot: commands.Bot, message: discord.Message):
 class Bot(commands.Bot):
 	def __init__(self, *args, **kwargs):
 		super().__init__(get_prefix, *args, **kwargs)
+		self.config = toml.load('config.toml')
+		self.owner_ids = {682950658671902730, 735489760491077742}
+		self.command_usage = 0
 		# Database related variables
-		self.db = cluster
-		self.prefixes = self.db.Boribay.prefixes
+		self.db = AsyncIOMotorClient(f'mongodb+srv://{self.config["mongo"]["username"]}:{self.config["mongo"]["password"]}@{self.config["mongo"]["project"]}.xyuwh.mongodb.net/{self.config["mongo"]["database"]}?authSource=admin&w=majority&readPreference=primary&retryWrites=true')
 		self.collection = self.db.Boribay.colldb
 		self.todos = self.db.Boribay.todos
 		# Additional variables
+		self.embed = Embed
 		self.start_time = datetime.now()
 		self.loop = asyncio.get_event_loop()
-		self.pool = self.loop.run_until_complete(
-			asyncpg.create_pool(
-				user=os.getenv('pg_user'),
-				password=os.getenv('pg_password'),
-				host=os.getenv('pg_host'),
-				database=os.getenv('pg_database')
-			)
-		)
+		self.pool = self.loop.run_until_complete(asyncpg.create_pool(
+			user=self.config['database']['user'],
+			password=self.config['database']['password'],
+			host=self.config['database']['host'],
+			database=self.config['database']['database']
+		))
 		self.session = aiohttp.ClientSession(loop=self.loop)
 		self.owner_url = 'http://discord.com/users/682950658671902730'
 		self.support_url = 'https://discord.gg/cZy6TvDg79'
@@ -79,15 +76,10 @@ class Bot(commands.Bot):
 		await self.process_commands(message)
 
 	async def on_guild_join(self, guild: discord.Guild):
-		post = {
-			"_id": guild.id,
-			"prefix": "."
-		}
-		if await self.prefixes.count_documents({"_id": guild.id}) == 0:
-			await self.prefixes.insert_one(post)
+		await self.pool.execute('INSERT INTO guild_config(guild_id, prefix, log_channel) VALUES($1, $2, $3)', guild.id, '.', None)
 
 	async def on_guild_remove(self, guild: discord.Guild):
-		await self.prefixes.delete_one({'_id': guild.id})
+		await self.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild.id)
 
 	async def on_message_edit(self, before, after):
 		if before.content != after.content:
@@ -97,7 +89,6 @@ class Bot(commands.Bot):
 			return
 
 	async def get_uptime(self) -> timedelta:
-		# return timedelta(seconds=int((datetime.now() - self.start_time).total_seconds()))
 		return int((datetime.now() - self.start_time).total_seconds())
 
 	async def reply(self, message_id, content=None, **kwargs):
@@ -105,5 +96,5 @@ class Bot(commands.Bot):
 		await message.reply(content, **kwargs)
 
 	@property
-	async def dosek(self):
-		return await self.fetch_user(682950658671902730)
+	def dosek(self):
+		return self.get_user(682950658671902730)
