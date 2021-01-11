@@ -3,6 +3,6 @@ jdk-11/
 __pycache__/
 data/logs/
 
-.env
+config.toml
 data/Music.url
 cogs/economics.py
