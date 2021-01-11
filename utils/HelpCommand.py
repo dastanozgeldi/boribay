@@ -100,7 +100,7 @@ class MainHelp(menus.ListPageSource):
 class MyHelpCommand(commands.HelpCommand):
 
 	async def get_ending_note(self):
-		return f'Type {self.clean_prefix}{self.invoked_with} [Category | command] to learn more about commands.'
+		return f'Type {self.clean_prefix}{self.invoked_with} [Category] to get help for a category.'
 
 	async def send_bot_help(self, mapping):
 		cats = []
@@ -132,12 +132,13 @@ class MyHelpCommand(commands.HelpCommand):
 
 	async def send_command_help(self, command):
 		embed = Embed(title=self.get_command_signature(command))
+		embed.set_footer(text=await self.get_ending_note())
 		aliases = ' | '.join(command.aliases)
 		category = command.cog_name
 		if command.aliases:
 			embed.add_field(name='Aliases', value=aliases, inline=True)
 		if category:
-			embed.add_field(name='Category', value=category or 'No category...', inline=True)
+			embed.add_field(name='Category', value=category, inline=True)
 		else:
 			pass
 
@@ -163,13 +164,10 @@ class MyHelpCommand(commands.HelpCommand):
 		await menu.start(ctx)
 
 	async def command_not_found(self, string):
-		bot = self.context.bot
-		commands_list = [i.name for i in bot.commands]
+		commands_list = [i.name for i in self.context.bot.commands]
 		dym = '\n'.join(get_close_matches(string, commands_list))
-		if dym:
-			return f'Could not find the command `{string}`. Did you mean...\n{dym}'
-		else:
-			return f'Could not find the command `{string}`'
+		msg = f'Could not find the command `{string}`.'
+		return f'{msg}\n{dym}' if dym else msg
 
 	def get_command_signature(self, command: commands.Command):
 		return f'{self.clean_prefix}{command.qualified_name} {command.signature}'

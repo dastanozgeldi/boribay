@@ -96,9 +96,9 @@ class Manip:
     @staticmethod
     def press_f(image: BytesIO):
         image = Image.open(image).resize((47, 87))
-        image = image.convert(mode='RGBA')
+        image = image.convert(mode='RGBA').rotate(14)
         with Image.open('./data/assets/f.jpg') as img:
-            img.paste(image, (315, 72))  # 353, 159
+            img.paste(image, (315, 72))
             buffer = BytesIO()
             img.save(buffer, 'png')
         buffer.seek(0)
