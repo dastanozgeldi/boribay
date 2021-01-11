@@ -1,158 +1,169 @@
 import discord
 from typing import Optional
-from utils.CustomEmbed import Embed
 from utils.CustomCog import Cog
 from discord.ext.commands import command, guild_only, Context
 import psutil as p
-import matplotlib.pyplot as plt
-from humanize import time, naturaldate
-import textwrap
-from datetime import datetime
+import humanize
+from datetime import datetime, timedelta
+from time import time
+import collections
+import glob
+import platform
 
 
 class Info(Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		self.name = 'ℹ Info'
-
-	def to_elapsed(self, time):
-		return f"{(time.seconds // 60) % 60:>02}:{time.seconds % 60:>02}"
-
-	def pluralize(self, inp, value):
-		if isinstance(value, list):
-			inp = inp + "s" if len(value) != 1 else inp
-		if isinstance(value, int):
-			inp = inp + "s" if value != 1 else inp
-		return inp
-
-	def bar_make(self, value, gap, *, length=10, point=False, fill="█", empty=" "):
-		bar = ""
-		scaled_value = (value / gap) * length
-		for i in range(1, (length + 1)):
-			check = (i == round(scaled_value)) if point else (i <= scaled_value)
-			bar += fill if check else empty
-		if point and (bar.count(fill) == 0):
-			bar = fill + bar[1:]
-		return bar
+		self.status_emojis = {
+			'online': '<:online:313956277808005120>',
+			'idle': '<:away2:464520569862357002>',
+			'dnd': '<:dnd2:464520569560498197>',
+			'offline': '<:offline2:464520569929334784>'
+		}
 
 	@command()
 	@guild_only()
-	async def spotify(self, ctx: Context, member: discord.Member = None):
-		target = member or ctx.author
-		if ac := discord.utils.find(lambda a: isinstance(a, discord.Spotify), target.activities):
-			_len = 5 if ctx.author.is_on_mobile() else 17
-			album = textwrap.fill(discord.utils.escape_markdown(ac.album), width=42.5)
-			artist = self.pluralize(inp="Artist", value=ac.artists)
-			artists = textwrap.fill(" • ".join(ac.artists), width=42.5)
-			val = datetime.utcnow() - ac.start
-			bar = self.bar_make(val.seconds, ac.duration.seconds, fill="◉", empty="─", point=True, length=_len)
-			embed = Embed.default(
+	async def spotify(self, ctx: Context, member: Optional[discord.Member]):
+		"""Spotify status command.
+		Shows Spotify activity of a specified member.
+		Args: member (discord.Member, optional): Member you want to see activity of.
+		Takes author as target if any member not specified.
+		Returns: Exception: if the member is not listening Spotify currently."""
+		member = member or ctx.author
+		if activity := discord.utils.find(lambda a: isinstance(a, discord.Spotify), member.activities):
+			embed = self.bot.embed.default(
 				ctx,
-				color=0x1DB954,
-				title=f"`{self.to_elapsed(val)}` {bar} `{self.to_elapsed(ac.duration)}`",
-				description=f"**Album:** {album}\n**{artist}:** {artists}"
-			).set_thumbnail(url=ac.album_cover_url)
-			embed.set_author(
-				name=textwrap.fill(ac.title, width=42.5),
-				icon_url="https://i.imgur.com/PA3vvdN.png",
-				url=f"https://open.spotify.com/track/{ac.track_id}"
-			)
+				title=f'<:spotify:585766969144508416> {activity.title}',
+				description=f'**Duration:** {humanize.naturaldelta(activity.duration)}\n'
+				f'**Album:** {activity.album}\n'
+				f'**Artists:** {" • ".join([i for i in activity.artists])}',
+				url=f'https://open.spotify.com/track/{activity.track_id}'
+			).set_thumbnail(url=activity.album_cover_url)
 			return await ctx.send(embed=embed)
 		else:
-			await ctx.send(f"**{target.display_name}** is not listening Spotify right now.")
+			await ctx.send(f"**{member}** isn't Spotifying rn.")
 
 	@command()
 	async def uptime(self, ctx):
+		"""Uptime command.
+		Returns: uptime: How much time bot is onlin."""
 		hours, remainder = divmod((await self.bot.get_uptime()), 3600)
 		minutes, seconds = divmod(remainder, 60)
 		days, hours = divmod(hours, 24)
-		embed = Embed().add_field(
+		embed = self.bot.embed().add_field(
 			name='Uptime',
 			value=f'{days}d, {hours}h {minutes}m {seconds}s'
 		)
 		return await ctx.send(embed=embed)
 
-	@command(name="botinfo", aliases=['bi', 'about'], brief='see some information about me.')
-	async def _bot_info(self, ctx):
+	@command(aliases=['sys'])
+	async def system(self, ctx):
+		"""Information of the system that is running the bot."""
+		embed = self.bot.embed(title="System Info").set_thumbnail(url="https://cdn.discordapp.com/attachments/735725378433187901/776524927708692490/data-server.png")
+		pr = p.Process()
+		info = {
+			'System': {
+				'Username': pr.as_dict(attrs=["username"])['username'],
+				'Host OS': platform.platform(),
+				'Uptime': timedelta(seconds=time() - p.boot_time()),
+				'Boot time': datetime.fromtimestamp(p.boot_time()).strftime("%Y-%m-%d %H:%M:%S"),
+			},
+			'CPU': {
+				'Frequency': f"{p.cpu_freq(percpu=True)[0][0]} MHz",
+				'CPU Used': f"{p.cpu_percent(interval=1)}%",
+				'Time on CPU': timedelta(seconds=p.cpu_times().system + p.cpu_times().user),
+			},
+			'Memory': {
+				'RAM Used': f"{p.virtual_memory().percent}%",
+				'RAM Available': f"{p.virtual_memory().available/(1024**3):,.3f} GB",
+				'Disk Used': f"{p.disk_usage('/').percent}%",
+				'Disk Free': f"{p.disk_usage('/').free/(1024**3):,.3f} GB",
+			}
+		}
+		for key in info:
+			embed.add_field(name=f'**> {key}**', value='\n'.join([f'**{k}:** {v}' for k, v in info[key].items()]), inline=False)
+		await ctx.send(embed=embed)
+
+	@command()
+	async def codestats(self, ctx):
+		"""Code statistic of the bot."""
+		ctr: collections.Counter[str] = collections.Counter()
+		for ctr['file'], f in enumerate(glob.glob('./**/*.py', recursive=True)):
+			with open(f, encoding='UTF-8') as fp:
+				for ctr['line'], line in enumerate(fp, ctr['line']):
+					line = line.lstrip()
+					ctr['comment'] += '#' in line
+					ctr['class'] += line.startswith('class')
+					ctr['function'] += line.startswith('def')
+					ctr['coroutine'] += line.startswith('async def')
+		await ctx.send(embed=self.bot.embed(description='\n'.join(f'{key.title()}: {value}' for key, value in ctr.items())))
+
+	@command(aliases=['bi', 'about'])
+	async def botinfo(self, ctx):
+		"""See some kind of information about me (such as command usage, links etc.)"""
 		servers = self.bot.guilds
-		embed = Embed(title=f"{self.bot.user.name} Info")
-		fields = [
-			('Invite link', f'[Here]({self.bot.invite_url})'),
-			('GitHub', f'[Here]({self.bot.github_url})'),
-			('Support', f'[Here]({self.bot.support_url})'),
-			('Latency', f'{round(self.bot.latency * 1000)}ms'),
-			('Memory', f'{round(p.virtual_memory().used/(1024**3), 2)}GB of {round(p.virtual_memory().total/(1024**3), 2)}GB'),
-			('CPU', f"{p.cpu_percent(interval=1)}%"),
-			('Owner', f'[{await self.bot.dosek}]({self.bot.owner_url})'),
-			('Currently in', f'{len(servers)} servers'),
-			('Prefix', f'{ctx.prefix}'),
-			('Uptime', f'{time.precisedelta(await self.bot.get_uptime(), minimum_unit="seconds")}'),
-			('Commands', f'{len(self.bot.commands)}')
-		]
-		for name, value in fields:
-			embed.add_field(name=name, value=value)
+		embed = self.bot.embed().set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url_as(size=128))
+		fields = {
+			'General': {
+				('Owner', f'{self.bot.dosek}'),
+				('Currently in', f'{len(servers)} servers'),
+				('Commands working', f'{len(self.bot.commands)}'),
+				('Commands used (last restart)', self.bot.command_usage),
+			},
+			'Links': {
+				('Invite link', f'[Here]({self.bot.invite_url})'),
+				('GitHub', f'[Here]({self.bot.github_url})'),
+				('Support', f'[Here]({self.bot.support_url})'),
+			},
+		}
+		for key in fields:
+			embed.add_field(name=key, value='\n'.join([f'**{name}:** {value}' for name, value in fields[key]]), inline=False)
 		await ctx.send(embed=embed)
 
-	@command(name="userinfo", aliases=["memberinfo", "ui", "mi"], brief="displays user information")
+	@command(aliases=["memberinfo", "ui", "mi"])
 	@guild_only()
-	async def user_info(self, ctx, target: Optional[discord.Member]):
-		target = target or ctx.author
+	async def userinfo(self, ctx, member: Optional[discord.Member]):
+		"""See some general information about mentioned user."""
+		member = member or ctx.author
 		mutual_servers = sum(1 for g in self.bot.guilds if g.get_member(ctx.author.id))
-		embed = Embed(title="User information", color=target.color)
-		embed.set_thumbnail(url=target.avatar_url)
+		embed = self.bot.embed(title=f'{self.status_emojis[str(member.status)]}{member.display_name}')
+		embed.set_thumbnail(url=member.avatar_url)
 		fields = [
-			("Name", f'{target.name}<:bot_tag:596576775555776522>' if target.bot else target.name, True),
 			("Mutual Servers", mutual_servers, True),
-			("Top role", target.top_role.mention, True),
-			("Status", str(target.status).title(), True),
-			("Activity", f"{str(target.activity.type).split('.')[-1].title() if target.activity else 'N/A'} {target.activity.name if target.activity else ''}", True),
-			("Boosted server", bool(target.premium_since), True),
-			("Account created", naturaldate(target.created_at), True),
-			("Here since", naturaldate(target.joined_at), True)
+			("Top role", member.top_role.mention, True),
+			("Activity", f"{str(member.activity.type).split('.')[-1].title() if member.activity else 'N/A'} {member.activity.name if member.activity else ''}", True),
+			("Boosted server", bool(member.premium_since), True),
+			("Account created", humanize.naturaldate(member.created_at), True),
+			("Here since", humanize.naturaldate(member.joined_at), True)
 		]
-		for name, value, inline in fields:
-			embed.add_field(name=name, value=value, inline=inline)
+		embed.description = '\n'.join([f'**{name}:** {value}' for name, value, inline in fields])
 		await ctx.send(embed=embed)
 
-	@command(name="serverinfo", aliases=["guildinfo", "si", "gi"], brief="displays server information")
+	@command(aliases=["guildinfo", "si", "gi"])
 	@guild_only()
-	async def server_info(self, ctx):
-		embed = Embed(title=f'{ctx.guild.name} info.').set_thumbnail(url=ctx.guild.icon_url)
-		statuses = [
-			len(list(filter(lambda m: str(m.status) == "online", ctx.guild.members))),
-			len(list(filter(lambda m: str(m.status) == "idle", ctx.guild.members))),
-			len(list(filter(lambda m: str(m.status) == "dnd", ctx.guild.members))),
-			len(list(filter(lambda m: str(m.status) == "offline", ctx.guild.members)))
-		]
-
-		labels = 'Offline', 'Idle', 'Online', 'DND'
-		sizes = [statuses[3], statuses[1], statuses[0], statuses[2]]
-		explode = (0.1, 0, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
-
-		fig1, ax1 = plt.subplots()
-		ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90)
-		ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-		plt.savefig(fname='./data/images/server.png')
-		f = discord.File('./data/images/server.png')
-		embed.set_image(url='attachment://server.png')
+	async def serverinfo(self, ctx):
+		"""See some general information about current guild."""
+		embed = self.bot.embed().set_author(
+			name=ctx.guild.name,
+			icon_url=ctx.guild.icon_url_as(size=128),
+			url=ctx.guild.icon_url
+		)
+		embed.set_thumbnail(url=ctx.guild.banner_url_as(size=256))
 		fields = [
 			("Owner", ctx.guild.owner, True),
 			("Region", ctx.guild.region, True),
-			("Created at", ctx.guild.created_at.strftime("%d/%m/%Y %H:%M:%S"), True),
-			("Members", sum(1 for g in ctx.guild.members), True),
-			("Humans", sum(not x.bot for x in ctx.guild.members), True),
+			("Created", humanize.time.naturaltime(ctx.guild.created_at), True),
+			("Members", ctx.guild.member_count, True),
 			("Bots", sum(x.bot for x in ctx.guild.members), True),
 			("Boosts", ctx.guild.premium_subscription_count, True),
-			("Guild Icon", f'[Here]({ctx.guild.icon_url})', True),
 			("Roles", len(ctx.guild.roles), True),
 			("Text channels", len(ctx.guild.text_channels), True),
 			("Voice channels", len(ctx.guild.voice_channels), True),
 			("Categories", len(ctx.guild.categories), True),
 		]
-		for name, value, inline in fields:
-			embed.add_field(name=name, value=value, inline=inline)
-
-		await ctx.send(file=f, embed=embed)
+		embed.description = '\n'.join([f'**{n}:** {v}' for n, v, inline in fields])
+		await ctx.send(embed=embed)
 
 
 def setup(bot):
