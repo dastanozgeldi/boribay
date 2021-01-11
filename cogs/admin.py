@@ -3,7 +3,6 @@ from typing import Optional
 
 import discord
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
 from utils.Converters import TimeConverter
 from discord.ext import commands
 
@@ -20,18 +19,15 @@ class Administration(Cog):
 
     @commands.command(name='setprefix', brief='Change prefix.')
     @commands.has_permissions(administrator=True)
-    async def change_prefix(self, ctx, prefix):
+    async def change_prefix(self, ctx, prefix: str):
         """Set Prefix command
         Args: prefix (str): a new prefix that you want to set."""
-        await self.bot.prefixes.update_one(
-            {'_id': ctx.guild.id},
-            {"$set": {"prefix": prefix}}
-        )
+        await self.bot.pool.execute('UPDATE guild_config SET prefix = $1 WHERE guild_id = $2', prefix, ctx.guild.id)
         await ctx.send(f"Prefix has been changed to: {prefix}")
 
-    @commands.command(name="mute", aliases=["block"], brief="mutes member (admins only). also you can specify the time")
+    @commands.command(aliases=["block"])
     @commands.has_permissions(administrator=True)
-    async def mute_user(self, ctx, member: discord.Member, time: TimeConverter = None):
+    async def mute(self, ctx, member: discord.Member, time: TimeConverter = None):
         """Mutes a member for time you specify (role 'Muted' required).
         Example: **mute Dosek 1d2h3m4s**
         Args:member (discord.Member): a member you want to mute.
@@ -46,9 +42,9 @@ class Administration(Cog):
             await ctx.send(f"Time's up! Unmuting {member}...")
             await member.remove_roles(role)
 
-    @commands.command(name="unmute", aliases=["unblock"], brief="unmutes member (admins only)")
+    @commands.command(aliases=["unblock"])
     @commands.has_permissions(administrator=True)
-    async def unmute_user(self, ctx, member: discord.Member):
+    async def unmute(self, ctx, member: discord.Member):
         """Unmutes a user (role 'Muted' required).
         Args: member (discord.Member): already muted user."""
         role = discord.utils.get(ctx.guild.roles, name="Muted")
@@ -72,7 +68,7 @@ class Administration(Cog):
         reason (str, optional): Reason why you considered kicking. Defaults to None."""
         r = reason or 'Reason not specified.'
         await ctx.guild.kick(user=member, reason=r)
-        embed = Embed(title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
+        embed = self.bot.embed(title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
         await ctx.send(embed=embed)
 
     @commands.command(brief="ban user")
@@ -82,7 +78,7 @@ class Administration(Cog):
         Args: member (discord.Member): a member you want to ban.
         reason (str, optional): Reason why you are banning. Defaults to None."""
         r = reason or 'Reason not specified.'
-        embed = Embed(title=f'{ctx.author.display_name} banned: {member.display_name}', description=r)
+        embed = self.bot.embed(title=f'{ctx.author.display_name} banned: {member.display_name}', description=r)
         await member.ban(reason=r)
         await ctx.send(embed=embed)
 
@@ -108,7 +104,7 @@ class Administration(Cog):
 
         elif amount <= 100:
             deleted = await ctx.channel.purge(limit=amount)
-            await ctx.send(embed=Embed(title="Clear Command", description=f"✅ Purged {len(deleted)} messages by {ctx.author}"))
+            await ctx.send(embed=self.bot.embed(title="Clear Command", description=f"✅ Purged {len(deleted)} messages by {ctx.author}"))
 
     @commands.command(brief="add a new category to the server")
     @commands.has_permissions(manage_guild=True)

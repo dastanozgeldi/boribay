@@ -5,7 +5,6 @@ import prettify_exceptions
 from discord.ext import commands
 from utils import Exceptions
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
 
 
 class CommandErrorHandler(Cog, command_attrs={'hidden': True}):
@@ -26,7 +25,7 @@ class CommandErrorHandler(Cog, command_attrs={'hidden': True}):
 
     async def send_error(self, ctx, exc):
         log_channel = self.bot.get_channel(781874343868629073)
-        embed = Embed.error(description=f'```py\nAn error occurred:\n{exc}\n```')
+        embed = self.bot.embed.error(description=f'```py\nAn error occurred:\n{exc}\n```')
         embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
         if ctx.guild:
             command = 'None' if isinstance(ctx.command, type(None)) else ctx.command.qualified_name
@@ -47,57 +46,57 @@ class CommandErrorHandler(Cog, command_attrs={'hidden': True}):
         if isinstance(error, ignored):
             return
         setattr(ctx, 'original_author_id', getattr(ctx, 'original_author_id', ctx.author.id))
-        invoke_errors = (
-            commands.MissingRole,
-            commands.MissingAnyRole,
-            commands.CommandOnCooldown,
-            commands.MissingPermissions,
-            commands.DisabledCommand
-        )
+        invoke_errors = (commands.MissingRole, commands.MissingAnyRole, commands.CommandOnCooldown, commands.MissingPermissions, commands.DisabledCommand)
 
         if isinstance(error, invoke_errors) and ctx.original_author_id in self.bot.owner_ids:
             return await ctx.reinvoke()
 
-        if isinstance(error, Exceptions.TooManyOptions):
-            return await self.send(ctx, embed=Embed.error(description='There were too many options to create a poll.'))
+        elif isinstance(error, Exceptions.TooManyOptions):
+            return await self.send(ctx, embed=self.bot.embed.error(description='There were too many options to create a poll.'))
 
-        if isinstance(error, Exceptions.NotEnoughOptions):
-            return await self.send(ctx, embed=Embed.error(description='There were not enough options to create a poll.'))
+        elif isinstance(error, Exceptions.NotEnoughOptions):
+            return await self.send(ctx, embed=self.bot.embed.error(description='There were not enough options to create a poll.'))
+
+        elif isinstance(error, commands.NSFWChannelRequired):
+            return await self.send(ctx, embed=self.bot.embed.error(description=str(error)))
+
+        elif isinstance(error, commands.MaxConcurrencyReached):
+            return await self.send(ctx, embed=self.bot.embed.error(description=str(error)))
 
         elif isinstance(error, commands.PartialEmojiConversionFailure):
             if ctx.command.name == 'emoji':
                 return
-            return await self.send(ctx, embed=Embed.error(description=f'{error}'), delete_after=5.0)
+            return await self.send(ctx, embed=self.bot.embed.error(description=f'{error}'), delete_after=5.0)
 
         elif isinstance(error, commands.CommandOnCooldown):
-            return await self.send(ctx, embed=Embed.error(description=f'This command is on cooldown. **`{int(error.retry_after)}` seconds**'), delete_after=10.0)
+            return await self.send(ctx, embed=self.bot.embed.error(description=f'This command is on cooldown. **`{int(error.retry_after)}` seconds**'), delete_after=10.0)
 
         elif isinstance(error, commands.MissingRequiredArgument):
             return await ctx.send_help(ctx.command)
 
         elif isinstance(error, commands.MissingPermissions):
-            return await self.send(ctx, embed=Embed.error(description=f'You are missing permission: `{error.missing_perms[0]}`'))
+            return await self.send(ctx, embed=self.bot.embed.error(description=f'You are missing permission: `{error.missing_perms[0]}`'))
 
         elif isinstance(error, commands.BadArgument):
-            return await self.send(ctx, embed=Embed.error(description=f'{error}'))
+            return await self.send(ctx, embed=self.bot.embed.error(description=f'{error}'))
 
         elif isinstance(error, commands.BotMissingPermissions):
-            return await self.send(ctx, embed=Embed.error(description=f'I am missing permission: `{error.missing_perms[0]}`'))
+            return await self.send(ctx, embed=self.bot.embed.error(description=f'I am missing permission: `{error.missing_perms[0]}`'))
 
         elif isinstance(error, commands.NotOwner):
-            return await self.send(ctx, embed=Embed.error(description='You must be the owner of the bot to run this.'))
+            return await self.send(ctx, embed=self.bot.embed.error(description='You must be the owner of the bot to run this.'))
 
         elif isinstance(error, commands.RoleNotFound):
-            return await self.send(ctx, embed=Embed.error(description=f'{error}'))
+            return await self.send(ctx, embed=self.bot.embed.error(description=f'{error}'))
 
         prettify_exceptions.DefaultFormatter().theme['_ansi_enabled'] = False
         exc = ''.join(prettify_exceptions.DefaultFormatter().format_exception(type(error), error, error.__traceback__))
 
-        if len(exc) > 1000:
-            await ctx.send('Error content was too big so I will send it to my developer.')
+        if len(exc) > 2000:
+            await ctx.send('Since traceback is too big I\'ll send it to the log channel.')
             await self.send_error(ctx, error)
         else:
-            await self.send(ctx, embed=Embed.error(
+            await self.send(ctx, embed=self.bot.embed.error(
                 title='An error occurred.',
                 description=f'Details: ```py\n{exc}\n```'
             ))

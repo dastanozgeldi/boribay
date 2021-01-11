@@ -1,15 +1,12 @@
 import functools
-import os
 import random
 from io import BytesIO
 from typing import Optional
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
 from utils.Manipulation import Manip, make_image, make_image_url
 from utils.CustomCog import Cog
 
-load_dotenv()
 EMOJI_REGEX = r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>'
 
 
@@ -24,14 +21,14 @@ class Canvas(Cog, name='Images'):
 
     async def dagpi_image(self, url, fn: str = None):
         cs = self.bot.session
-        r = await cs.get(f'https://api.dagpi.xyz/image/{url}', headers={'Authorization': os.getenv('dagpi_token')})
+        r = await cs.get(f'https://api.dagpi.xyz/image/{url}', headers={'Authorization': self.bot.config['API']['dagpi_token']})
         io = BytesIO(await r.read())
         f = discord.File(fp=io, filename=fn or 'dagpi.png')
         return f
 
     async def alex_image(self, url, fn: str = None):
         cs = self.bot.session
-        r = await cs.get(f'https://api.alexflipnote.dev/{url}', headers={'Authorization': os.getenv('alex_token')})
+        r = await cs.get(f'https://api.alexflipnote.dev/{url}', headers={'Authorization': self.bot.config['API']['alex_token']})
         io = BytesIO(await r.read())
         f = discord.File(fp=io, filename=fn or 'alex.png')
         return f

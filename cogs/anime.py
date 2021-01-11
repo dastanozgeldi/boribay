@@ -1,5 +1,4 @@
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
 from discord.ext.commands import command
 
 
@@ -12,7 +11,7 @@ class Anime(Cog):
         async with self.bot.session.get(f'https://nekos.life/api/v2/img/{topic}') as r:
             json = await r.json()
         url = str(json['url'])
-        embed = Embed.default(ctx=ctx, description=f'**[{description}]({url})**').set_image(url=url)
+        embed = self.bot.embed.default(ctx=ctx, description=f'**[{description}]({url})**').set_image(url=url)
         return embed
 
     @command(brief="pat")
@@ -57,7 +56,7 @@ class Anime(Cog):
                 ('Age Rating', attributes['ageRatingGuide'], True),
                 ('Genres', genres, True)
             ]
-            embed = Embed(
+            embed = self.bot.embed(
                 title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
                 description=attributes['description'],
                 url=f'https://kitsu.io/anime/{_id}'
@@ -93,7 +92,7 @@ class Anime(Cog):
                     ("Age Rating", attributes['ageRatingGuide'], True),
                     ("Genres", genres, True)
                 ]
-                embed = Embed(
+                embed = self.bot.embed(
                     title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
                     description=description[0:1500],
                     url=f"https://kitsu.io/manga/{manga}"
