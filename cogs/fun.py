@@ -1,4 +1,3 @@
-import os
 import re
 import discord
 import random
@@ -6,11 +5,10 @@ import functools
 from io import BytesIO
 from typing import Optional
 from PIL import Image
-from utils.Manipulation import Manip, make_image
+from utils.Manipulation import Manip, make_image, make_image_url
 from utils.Converters import BoolConverter
 from discord.ext import commands
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
 
 
 class Fun(Cog):
@@ -26,13 +24,12 @@ class Fun(Cog):
     async def press_f(self, ctx, image: Optional[str]):
         """'Press F to pay respect' meme maker. F your mate using this command.
         Args: image (optional): Image that you want to see on the canvas."""
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            buffer = BytesIO(image)
-            f = functools.partial(Manip.press_f, buffer)
-            buffer = await self.bot.loop.run_in_executor(None, f)
-            msg = await ctx.send(file=discord.File(fp=buffer, filename='f.png'))
-            await msg.add_reaction('<:press_f:796264575065653248>')
+        image = await make_image(ctx, image)
+        buffer = BytesIO(image)
+        f = functools.partial(Manip.press_f, buffer)
+        buffer = await self.bot.loop.run_in_executor(None, f)
+        msg = await ctx.send(file=discord.File(fp=buffer, filename='f.png'))
+        await msg.add_reaction('<:press_f:796264575065653248>')
 
     @commands.command(aliases=['5g1g', 'fivegoneg'])
     async def fiveguysonegirl(self, ctx, member: Optional[str], member2: Optional[str]):
@@ -63,13 +60,10 @@ class Fun(Cog):
     async def qr(self, ctx, url: Optional[str]):
         '''Makes QR-code of a given URL.
         A great way to make your friends get rickrolled!
-        P.S: this command accepts only URLs and raises an exception when it does not see URL.'''
-        if re.match(self.URL_REGEX, url):
-            url
-        else:
-            return await ctx.send('Please, specify a valid URL.')
+        P.S: this command accepts only URLs.'''
+        url = await make_image_url(ctx, url)
         cs = self.bot.session
-        r = await cs.get(f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={url}")
+        r = await cs.get(self.bot.config['API']['qr_api'] + url)
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='qr.png'))
 
@@ -106,7 +100,7 @@ class Fun(Cog):
         if not re.search("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", url):
             return await ctx.send("Please leave a valid url!")
         cs = self.bot.session
-        r = await cs.get(f'{os.getenv("screenshoter")}{url}')
+        r = await cs.get(f'{self.bot.config["API"]["screenshot_api"]}{url}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename="screenshot.png"))
 
@@ -125,7 +119,7 @@ class Fun(Cog):
         cs = self.bot.session
         r = await cs.get('https://uselessfacts.jsph.pl/random.json?language=en')
         js = await r.json()
-        await ctx.send(embed=Embed(description=js['text']))
+        await ctx.send(embed=self.bot.embed(description=js['text']))
 
 
 def setup(bot):
