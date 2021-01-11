@@ -1,21 +1,14 @@
-import inspect
-import os
 from textwrap import wrap
 from typing import Optional
 
 import discord
 import numexpr
-import wikipedia
 from discord.ext import commands
-from dotenv import load_dotenv
 from googletrans import Translator
 from utils.Converters import ColorConverter
 from utils.CustomCog import Cog
-from utils.CustomEmbed import Embed
 from utils.Manipulation import make_image_url
 from utils.Paginators import EmbedPageSource, MyPages
-
-load_dotenv()
 
 URL_REGEX = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 USER_REGEX = '<@[!]?\d*>'
@@ -41,7 +34,7 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
             song = wrap(song, 1000, drop_whitespace=False, replace_whitespace=False)
             embed_list = []
             for lyrics in song:
-                embed = Embed(
+                embed = self.bot.embed(
                     title=f'{js["author"]} — {js["title"]}',
                     description=lyrics
                 ).set_thumbnail(url=js['thumbnail']['genius'])
@@ -55,7 +48,7 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
     async def calc(self, ctx, *, equation: str):
         try:
             solution = numexpr.evaluate(str(equation)).item()
-            embed = Embed.default(ctx)
+            embed = self.bot.embed.default(ctx)
             embed.add_field(name='Input:', value=f'```{equation}```', inline=False)
             embed.add_field(name='Output:', value=f'```{solution}```', inline=False)
             await ctx.send(embed=embed)
@@ -69,7 +62,7 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         Args: color (ColorConverter): Color that you specify. It can be either RGB, HEX, or even a word.
         """
         rgb = color.to_rgb()
-        embed = Embed.default(
+        embed = self.bot.embed.default(
             ctx=ctx, color=discord.Color.from_rgb(*rgb)
         ).set_thumbnail(url=f'https://kal-byte.co.uk/colour/{"/".join(str(i) for i in rgb)}')
         embed.add_field(name='Hex', value=str(color), inline=False)
@@ -86,9 +79,8 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         • Active cases
         • Critical cases'''
         cs = self.bot.session
-        url = os.getenv('covid')
         if not country:
-            r = await cs.get(f'{url}all?yesterday=true&twoDaysAgo=true')
+            r = await cs.get(f'{self.bot.config["API"]["covid_api"]}all?yesterday=true&twoDaysAgo=true')
             js = await r.json()
             title = 'Covid-19 World Statistics'
             field = ('Affected Countries', str(js['affectedCountries']))
@@ -101,7 +93,7 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
             field = ('Continent', str(js['continent']))
             url = str(js['countryInfo']['flag'])
 
-        embed = Embed().set_thumbnail(url=url)
+        embed = self.bot.embed().set_thumbnail(url=url)
         fields = [
             ('Total Cases', str(js['cases'])),
             ('Today Cases', str(js['todayCases'])),
@@ -118,38 +110,6 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
             embed.add_field(name=name, value=value)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['src'])
-    async def source(self, ctx, *, command: str = None):
-        '''Displays my full source code or for a specific command.
-        Able to show source code of either command or a group.
-        To display the source code of a subcommand you can separate it by periods.
-        Ex: **source todo.add** — for the add subcommand of the todo command.'''
-        source_url = 'https://github.com/Dositan/Boribay'
-        if command is None:
-            return await ctx.send(source_url)
-
-        if command == 'help':
-            src = type(self.bot.help_command)
-            module = src.__module__
-            filename = inspect.getsourcefile(src)
-        else:
-            obj = self.bot.get_command(command.replace('.', ' '))
-            if obj is None:
-                return await ctx.send(f'Command **{command}** not found.')
-
-            src = obj.callback.__code__
-            module = obj.callback.__module__
-            filename = src.co_filename
-
-        lines, firstlineno = inspect.getsourcelines(src)
-        if not module.startswith('discord'):
-            location = os.path.relpath(filename).replace('\\', '/')
-        else:
-            location = module.replace('.', '/') + '.py'
-            source_url = 'https://github.com/Rapptz/discord.py'
-
-        await ctx.send(f'{source_url}/blob/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}')
-
     @commands.command()
     async def caption(self, ctx, arg: Optional[str]):
         '''Caption for an image.
@@ -158,9 +118,8 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         Ex: **caption Dosek**'''
         image = await make_image_url(ctx, arg)
         cs = self.bot.session
-        url = os.getenv('caption')
-        r = await cs.post(url, json={'Content': image, 'Type': 'CaptionRequest'})
-        await ctx.send(embed=Embed(title=await r.text()).set_image(url=image))
+        r = await cs.post(self.bot.config['API']['caption_api'], json={'Content': image, 'Type': 'CaptionRequest'})
+        await ctx.send(embed=self.bot.embed(title=await r.text()).set_image(url=image))
 
     @commands.command(aliases=['temp', 'temperature'])
     async def weather(self, ctx, *, city: str):
@@ -171,12 +130,12 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
             • Humidity % in city;
             • Atmospheric Pressure data (hPa) in a current city.'''
         cs = self.bot.session
-        r = await cs.get(f'{os.getenv("weather")}appid={os.getenv("app_id")}&q={city}')
+        r = await cs.get(f'{self.bot.config["weather_api"]}appid={self.bot.config["weather_id"]}&q={city}')
         x = await r.json()
         if x["cod"] != "404":
             y = x["main"]
             z = x["weather"]
-            embed = Embed(title=f'Weather in {city.capitalize()}').set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
+            embed = self.bot.embed(title=f'Weather in {city.capitalize()}').set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
             fields = [
                 ('Description', f'**{z[0]["description"]}**', False),
                 ('Temperature', f'**{str(round(y["temp"] - 273.15))}°C**', False),
@@ -196,26 +155,10 @@ class Useful(Cog, command_attrs=dict(cooldown=commands.Cooldown(1, 5, commands.B
         Ex: **translate ru hello world!**'''
         t = Translator()
         a = t.translate(sentence, dest=language)
-        embed = Embed(title=f'Translating from {a.src} to {a.dest}:')
+        embed = self.bot.embed(title=f'Translating from {a.src} to {a.dest}:')
         embed.add_field(name='Translation:', value=f'```{a.text}```', inline=False)
         embed.add_field(name='Pronunciation:', value=f'```{a.pronunciation}```', inline=False)
         await ctx.send(embed=embed)
-
-    @commands.command(aliases=['wiki'])
-    async def wikipedia(self, ctx, *, search: str = None):
-        '''Search from Wikipedia. Updated version.
-        Command shows only summary of the page,
-        so you can follow the link to see an article in your browser.
-        Ex: **wikipedia Python**'''
-        async with ctx.typing():
-            results = wikipedia.search(search)
-            if not len(results):
-                return await ctx.send("Sorry, could not find any results.")
-            new_search = results[0]
-            wiki = wikipedia.page(new_search)
-            text = wrap(wiki.summary, 500, break_long_words=True, replace_whitespace=False)
-            embed = Embed(title=wiki.title, description=f'{text[0]}...', url=wiki.url)
-            await ctx.send(embed=embed)
 
 
 def setup(bot):
