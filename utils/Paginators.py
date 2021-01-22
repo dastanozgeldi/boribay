@@ -1,6 +1,27 @@
 import discord
 import asyncio
 from discord.ext import menus
+from utils.CustomEmbed import Embed
+
+
+class TodoPageSource(menus.ListPageSource):
+	def __init__(self, ctx, data):
+		super().__init__(data, per_page=10)
+		self.ctx = ctx
+
+	async def format_page(self, menu, entries):
+		offset = menu.current_page * self.per_page + 1
+		embed = self.ctx.bot.embed()
+		if len(entries) < 1:
+			embed.description = '''Currently you have no to-do\'s.\nTo set them use **todo add** command.'''
+		else:
+			maximum = self.get_max_pages()
+			embed.set_author(
+				name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} todos)',
+				icon_url=self.ctx.author.avatar_url
+			)
+			embed.description = '\n'.join(f'{i}. {v}' for i, v in enumerate(entries, start=offset))
+		return embed
 
 
 class MyPages(menus.MenuPages):
@@ -24,7 +45,9 @@ class SQLListPageSource(menus.ListPageSource):
 		super().__init__(data, per_page=per_page)
 
 	async def format_page(self, menu, page):
-		embed = discord.Embed(description='```sql\n' + "\n".join(page) + '\n```')
+		embed = Embed(
+			description='```py\n' + '\n'.join(page) + '\n```'
+		).set_author(name=f'Page {menu.current_page + 1} / {self.get_max_pages()}')
 		return embed
 
 

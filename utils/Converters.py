@@ -7,9 +7,9 @@ from PIL import ImageColor
 from discord.ext import commands
 
 URL_REGEX = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
-RGB_REGEX = '\(?(\d+),?\s*(\d+),?\s*(\d+)\)?'
+RGB_REGEX = r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?'
 EMOJI_REGEX = r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>'
-time_regex = re.compile("(?:(\d{1,5})(h|s|m|d))+?")
+time_regex = re.compile(r"(?:(\d{1,5})(h|s|m|d))+?")
 time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
 
 
@@ -117,11 +117,3 @@ class MemberRoles(commands.MemberConverter):
     async def convert(self, ctx, argument: str):
         member = await super().convert(ctx, argument)
         return [role.name for role in member.roles[1:]]
-
-
-class BoolConverter(commands.Converter):
-    async def convert(self, ctx, argument: str):
-        if argument in ('yes', 'y', 'true', 't', '1', 'enable', 'on'):
-            return True
-        elif argument in ('no', 'n', 'false', 'f', '0', 'disable', 'off'):
-            return False

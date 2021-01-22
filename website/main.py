@@ -3,12 +3,17 @@ import toml
 from discord.ext.ipc import Client
 from quart import Quart, render_template
 
-data = toml.load('./config.toml')['ipc']
+data = toml.load('../config.toml')['ipc']
 app = Quart(__name__)
 web_ipc = Client(host=data['host'], secret_key=data['secret_key'])
 
 
 @app.route('/')
+async def welcoming_page():
+	return 'Welcome!'
+
+
+@app.route('/home')
 async def home_page():
 	return await render_template('home.html', title='Home')
 
@@ -20,13 +25,17 @@ async def about_page():
 
 @app.route('/stats')
 async def stats_page():
-	stats = await app.ipc_node.request('get_stats_page')
-	return stats
+	return await app.node.request('get_stats_page')
+
+
+@app.route('/commands')
+async def commands_page():
+	return await app.node.request('get_commands_page')
 
 
 @app.before_first_request
 async def before():
-	app.ipc_node = await web_ipc.discover()
+	app.node = await web_ipc.discover()
 
 
 if __name__ == '__main__':

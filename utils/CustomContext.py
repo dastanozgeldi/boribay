@@ -18,4 +18,4 @@ class Timer(ContextDecorator):
 
 	async def __aexit__(self, *args):
 		self.end = perf_counter()
-		await self.ctx.send(f'Done in `{round(self.end - self.start, 2)}s`')
+		await self.ctx.send(f'Done in `{self.end - self.start:.2f}s`')

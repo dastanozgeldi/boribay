@@ -17,62 +17,17 @@ class GroupHelp(menus.ListPageSource):
 		self.description = '```fix\n<> ← required argument\n[] ← optional argument```'
 
 	async def format_page(self, menu, cmds):
-		embed = Embed(
-			title=self.title,
-			description=self.description
-		)
+		doc = self.group.__doc__ if isinstance(self.group, commands.Cog) else self.group.help
+		embed = Embed(title=self.title, description=f'{doc}\n{self.description}')
 		for cmd in cmds:
 			signature = f'{self.prefix}{cmd.qualified_name} {cmd.signature}'
-			desc = cmd.help or cmd.brief
-			embed.add_field(
-				name=signature,
-				value=desc.format(prefix=self.ctx.prefix),
-				inline=False
-			)
-
+			desc = cmd.help
+			embed.add_field(name=signature, value=desc.format(prefix=self.ctx.prefix), inline=False)
 		maximum = self.get_max_pages()
 		if maximum > 1:
-			embed.set_author(
-				name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
-
+			embed.set_author(name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
 		embed.set_footer(text=f'{self.prefix}help to see all commands list.')
 		return embed
-
-
-class Menu(menus.Menu):
-
-	def __init__(self, pages, embed: bool = True, **kwargs):
-		super().__init__(**kwargs)
-		self.pages = pages
-		self.embed = embed
-		self.cur_page = 0
-
-	async def change(self):
-		new_page = self.pages[self.cur_page]
-		if self.embed:
-			await self.message.edit(embed=new_page)
-		else:
-			await self.message.edit(content=new_page)
-
-	async def send_initial_message(self, ctx, channel):
-		if self.embed:
-			return await channel.send(embed=self.pages[self.cur_page])
-
-	@menus.button('\N{LEFTWARDS BLACK ARROW}')
-	async def previous_page(self, payload):
-		if self.cur_page > 0:
-			self.cur_page -= 1
-			await self.change()
-
-	@menus.button('\N{BLACK SQUARE FOR STOP}')
-	async def stop_pages(self, payload):
-		self.stop()
-
-	@menus.button('\N{BLACK RIGHTWARDS ARROW}')
-	async def next_page(self, payload):
-		if self.cur_page < len(self.pages) - 1:
-			self.cur_page += 1
-			await self.change()
 
 
 class MainHelp(menus.ListPageSource):
@@ -85,15 +40,15 @@ class MainHelp(menus.ListPageSource):
 
 	async def format_page(self, menu, category):
 		embed = Embed(
-			description=f'''{self.ctx.prefix}help [category | group] to get module help
-			[Invite]({self.ctx.bot.invite_url}) | [Support]({self.ctx.bot.support_url}) | [Source]({self.ctx.bot.github_url})''',
+			description=f'{self.ctx.prefix}help [Category | group] to get module help\n'
+			f'[Invite]({self.ctx.bot.invite_url}) | [Support]({self.ctx.bot.support_url}) | [Source]({self.ctx.bot.github_url})',
 		).set_footer(text=f'{self.ctx.prefix}help <command> to get command help.')
 		embed.set_author(
 			name=f'Page {menu.current_page + 1} of {self.get_max_pages()} ({self.count} categories)',
-			icon_url=self.ctx.author.avatar_url_as(size=128)
+			icon_url=self.ctx.author.avatar_url_as(size=64)
 		)
-		for k, v in category:
-			embed.add_field(name=k, value=v, inline=False)
+		for name, value in category:
+			embed.add_field(name=name, value=value, inline=False)
 		return embed
 
 
@@ -105,14 +60,13 @@ class MyHelpCommand(commands.HelpCommand):
 	async def send_bot_help(self, mapping):
 		cats = []
 		for cog, cmds in mapping.items():
-			if not hasattr(cog, "name"):
+			if not hasattr(cog, 'name'):
 				continue
-			name = cog.name or "No Category"
 			filtered = await self.filter_commands(cmds, sort=True)
 			if filtered:
 				all_cmds = ", ".join(f"`{c.name}`" for c in cmds)
 				if cog:
-					cats.append([name, f"> {all_cmds}\n"])
+					cats.append([cog.name, f"> {all_cmds}\n"])
 
 		menu = MyPages(source=MainHelp(self.context, cats), timeout=30.0)
 		await menu.start(self.context)
@@ -142,12 +96,7 @@ class MyHelpCommand(commands.HelpCommand):
 		else:
 			pass
 
-		if command.description and not command.help:
-			embed.description = command.description
-		if command.help:
-			embed.description = command.help
-		else:
-			embed.description = command.brief or 'No help found...'
+		embed.description = command.help or 'No help found...'
 		await self.get_destination().send(embed=embed)
 
 	async def send_group_help(self, group: commands.Group):
@@ -166,8 +115,11 @@ class MyHelpCommand(commands.HelpCommand):
 	async def command_not_found(self, string):
 		commands_list = [i.name for i in self.context.bot.commands]
 		dym = '\n'.join(get_close_matches(string, commands_list))
-		msg = f'Could not find the command `{string}`.'
-		return f'{msg}\n{dym}' if dym else msg
+		if not dym:
+			msg = f'Could not find the command `{string}`.'
+		else:
+			msg = f'Could not find the command {string}. Did you mean...\n{dym}'
+		return msg
 
 	def get_command_signature(self, command: commands.Command):
 		return f'{self.clean_prefix}{command.qualified_name} {command.signature}'

@@ -4,5 +4,6 @@ __pycache__/
 data/logs/
 
 config.toml
-data/Music.url
-cogs/economics.py
+cogs/music/Music.url
+cogs/economics/
+cogs/leveling/

@@ -1,10 +1,9 @@
+import discord
 import textwrap
 from io import BytesIO
 from polaroid import Image as PI
 from wand.image import Image as WI
-
 from PIL import Image, ImageDraw, ImageFont
-
 from utils.Converters import ImageConverter, ImageURLConverter
 
 
@@ -31,7 +30,7 @@ async def make_image(ctx, argument: str):
             image = await layout.read()
             return image
         else:
-            layout = ctx.author.avatar_url_as(static_format='png', format='png', size=512)
+            layout = ctx.author.avatar_url_as(static_format='png', format='png', size=size)
             image = await layout.read()
             return image
     else:
@@ -78,20 +77,15 @@ class Manip:
         return buffer
 
     @staticmethod
-    def solarize(image: bytes):
+    def polaroid_filter(ctx, image: bytes, *, method: str, fn: str, args: list = None, kwargs: dict = None):
+        args = args or []
+        kwargs = kwargs or {}
         img = PI(image)
-        img.solarize()
-        b = img.save_bytes()
-        buffer = BytesIO(b)
-        return buffer
-
-    @staticmethod
-    def brighten(image: bytes, quantity: int):
-        img = PI(image)
-        img.brighten(quantity)
-        b = img.save_bytes()
-        buffer = BytesIO(b)
-        return buffer
+        method = getattr(img, method)
+        method(*args, **kwargs)
+        buffer = BytesIO(img.save_bytes())
+        file = discord.File(fp=buffer, filename=f'{fn}.png')
+        return file
 
     @staticmethod
     def press_f(image: BytesIO):
