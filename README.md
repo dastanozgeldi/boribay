@@ -8,7 +8,7 @@ A bot made with Python using discord.py library by Dosek#4400.
 PosgtreSQL: log into pgadmin GUI or whatever terminal to connect to the psql shell.<br/>
 Then create the database with appropriate tables.<br/>
 MongoDB: mongo gives opportunity to setup an atlas or simply a server that saves your data in (512 mb)<br/>
-4. JDK setup. Skip that part if you don't want to use music features. Ideally, install JDK 13 and Lavalink. After every bot launch you have also to run these music nodes, `java -jar Lavalink.jar`<br/>
+4. JDK setup. Skip that part if you don't want to use music features. Ideally, install JDK 13 and Lavalink. Before every bot launch you have also to run these music nodes, `java -jar Lavalink.jar`<br/>
 5. Finishing, if everything is clear and you have no issues do `python bot.py` and you are ready to go.
 
 # Useful Links
