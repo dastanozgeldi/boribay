@@ -3,19 +3,19 @@ import os
 from logging.handlers import RotatingFileHandler
 from discord import AllowedMentions, Game, Intents
 from discord.flags import MemberCacheFlags
-from utils.CustomBot import Bot
+from utils.Bot import Bot
 
 logging.basicConfig(filename='./data/logs/discord.log', filemode='w', level=logging.INFO)
 intents = Intents.default()
 intents.members = True
 bot = Bot(
-    activity=Game(name='.help'),
-    case_insensitive=True,
-    max_messages=1000,
-    allowed_mentions=AllowedMentions(everyone=False, roles=False),
     intents=intents,
+    max_messages=1000,
+    case_insensitive=True,
+    activity=Game(name='.help'),
+    chunk_guilds_at_startup=False,
     member_cache_flags=MemberCacheFlags.from_intents(intents),
-    chunk_guilds_at_startup=False
+    allowed_mentions=AllowedMentions(everyone=False, roles=False, replied_user=False),
 )
 bot.log = logging.getLogger(__name__)
 handler = RotatingFileHandler('./data/logs/discord.log', maxBytes=5242880, backupCount=1)

@@ -2,9 +2,22 @@ title = 'Boribay bot configuration.'  # Some kind of introduction
 
 [bot]  # I'd say the main config data.
 exts = [
-    'this is the list of extensions',
-    'example below',
-    'cogs.owner'
+    'jishaku',
+    'cogs.owner',
+    'cogs.utils.events',
+    'cogs.utils.errors',
+    'cogs.useful',
+    'cogs.info',
+    'cogs.fun',
+    'cogs.games',
+    'cogs.images',
+    'cogs.filter',
+    'cogs.anime',
+    'cogs.admins',
+    'cogs.settings',
+    'cogs.misc',
+    'cogs.help',
+    'cogs.topgg'
 ]
 version = 'the bot version'
 description = 'the bot description that i want'

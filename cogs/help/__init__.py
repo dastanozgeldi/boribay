@@ -1,5 +1,5 @@
-from utils.CustomCog import Cog
-from utils.HelpCommand import MyHelpCommand
+from utils.Cog import Cog
+from .Help import MyHelpCommand
 
 
 class Help(Cog):

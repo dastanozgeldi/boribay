@@ -1,7 +1,7 @@
 import discord
 import asyncio
 from typing import Optional
-from utils.CustomCog import Cog
+from utils.Cog import Cog
 from discord.ext import commands
 from utils.Converters import TimeConverter
 
@@ -15,26 +15,18 @@ class Management(Cog):
         self.bot = bot
         self.name = '🛡 Management'
 
+    async def cog_check(self, ctx):
+        return await commands.has_guild_permissions(administrator=True).predicate(ctx)
+
     @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def addlog(self, ctx, message: str, channel_id: Optional[int]):
+    async def addlog(self, ctx, message: str, channel: Optional[discord.TextChannel]):
         """Adds log channel with log message to the DB. When someone joins to
         your guild, that channel will be notified."""
-        channel_id = channel_id or ctx.channel.id
-        await self.bot.pool.execute('UPDATE guild_config SET member_log = $1 WHERE guild_id = $2', channel_id, ctx.guild.id)
-        await self.bot.pool.execute('UPDATE guild_config SET member_log_message = $1 WHERE guild_id = $2', message, ctx.guild.id)
+        channel = channel or ctx.channel
+        await self.bot.pool.execute('UPDATE guild_config SET member_log = $1, member_log_message = $2 WHERE guild_id = $3', channel.id, message, ctx.guild.id)
         await ctx.message.add_reaction('✅')
 
-    @commands.command(name='setprefix')
-    @commands.has_permissions(administrator=True)
-    async def change_prefix(self, ctx, prefix: str):
-        """Set Prefix command
-        Args: prefix (str): a new prefix that you want to set."""
-        await self.bot.pool.execute('UPDATE guild_config SET prefix = $1 WHERE guild_id = $2', prefix, ctx.guild.id)
-        await ctx.send('Prefix has been changed to: `%s`' % prefix)
-
     @commands.command(aliases=['block'])
-    @commands.has_permissions(administrator=True)
     async def mute(self, ctx, member: discord.Member, time: Optional[TimeConverter]):
         """Mutes a member for time you specify (role 'Muted' required).
         Example: **mute Dosek 1d2h3m4s**
@@ -51,7 +43,6 @@ class Management(Cog):
             await member.remove_roles(role)
 
     @commands.command(aliases=['unblock'])
-    @commands.has_permissions(administrator=True)
     async def unmute(self, ctx, member: discord.Member):
         """Unmutes a user (role 'Muted' required).
         Args: member (discord.Member): already muted user."""
@@ -60,7 +51,6 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command()
-    @commands.has_permissions(manage_nicknames=True)
     async def nick(self, ctx, member: discord.Member, *, new_nick: str):
         """Changes member's nickname in the server.
         Args: member (discord.Member): a member whose nickname you wanna change.
@@ -69,51 +59,42 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command()
-    @commands.has_guild_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason: Optional[str]):
         """Kicks a user.
         Args: member (discord.Member): a member you want to kick.
         reason (str, optional): Reason why you considered kicking. Defaults to None."""
         r = reason or 'Reason not specified.'
         await ctx.guild.kick(user=member, reason=r)
-        embed = self.bot.embed(title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
+        embed = self.bot.embed.default(ctx, title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_guild_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason: Optional[str]):
         """Bans a user.
         Args: member (discord.Member): a member you want to ban.
         reason (str, optional): Reason why you are banning. Defaults to None."""
         r = reason or 'Reason not specified.'
-        embed = self.bot.embed(title=f'{ctx.author.display_name} banned: {member.display_name}', description=r)
+        embed = self.bot.embed.default(ctx, title=f'{ctx.author.display_name} banned: {member.display_name}', description=r)
         await member.ban(reason=r)
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_guild_permissions(ban_members=True)
     async def unban(self, ctx, user: discord.User):
         """Unban user with their ID
         Args: user (discord.User): Normally takes user ID.
         Returns: Exception: If given user id isn't in server ban-list."""
-        bans = await ctx.guild.bans()
-        if user not in bans:
-            return await ctx.send(f'I don\'t see the user `{user}` in the ban-list.')
         await ctx.guild.unban(user)
         await ctx.message.add_reaction('✅')
 
     @commands.command(aliases=['clear'])
-    @commands.has_permissions(administrator=True)
     async def purge(self, ctx, amount: int = 2):
         """Purges messages of a given amount. Limit is 100.
         Args: amount (int, optional): amount of messages to clear. Defaults to 2"""
         if amount > 100:
-            await ctx.send('That is too big amount. The maximum is 100')
-        elif amount <= 100:
-            await ctx.channel.purge(limit=amount)
+            return await ctx.send('That is too big amount. The maximum is 100')
+        await ctx.channel.purge(limit=amount)
 
     @commands.command()
-    @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def categoryadd(self, ctx, role: discord.Role, *, name: str):
         """Adds a category for the current guild.
@@ -127,7 +108,6 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command()
-    @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def channeladd(self, ctx, role: discord.Role, *, name: str):
         """Adds a channel for the current guild.
@@ -142,7 +122,6 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command()
-    @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def delcat(self, ctx, category: discord.CategoryChannel, *, reason: Optional[str]):
         """Deletes a specififed category.
@@ -152,7 +131,6 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command()
-    @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def delchan(self, ctx, channel: discord.TextChannel, *, reason: Optional[str]):
         """Deletes a specified channel.
@@ -164,7 +142,6 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command(aliases=['ld'])
-    @commands.has_permissions(manage_guild=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def lockdown(self, ctx, channel: Optional[discord.TextChannel]):
         """Puts a channel on lockdown.
@@ -188,19 +165,13 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command(aliases=['sm'])
-    @commands.has_permissions(manage_guild=True)
-    async def slowmode(self, ctx, arg: int):
+    async def slowmode(self, ctx, arg):
         """Enables slowmode for a given amount of seconds.
         Args: arg (int): a time in seconds users have to wait to send a message."""
-        if arg == "disable":
-            await ctx.channel.edit(slowmode_delay=0)
-            await ctx.message.add_reaction('✅')
-        else:
-            await ctx.channel.edit(slowmode_delay=arg)
-            await ctx.send(f'Slowmode has set to {arg} seconds.')
+        await ctx.channel.edit(slowmode_delay=arg)
+        await ctx.send(f'Slowmode has set to {arg} seconds.')
 
     @commands.command(aliases=['add_role'])
-    @commands.has_permissions(administrator=True)
     async def addrole(self, ctx, role: discord.Role, user: discord.Member):
         """Adds a specified role to a user.
         Args: role (discord.Role): a role you want to give.
@@ -209,7 +180,6 @@ class Management(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command(aliases=['remove_role'])
-    @commands.has_permissions(administrator=True)
     async def removerole(self, ctx, role: discord.Role, user: discord.Member):
         """Removes a specified role from a user.
         Args: role (discord.Role): role you want to take.

@@ -1,10 +1,10 @@
-import discord
 import random
-import functools
+from functools import partial
 from io import BytesIO
 from typing import Optional
-from utils.CustomCog import Cog
+import discord
 from discord.ext import commands
+from utils.Cog import Cog
 from utils.Manipulation import Manip, make_image, make_image_url
 
 
@@ -48,7 +48,7 @@ class Images(Cog):
         Args: image (optional): Image that you want to see on the canvas."""
         image = await make_image(ctx, image)
         buffer = BytesIO(image)
-        f = functools.partial(Manip.press_f, buffer)
+        f = partial(Manip.press_f, buffer)
         buffer = await self.bot.loop.run_in_executor(None, f)
         msg = await ctx.send(file=discord.File(fp=buffer, filename='f.png'))
         await msg.add_reaction('<:press_f:796264575065653248>')
@@ -154,6 +154,29 @@ class Images(Cog):
         )
         await ctx.send(file=file)
 
+    @commands.command()
+    async def caption(self, ctx, arg: Optional[str]):
+        '''Caption for an image.
+        This command describes a given image being just a piece of code.
+        Can handle either image, member or even URL.
+        Ex: **caption Dosek**'''
+        image = await make_image_url(ctx, arg)
+        cs = self.bot.session
+        r = await cs.post(self.bot.config['API']['caption_api'], json={'Content': image, 'Type': 'CaptionRequest'})
+        embed = self.bot.embed.default(ctx, title=await r.text())
+        await ctx.send(embed=embed.set_image(url=image))
+
+    @commands.command()
+    async def qr(self, ctx, url: Optional[str]):
+        '''Makes QR-code of a given URL.
+        A great way to make your friends get rickrolled!
+        P.S: this command accepts only URLs.'''
+        url = await make_image_url(ctx, url)
+        cs = self.bot.session
+        r = await cs.get(self.bot.config['API']['qr_api'] + url)
+        io = BytesIO(await r.read())
+        await ctx.send(file=discord.File(fp=io, filename='qr.png'))
+
     @commands.command(aliases=['wayg'])
     async def whyareyougay(self, ctx, member: Optional[str]):
         '''A legendary "Why are you gay?" meme maker.
@@ -181,7 +204,7 @@ class Images(Cog):
             if len(yes) > 90 or len(no) > 90:
                 return await ctx.send('The text was too long to render.')
 
-            f = functools.partial(Manip.drake, no, yes)
+            f = partial(Manip.drake, no, yes)
             buffer = await self.bot.loop.run_in_executor(None, f)
             self.cache[no] = buffer
             await ctx.send(file=discord.File(fp=buffer, filename='drake.png'))
@@ -200,37 +223,10 @@ class Images(Cog):
                 if len(text) > 75:
                     return await ctx.send('The text was too long to render.')
 
-                f = functools.partial(Manip.clyde, text)
+                f = partial(Manip.clyde, text)
                 buffer = await self.bot.loop.run_in_executor(None, f)
                 self.cache[text] = buffer
                 await ctx.send(file=discord.File(fp=buffer, filename='clyde.png'))
-
-    @commands.command()
-    async def noise(self, ctx, image: Optional[str]):
-        """Randomly adds noises to an image.
-        Args: image (str): A specified image, either user, emoji or attachment."""
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = Manip.polaroid_filter(ctx, image, method='add_noise_rand', fn='noise')
-            await ctx.send(file=file)
-
-    @commands.command()
-    async def solarize(self, ctx, image: Optional[str]):
-        """As it says, solarizes an image.
-        Args: image (str): A specified image, either user, emoji or attachment."""
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = Manip.polaroid_filter(ctx, image, method='solarize', fn='solarized')
-            await ctx.send(file=file)
-
-    @commands.command()
-    async def brighten(self, ctx, image: Optional[str]):
-        """As it says, brightens an image.
-        Args: image (str): A specified image, either user, emoji or attachment."""
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = Manip.polaroid_filter(ctx, image, method='brighten', fn='brightened', kwargs={'treshold': 69})
-            await ctx.send(file=file)
 
     @commands.command(hidden=True)
     async def swirl(self, ctx, image: Optional[str], degrees: Optional[int]):
@@ -243,7 +239,7 @@ class Images(Cog):
             image = await make_image(ctx, image)
             degrees = random.randint(-360, 360) if degrees is None else degrees
             buffer = BytesIO(image)
-            f = functools.partial(Manip.swirl, buffer, degrees)
+            f = partial(Manip.swirl, buffer, degrees)
             buffer = await self.bot.loop.run_in_executor(None, f)
             await ctx.send(file=discord.File(fp=buffer, filename='swirl.png'))
 
@@ -263,7 +259,7 @@ class Images(Cog):
                 if len(text) > 144:
                     return await ctx.send('The text was too long to render.')
 
-                f = functools.partial(Manip.theory, text)
+                f = partial(Manip.theory, text)
                 buffer = await self.bot.loop.run_in_executor(None, f)
                 self.cache[text] = buffer
                 await ctx.send(file=discord.File(fp=buffer, filename='theory.png'))

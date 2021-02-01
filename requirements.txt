@@ -5,6 +5,7 @@ DateTime==4.3
 discord-ext-ipc @ git+git://github.com/ext-creators/discord-ext-ipc@2aaaa7b75bae0cb78888dc022585493a82c7f267
 discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@84caae8038d0d3adc860957ccef05baeec2e2dd8
 discord.py @ git+https://github.com/Rapptz/discord.py/@6515f339780ba2efe8951b827de53656aa84b695
+aiowiki @ git+https://github.com/Gelbpunkt/aiowiki@2c342e748b63695413b56b7d04cdd6b2c9abfbf1
 googletrans==3.1.0a0
 humanize==3.1.0
 jishaku==1.19.2.202

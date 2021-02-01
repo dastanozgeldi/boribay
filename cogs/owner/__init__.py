@@ -2,8 +2,8 @@ from typing import Optional
 
 from discord.ext import commands
 from jishaku.codeblocks import codeblock_converter
-from utils.CustomCog import Cog
-from utils.Paginators import MyPages, SQLListPageSource
+from utils.Cog import Cog
+from utils.Formats import TabularData
 
 
 class Owner(Cog, command_attrs={'hidden': True}):
@@ -24,28 +24,27 @@ class Owner(Cog, command_attrs={'hidden': True}):
         pass
 
     @dev.command()
-    async def selfclear(self, ctx, amount: Optional[int] = 1):
-        pass
-
-    @dev.command()
     async def leave(self, ctx, guild_id: Optional[int]):
         """Leave command. Takes current guild if id was not given."""
         guild_id = guild_id or ctx.guild.id
         await self.bot.get_guild(guild_id).leave()
 
-    @dev.command(aliases=['die'])
+    @dev.command(aliases=['logout', 'close'])
     async def shutdown(self, ctx):
         await ctx.message.add_reaction('👌')
         await self.bot.close()
 
     @dev.command()
     async def sql(self, ctx, *, query: codeblock_converter):
-        """Does an SQL query."""
+        """Does an SQL query.
+        Thanks again Danny for the output formatter!"""
         query = query.content
-        data = []
-        for result in (await self.bot.pool.fetch(query) if query.lower().startswith('select') else await self.bot.pool.execute(query)):
-            data.append(repr(result))
-        await MyPages(SQLListPageSource(data)).start(ctx)
+        async with ctx.timer:
+            results = await self.bot.pool.fetch(query) if query.lower().startswith('select') else await self.bot.pool.execute(query)
+            table = TabularData()
+            table.set_columns(list(results[0].keys()))
+            table.add_rows(list(r.values()) for r in results)
+            await ctx.send(f'```py\n{table.render()}\n```')
 
     @dev.command(aliases=['l'])
     async def load(self, ctx, *, module: str):

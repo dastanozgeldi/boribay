@@ -1,6 +1,6 @@
 import asyncio
 import wavelink
-from .music_excs import (
+from utils.Exceptions import (
     QueueIsEmpty,
     AlreadyConnectedToChannel,
     NoVoiceChannel,
@@ -84,7 +84,7 @@ class Player(wavelink.Player):
         if self.is_connected:
             raise AlreadyConnectedToChannel
 
-        if (channel := getattr(ctx.author.voice, "channel", channel)) is None:
+        if channel := getattr(ctx.author.voice, "channel", channel) is None:
             raise NoVoiceChannel
 
         await super().connect(channel.id)

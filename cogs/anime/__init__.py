@@ -1,4 +1,4 @@
-from utils.CustomCog import Cog
+from utils.Cog import Cog
 from discord.ext.commands import command
 
 
@@ -14,7 +14,8 @@ class Anime(Cog):
         async with self.bot.session.get(f'https://nekos.life/api/v2/img/{topic}') as r:
             json = await r.json()
         url = str(json['url'])
-        embed = self.bot.embed.default(ctx=ctx, description=f'**[{description}]({url})**').set_image(url=url)
+        embed = self.bot.embed.default(ctx=ctx, description=f'**[{description}]({url})**')
+        embed.set_image(url=url)
         return embed
 
     @command()
@@ -68,11 +69,13 @@ class Anime(Cog):
                 ('Age Rating', attributes['ageRatingGuide'], True),
                 ('Genres', genres, True)
             ]
-            embed = self.bot.embed(
+            embed = self.bot.embed.default(
+                ctx,
                 title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
                 description=attributes['description'],
                 url=f'https://kitsu.io/anime/{_id}'
-            ).set_thumbnail(url=attributes['posterImage']['small'])
+            )
+            embed.set_thumbnail(url=attributes['posterImage']['small'])
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value or 'Not specified.', inline=inline)
             await ctx.send(embed=embed)
@@ -108,11 +111,13 @@ class Anime(Cog):
                 ('Age Rating', attributes['ageRatingGuide'], True),
                 ('Genres', genres, True)
             ]
-            embed = self.bot.embed(
+            embed = self.bot.embed.default(
+                ctx,
                 title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
                 description=attributes['description'],
                 url=f"https://kitsu.io/manga/{manga}"
-            ).set_thumbnail(url=attributes['posterImage']['small'])
+            )
+            embed.set_thumbnail(url=attributes['posterImage']['small'])
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value or 'Not specified.', inline=inline)
             await ctx.send(embed=embed)

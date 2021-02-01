@@ -1,9 +1,9 @@
+# Folders
 jdk-11/
 .vscode/
 __pycache__/
 data/logs/
 
+# Files
 config.toml
 cogs/music/Music.url
-cogs/economics/
-cogs/leveling/

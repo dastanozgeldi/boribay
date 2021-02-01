@@ -1,15 +1,16 @@
-import json
-import html
-import discord
 import asyncio
+import html
+import json
 import random
 import textwrap
-from time import time
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from time import time
+
+import discord
 from discord.ext import commands
-from utils.CustomCog import Cog
+from PIL import Image, ImageDraw, ImageFont
 from utils import Paginators
+from utils.Cog import Cog
 
 
 class Games(Cog):
@@ -39,12 +40,20 @@ class Games(Cog):
         return ans == q['correct_answer']
 
     @commands.command()
-    async def trivia(self, ctx, difficulty: str = 'medium'):
+    async def coinflip(self, ctx):
+        """A very simple coinflip game! Chances are:
+        **head → 47.5%**, **tail → 47.5%** and **side → 5%**"""
+        if (choice := random.choices(population=['head', 'tail', 'side'], weights=[0.475, 0.475, 0.05], k=1)[0]) == 'side':
+            return await ctx.send('You\'ve got an amazing luck since the coin was flipped to the side!')
+        await ctx.send('Coin flipped to the `%s`' % choice)
+
+    @commands.command()
+    async def trivia(self, ctx, difficulty: str.lower = 'medium'):
         """Trivia game! Has 3 difficulties: `easy`, `medium` and `hard`.
         Args: difficulty (optional): Questions difficulty in the game. Defaults to "easy".
         Returns: A correct answer."""
         try:
-            q = await self.question(difficulty.lower())
+            q = await self.question(difficulty)
         except ValueError:
             return await ctx.send('Invalid difficulty specified.')
         if await self.answer(ctx, q):
@@ -69,11 +78,10 @@ class Games(Cog):
             canvas.multiline_text((5, 5), text, font=font)
             base.save(buffer, 'png', optimize=True)
         buffer.seek(0)
+        embed = self.bot.embed.default(ctx, title='Typeracer', description='see who is fastest at typing.')
         race = await ctx.send(
             file=discord.File(buffer, 'typeracer.png'),
-            embed=self.bot.embed.default(
-                ctx, title='Typeracer', description='see who is fastest at typing.'
-            ).set_image(url='attachment://typeracer.png'))
+            embed=embed.set_image(url='attachment://typeracer.png'))
         start = time()
         try:
             msg = await self.bot.wait_for('message', check=lambda m: m.content == to_wrap, timeout=60.0)
@@ -81,7 +89,8 @@ class Games(Cog):
                 return
             end = time()
             final = round(end - start, 2)
-            await ctx.send(embed=self.bot.embed(
+            await ctx.send(embed=self.bot.embed.default(
+                ctx,
                 title=f'{msg.author.display_name} won!',
                 description=f'**Done in**: {final}s\n**Average WPM**: {round(len(to_wrap.split()) * (60.0 / final))} words\n**Original text:**```diff\n+ {to_wrap}```',
             ))
@@ -97,12 +106,13 @@ class Games(Cog):
         There are three different reactions, depending on your choice
         random will find did you win, lose or made draw."""
         rps_dict = {
-            "🪨": {"🪨": "draw", "📄": "lose", "✂": "win"},
-            "📄": {"🪨": "win", "📄": "draw", "✂": "lose"},
-            "✂": {"🪨": "lose", "📄": "win", "✂": "draw"}
+            '🪨': {'🪨': 'draw', '📄': 'lose', '✂': 'win'},
+            '📄': {'🪨': 'win', '📄': 'draw', '✂': 'lose'},
+            '✂': {'🪨': 'lose', '📄': 'win', '✂': 'draw'}
         }
         choice = random.choice([*rps_dict.keys()])
-        msg = await ctx.send(embed=self.bot.embed(description="**Choose one 👇**").set_footer(text="10 seconds left⏰"))
+        embed = self.bot.embed.default(ctx, description='**Choose one 👇**')
+        msg = await ctx.send(embed=embed.set_footer(text='10 seconds left⏰'))
         for r in rps_dict.keys():
             await msg.add_reaction(r)
         try:
@@ -112,24 +122,21 @@ class Games(Cog):
                 check=lambda re, us: us == ctx.author and str(re) in rps_dict.keys() and re.message.id == msg.id
             )
             game = rps_dict.get(str(r.emoji))
-            await msg.edit(embed=self.bot.embed(description=f'''Result: **{game[choice].upper()}**\nMy choice: **{choice}**\nYour choice: **{str(r.emoji)}**'''))
+            await msg.edit(embed=self.bot.embed.default(ctx, description=f'''Result: **{game[choice].upper()}**\nMy choice: **{choice}**\nYour choice: **{str(r.emoji)}**'''))
         except asyncio.TimeoutError:
             await msg.delete()
 
-    @commands.command(aliases=['slots', 'bet'])
+    @commands.command(aliases=['slots'])
     async def slot(self, ctx):
         """Play the game on a slot machine!"""
-        emojis = '🍎🍊🍐🍋🍉🍇🍓🍒'
-        a = random.choice(emojis)
-        b = random.choice(emojis)
-        c = random.choice(emojis)
-        slotmachine = f'{a} | {b} | {c}\n{ctx.author.display_name},'
+        a, b, c = random.choices('🍎🍊🍐🍋🍉🍇🍓🍒', k=3)
+        text = f'{a} | {b} | {c}\n{ctx.author.display_name}, '
         if (a == b == c):
-            await ctx.send(f'{slotmachine} All 3 match, you are a big winner! 🎉')
+            await ctx.send(f'{text}All match, we have a big winner! 🎉')
         elif (a == b) or (a == c) or (b == c):
-            await ctx.send(f'{slotmachine} 2 match, you won! 🎉')
+            await ctx.send(f'{text}2 match, you won! 🎉')
         else:
-            await ctx.send(f'{slotmachine} No matches, you have to buy me a VPS 😳')
+            await ctx.send(f'{text}No matches, unlucky retard.')
 
 
 def setup(bot):

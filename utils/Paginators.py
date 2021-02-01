@@ -1,7 +1,7 @@
-import discord
 import asyncio
 from discord.ext import menus
-from utils.CustomEmbed import Embed
+from discord import HTTPException
+from utils.Exceptions import NoReactionsPassed
 
 
 class TodoPageSource(menus.ListPageSource):
@@ -11,9 +11,9 @@ class TodoPageSource(menus.ListPageSource):
 
 	async def format_page(self, menu, entries):
 		offset = menu.current_page * self.per_page + 1
-		embed = self.ctx.bot.embed()
+		embed = self.ctx.bot.embed.default(self.ctx)
 		if len(entries) < 1:
-			embed.description = '''Currently you have no to-do\'s.\nTo set them use **todo add** command.'''
+			embed.description = 'Currently you have no to-do\'s.\nTo set them use **todo add** command.'
 		else:
 			maximum = self.get_max_pages()
 			embed.set_author(
@@ -36,19 +36,8 @@ class MyPages(menus.MenuPages):
 				await self.message.clear_reactions()
 			else:
 				await self.message.delete()
-		except discord.HTTPException:
+		except HTTPException:
 			pass
-
-
-class SQLListPageSource(menus.ListPageSource):
-	def __init__(self, data, *, per_page=5):
-		super().__init__(data, per_page=per_page)
-
-	async def format_page(self, menu, page):
-		embed = Embed(
-			description='```py\n' + '\n'.join(page) + '\n```'
-		).set_author(name=f'Page {menu.current_page + 1} / {self.get_max_pages()}')
-		return embed
 
 
 class EmbedPageSource(menus.ListPageSource):
@@ -61,14 +50,10 @@ class EmbedPageSource(menus.ListPageSource):
 		return embed
 
 
-class NoReactionsPassed(discord.ext.commands.CommandInvokeError):
-	pass
-
-
 class Poll:
 	def __init__(self, entries, title=None, footer=None, color=0x36393E, timeout=30.0, return_index=False):
 		self.entries = entries
-		self.title = title or "Untitled"
+		self.title = title or 'Untitled'
 		self.footer = footer
 		self.color = color
 		self.timeout = timeout
@@ -76,17 +61,17 @@ class Poll:
 
 	async def pagination(self, ctx, loc=None, user=None):
 		if len(self.entries) < 2:
-			raise ValueError("Not enough data to create a poll.")
+			raise ValueError('Not enough data to create a poll.')
 		elif len(self.entries) > 10:
-			raise ValueError("Maximum limit 10 has reached.")
-		e = ctx.bot.embed(title=self.title, description="", color=self.color)
+			raise ValueError('Maximum limit 10 has reached.')
+		e = ctx.bot.embed.default(ctx, title=self.title, description="", color=self.color)
 		self.emojis = []
 		for i, c in enumerate(self.entries):
 			if i < 9:
-				self.emojis.append(f"{i + 1}\u20E3")
+				self.emojis.append(f'{i + 1}\u20E3')
 			else:
-				self.emojis.append("\U0001F51F")
-			e.description = f"{e.description}{self.emojis[i]} {c}\n"
+				self.emojis.append('\U0001F51F')
+			e.description = f'{e.description}{self.emojis[i]} {c}\n'
 
 		if self.footer:
 			e.set_footer(text=self.footer)
@@ -117,10 +102,10 @@ class Poll:
 			return True
 
 		try:
-			r, u = await ctx.bot.wait_for("reaction_add", check=check, timeout=self.timeout)
+			r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=self.timeout)
 		except asyncio.TimeoutError:
 			await self.stop(mes)
-			raise NoReactionsPassed("You didn't choose anything.")
+			raise NoReactionsPassed('You didn\'t choose anything.')
 
 		control = self.entries[self.emojis.index(str(r))]
 		await self.stop(mes)
@@ -132,5 +117,5 @@ class Poll:
 	async def stop(self, msg):
 		try:
 			await msg.delete()
-		except discord.HTTPException:
+		except HTTPException:
 			pass

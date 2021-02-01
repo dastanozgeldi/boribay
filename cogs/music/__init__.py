@@ -3,7 +3,7 @@ import typing as t
 import discord
 import wavelink
 from discord.ext import commands
-from .music_excs import (
+from utils.Exceptions import (
     AlreadyConnectedToChannel,
     NoVoiceChannel,
     QueueIsEmpty,
@@ -11,8 +11,8 @@ from .music_excs import (
     NoMoreTracks,
     NoPreviousTracks
 )
-from .music_util import Player
-from utils.CustomCog import Cog
+from .music import Player
+from utils.Cog import Cog
 
 
 class Music(Cog, wavelink.WavelinkMixin):
@@ -26,7 +26,7 @@ class Music(Cog, wavelink.WavelinkMixin):
         self.wavelink = wavelink.Client(bot=bot)
         self.bot.loop.create_task(self.start_nodes())
 
-    @commands.Cog.listener()
+    @Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if not member.bot and after.channel is None:
             if not [m for m in before.channel.members if not m.bot]:
@@ -141,8 +141,8 @@ class Music(Cog, wavelink.WavelinkMixin):
         await player.stop()
         await ctx.send('Playback successfully stopped.')
 
-    @commands.command(name='skip', aliases=['next'])
-    async def next_command(self, ctx):
+    @commands.command(aliases=['next'])
+    async def skip(self, ctx):
         """Next command. Makes bot play next song in the queue.
         Returns: Stop Command: Stops music if no songs are incoming."""
         player = self.get_player(ctx)
@@ -151,7 +151,7 @@ class Music(Cog, wavelink.WavelinkMixin):
         await player.stop()
         await ctx.send('Playing next track in queue...')
 
-    @next_command.error
+    @skip.error
     async def next_command_error(self, ctx, exc):
         if isinstance(exc, QueueIsEmpty):
             await ctx.send('Next track could not be executed as the queue is currently empty.')

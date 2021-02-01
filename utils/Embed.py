@@ -3,9 +3,8 @@ import datetime
 
 
 class Embed(discord.Embed):
-	def __init__(self, color=0x36393E, timestamp=None, **kwargs):
+	def __init__(self, timestamp=None, **kwargs):
 		super(Embed, self).__init__(
-			color=color,
 			timestamp=timestamp or datetime.datetime.utcnow(),
 			**kwargs
 		)
@@ -13,9 +12,12 @@ class Embed(discord.Embed):
 	@classmethod
 	def default(cls, ctx, **kwargs):
 		instance = cls(**kwargs)
-		instance.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
+		try:
+			instance.color = ctx.bot.config['embed_colors'][ctx.guild.id]
+		except (AttributeError, KeyError):
+			instance.color = 0x36393e
 		return instance
 
 	@classmethod
-	def error(cls, color=0xe74c3c, **kwargs):
+	def error(cls, color=0xff0000, **kwargs):
 		return cls(color=color, **kwargs)
