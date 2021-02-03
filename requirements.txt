@@ -1,5 +1,6 @@
 aiohttp==3.6.2
 async-cse==0.3.0
+asyncpg==0.21.0
 async-timeout==3.0.1
 DateTime==4.3
 discord-ext-ipc @ git+git://github.com/ext-creators/discord-ext-ipc@2aaaa7b75bae0cb78888dc022585493a82c7f267
