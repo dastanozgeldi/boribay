@@ -9,7 +9,7 @@ from time import time
 import discord
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
-from utils import Paginators
+from utils.Paginators import Poll
 from utils.Cog import Cog
 
 
@@ -35,8 +35,7 @@ class Games(Cog):
     async def answer(self, ctx, q):
         """Takes a question parameter."""
         entr = q['incorrect_answers'] + [q['correct_answer']]
-        entr = random.sample(entr, len(entr))
-        ans = await Paginators.Poll(title=q['question'], entries=entr).pagination(ctx)
+        ans = await Poll(title=q['question'], entries=random.sample(entr, len(entr))).pagination(ctx)
         return ans == q['correct_answer']
 
     @commands.command()
@@ -57,7 +56,7 @@ class Games(Cog):
         except ValueError:
             return await ctx.send('Invalid difficulty specified.')
         if await self.answer(ctx, q):
-            await ctx.send(f'**{ctx.author}** answered correct.')
+            await ctx.send(f'**{ctx.author}** answered correct.\n The answer was: `{q["correct_answer"]}`.')
         else:
             await ctx.send(f'**{ctx.author}** was a bit wrong\nThe answer is: `{q["correct_answer"]}`.')
 
@@ -92,7 +91,9 @@ class Games(Cog):
             await ctx.send(embed=self.bot.embed.default(
                 ctx,
                 title=f'{msg.author.display_name} won!',
-                description=f'**Done in**: {final}s\n**Average WPM**: {round(len(to_wrap.split()) * (60.0 / final))} words\n**Original text:**```diff\n+ {to_wrap}```',
+                description=f'**Done in**: {final}s\n'
+                f'**Average WPM**: {round(len(to_wrap.split()) * (60.0 / final))} words\n'
+                f'**Original text:**```diff\n+ {to_wrap}```',
             ))
         except asyncio.TimeoutError:
             try:

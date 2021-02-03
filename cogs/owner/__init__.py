@@ -1,5 +1,4 @@
 from typing import Optional
-
 from discord.ext import commands
 from jishaku.codeblocks import codeblock_converter
 from utils.Cog import Cog
@@ -17,6 +16,14 @@ class Owner(Cog, command_attrs={'hidden': True}):
 
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)
+
+    async def basic_cleanup(self, ctx, search):
+        count = 0
+        async for msg in ctx.history(limit=search, before=ctx.message):
+            if msg.author == ctx.me:
+                await msg.delete()
+                count += 1
+        return {str(self.bot.user): count}
 
     @commands.group(invoke_without_command=True)
     async def dev(self, ctx):
@@ -75,6 +82,18 @@ class Owner(Cog, command_attrs={'hidden': True}):
             await ctx.send(f'{e.__class__.__name__}: {e}')
         else:
             await ctx.message.add_reaction('🔄')
+
+    @dev.command()
+    async def cleanup(self, ctx, search=100):
+        """Cleans up the bot's messages from the channel."""
+        spammers = await self.basic_cleanup(ctx, search)
+        deleted = sum(spammers.values())
+        messages = [f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
+        if deleted:
+            spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
+            messages.extend(f'**{author}**: {count}' for author, count in spammers)
+
+        await ctx.send('\n'.join(messages))
 
 
 def setup(bot):

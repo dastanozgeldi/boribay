@@ -4,6 +4,14 @@ from discord import Forbidden, Message, NotFound
 from discord.ext import commands
 from utils import Exceptions
 from utils.Cog import Cog
+from utils.Exceptions import (
+    AlreadyConnectedToChannel,
+    NoVoiceChannel,
+    QueueIsEmpty,
+    PlayerIsAlreadyPaused,
+    NoMoreTracks,
+    NoPreviousTracks
+)
 
 
 class ErrorHandler(Cog, command_attrs={'hidden': True}):
@@ -65,6 +73,24 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
              commands.RoleNotFound)
         ):
             return await self.send(ctx, embed=self.bot.embed.error(title='⚠ Wait...', description=str(error)))
+
+        elif isinstance(error, AlreadyConnectedToChannel):
+            return await self.send(ctx, embed=self.bot.embed.error(description='Already connected to a voice channel.'))
+
+        elif isinstance(error, NoVoiceChannel):
+            return await self.send(ctx, embed=self.bot.embed.error(description='No suitable voice channel was provided.'))
+
+        elif isinstance(error, QueueIsEmpty):
+            return await self.send(ctx, embed=self.bot.embed.error(description='No songs to play as the queue is empty.'))
+
+        elif isinstance(error, PlayerIsAlreadyPaused):
+            return await self.send(ctx, embed=self.bot.embed.error(description='Playback is already paused.'))
+
+        elif isinstance(error, NoMoreTracks):
+            return await self.send(ctx, embed=self.bot.embed.error(description='There are no more tracks in the queue.'))
+
+        elif isinstance(error, NoPreviousTracks):
+            return await self.send(ctx, embed=self.bot.embed.error(description='There are no previous tracks in the queue.'))
 
         elif isinstance(error, commands.PartialEmojiConversionFailure):
             if ctx.command.name == 'emoji':

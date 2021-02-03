@@ -57,6 +57,11 @@ class Miscellaneous(Cog):
             embed.add_field(name=n, value=v)
         await msg.edit(embed=embed)
 
+    @commands.command(aliases=['src'])
+    async def source(self, ctx):
+        """Sends a GitHub source link."""
+        await ctx.send('AGPL-3.0 ' + self.bot.github_url)
+
 
 def setup(bot):
     bot.add_cog(Miscellaneous(bot))

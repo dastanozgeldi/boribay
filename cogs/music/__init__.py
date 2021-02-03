@@ -4,11 +4,8 @@ import discord
 import wavelink
 from discord.ext import commands
 from utils.Exceptions import (
-    AlreadyConnectedToChannel,
-    NoVoiceChannel,
     QueueIsEmpty,
     PlayerIsAlreadyPaused,
-    NoMoreTracks,
     NoPreviousTracks
 )
 from .music import Player
@@ -34,17 +31,17 @@ class Music(Cog, wavelink.WavelinkMixin):
 
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node):
-        self.bot.log.info(f'Wavelink node `{node.identifier}` ready.')
+        self.bot.log.info(f'Wavelink node -> `{node.identifier}`')
 
-    @wavelink.WavelinkMixin.listener("on_track_stuck")
-    @wavelink.WavelinkMixin.listener("on_track_end")
-    @wavelink.WavelinkMixin.listener("on_track_exception")
+    @wavelink.WavelinkMixin.listener('on_track_stuck')
+    @wavelink.WavelinkMixin.listener('on_track_end')
+    @wavelink.WavelinkMixin.listener('on_track_exception')
     async def on_player_stop(self, node, payload):
         await payload.player.advance()
 
     async def cog_check(self, ctx):
         if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("Music commands are not available in DMs.")
+            await ctx.send('Music commands are not available in DMs.')
             return False
         return True
 
@@ -76,21 +73,14 @@ class Music(Cog, wavelink.WavelinkMixin):
         Args: channel (optional): Channel that you want bot to join to."""
         player = self.get_player(ctx)
         channel = await player.connect(ctx, channel)
-        await ctx.send(f"Connected to `{channel.name}`.")
-
-    @connect.error
-    async def connect_error(self, ctx, exc):
-        if isinstance(exc, AlreadyConnectedToChannel):
-            await ctx.send("Already connected to a voice channel.")
-        elif isinstance(exc, NoVoiceChannel):
-            await ctx.send("No suitable voice channel was provided.")
+        await ctx.send(f'Connected to `{channel.name}`.')
 
     @commands.command(aliases=['leave'])
     async def disconnect(self, ctx):
         """Disconnect command. Makes bot leave the current channel."""
         player = self.get_player(ctx)
         await player.teardown()
-        await ctx.send("Disconnected from the current channel.")
+        await ctx.message.add_reaction('✅')
 
     @commands.command()
     async def play(self, ctx, *, query: t.Optional[str]):
@@ -110,13 +100,8 @@ class Music(Cog, wavelink.WavelinkMixin):
         else:
             query = query.strip("<>")
             if not re.match(self.bot.regex['URL_REGEX'], query):
-                query = f"ytsearch:{query}"
+                query = f'ytsearch:{query}'
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
-
-    @play.error
-    async def play_error(self, ctx, exc):
-        if isinstance(exc, QueueIsEmpty):
-            await ctx.send('No songs to play as the queue is empty.')
 
     @commands.command()
     async def pause(self, ctx):
@@ -127,11 +112,6 @@ class Music(Cog, wavelink.WavelinkMixin):
             raise PlayerIsAlreadyPaused
         await player.set_pause(True)
         await ctx.send('Playback successfully paused.')
-
-    @pause.error
-    async def pause_error(self, ctx, exc):
-        if isinstance(exc, PlayerIsAlreadyPaused):
-            await ctx.send('Playback is already paused.')
 
     @commands.command()
     async def stop(self, ctx):
@@ -151,13 +131,6 @@ class Music(Cog, wavelink.WavelinkMixin):
         await player.stop()
         await ctx.send('Playing next track in queue...')
 
-    @skip.error
-    async def next_command_error(self, ctx, exc):
-        if isinstance(exc, QueueIsEmpty):
-            await ctx.send('Next track could not be executed as the queue is currently empty.')
-        elif isinstance(exc, NoMoreTracks):
-            await ctx.send('There are no more tracks in the queue.')
-
     @commands.command()
     async def previous(self, ctx):
         """Previous command. Makes bot play previous track in the queue.
@@ -168,14 +141,6 @@ class Music(Cog, wavelink.WavelinkMixin):
         player.queue.position -= 2
         await player.stop()
         await ctx.send('Playing previous track in queue...')
-
-    @previous.error
-    async def previous_error(self, ctx, exc):
-        if isinstance(exc, QueueIsEmpty):
-            await ctx.send('Previous track could not be executed as the queue is currently empty.')
-
-        elif isinstance(exc, NoPreviousTracks):
-            await ctx.send('There are no previous tracks in the queue.')
 
     @commands.command(aliases=['q'])
     async def queue(self, ctx, show: t.Optional[int] = 10):
@@ -193,7 +158,7 @@ class Music(Cog, wavelink.WavelinkMixin):
             title='Queue',
             description=f'Showing up to next {show} tracks'
         ).set_author(name='Query Results')
-        embed.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f'Requested by {ctx.author}', icon_url=ctx.author.avatar_url)
         embed.add_field(name='Currently playing...', value=player.queue.current_track.title, inline=False)
         if upcoming := player.queue.upcoming:
             embed.add_field(
@@ -202,11 +167,6 @@ class Music(Cog, wavelink.WavelinkMixin):
                 inline=False
             )
         await ctx.send(embed=embed)
-
-    @queue.error
-    async def queue_error(self, ctx, exc):
-        if isinstance(exc, QueueIsEmpty):
-            await ctx.send('The queue is currently empty.')
 
 
 def setup(bot):

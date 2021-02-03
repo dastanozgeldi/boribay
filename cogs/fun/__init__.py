@@ -21,7 +21,7 @@ class Fun(Cog):
         Perfect feature when you want to use Boribay but don't even know
         what to call."""
         denied = ['random', 'jishaku', 'dev']
-        command = random.choice([cmd.name for cmd in self.bot.commands if len(cmd.signature.split()) <= 1 and cmd.name not in denied])
+        command = random.choice([cmd.name for cmd in self.bot.commands if len(cmd.signature.split()) == 0 and cmd.name not in denied])
         cmd = self.bot.get_command(command)
         await ctx.send('Invoking command `%s`...' % command)
         await cmd(ctx)

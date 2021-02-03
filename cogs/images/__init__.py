@@ -42,6 +42,15 @@ class Images(Cog):
         )
         await ctx.send(file=file)
 
+    @commands.command()
+    async def wanted(self, ctx, image: Optional[str]):
+        async with ctx.timer:
+            image = await make_image(ctx, image)
+            buffer = BytesIO(image)
+            f = partial(Manip.wanted, buffer)
+            buffer = await self.bot.loop.run_in_executor(None, f)
+            await ctx.send(file=discord.File(fp=buffer, filename='wanted.png'))
+
     @commands.command(name='f')
     async def press_f(self, ctx, image: Optional[str]):
         """'Press F to pay respect' meme maker. F your mate using this command.
