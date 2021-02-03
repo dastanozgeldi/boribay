@@ -1,7 +1,7 @@
 from discord import File
 import textwrap
 from io import BytesIO
-from wand.image import Image as WI
+from wand.image import Image as WI, Color
 from PIL import Image, ImageDraw, ImageFont
 from utils.Converters import ImageConverter, ImageURLConverter
 
@@ -55,6 +55,16 @@ async def make_image(ctx, argument: str):
 
 
 class Manip:
+
+    @staticmethod  # (73, 185) | (262, 390)
+    def wanted(image: BytesIO):
+        image = Image.open(image).resize((189, 205))
+        with Image.open('./data/layouts/wanted.png') as img:
+            img.paste(image, (73, 185))
+            buffer = BytesIO()
+            img.save(buffer, 'png')
+        buffer.seek(0)
+        return buffer
 
     @staticmethod
     def clyde(txt: str):

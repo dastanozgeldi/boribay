@@ -6,20 +6,18 @@ import aiohttp
 import asyncpg
 from time import perf_counter
 from utils.Embed import Embed
-from discord.ext import commands, ipc
+from discord.ext import commands
 from utils.Context import Context
 from datetime import datetime, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient
 from dbl import DBLClient
 
 
-async def get_prefix(bot: commands.Bot, message: discord.Message):
-	if await bot.is_owner(message.author) and message.content.startswith('dev'):
-		prefix = ''
-	elif message.guild is None:
+async def get_prefix(bot, message):
+	if not message.guild:
 		prefix = '.'
 	else:
-		prefix = await bot.pool.fetchval('SELECT prefix FROM guild_config WHERE guild_id = $1', message.guild.id)
+		prefix = bot.config['prefixes'][message.guild.id]
 	return commands.when_mentioned_or(prefix)(bot, message)
 
 
@@ -47,12 +45,6 @@ class Bot(commands.Bot):
 			host=self.config['database']['host'],
 			database=self.config['database']['database']
 		))
-		self.ipc = ipc.Server(
-			bot=self,
-			host=self.config['ipc']['host'],
-			port=self.config['ipc']['port'],
-			secret_key=self.config['ipc']['secret_key']
-		)
 		self.session = aiohttp.ClientSession(loop=self.loop)
 		self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
 		self.owner_url = 'http://discord.com/users/682950658671902730'
@@ -83,6 +75,7 @@ class Bot(commands.Bot):
 
 	async def close(self):
 		await super().close()
+		await self.dblpy.close()
 		await self.session.close()
 
 	async def get_context(self, message, *, cls=Context):
@@ -91,6 +84,8 @@ class Bot(commands.Bot):
 	async def on_message(self, message):
 		if not self.is_ready():
 			return
+		if message.channel.id == 789791676632662017:
+			open('news.md', 'w').write(message.content)
 		if re.fullmatch(f'<@(!)?{self.user.id}>', message.content):
 			ctx = await self.get_context(message)
 			cmd = self.get_command('prefix')

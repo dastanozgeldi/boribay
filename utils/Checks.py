@@ -1,5 +1,6 @@
 """check_guild_perms, is_mod
-Stolen from R. Danny.
+are stolen from R. Danny.
+
 Thanks Danny for this awesome piece of code!
 
 The MIT License (MIT)
@@ -34,6 +35,6 @@ def has_voted():
             return True
         else:
             raise commands.CheckFailure('This message means that you didn\'t vote last 12 hours.\n'
-                                        f'Fix it clicking **[here]({ctx.bot.topgg_url})♥**')
+                                        f'Fix it clicking **[here!]({ctx.bot.topgg_url})**')
             return False
     return commands.check(predicate)

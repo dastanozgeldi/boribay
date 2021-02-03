@@ -5,6 +5,9 @@ from utils.Exceptions import NoReactionsPassed
 
 
 class TodoPageSource(menus.ListPageSource):
+	"""TodoPageSource, a special paginator created for the todo commands parent.
+	Takes the list of data, enumerates, then paginates through."""
+
 	def __init__(self, ctx, data):
 		super().__init__(data, per_page=10)
 		self.ctx = ctx
@@ -13,7 +16,8 @@ class TodoPageSource(menus.ListPageSource):
 		offset = menu.current_page * self.per_page + 1
 		embed = self.ctx.bot.embed.default(self.ctx)
 		if len(entries) < 1:
-			embed.description = 'Currently you have no to-do\'s.\nTo set them use **todo add** command.'
+			embed.description = 'Currently, you have no to-do\'s.\n'
+			'To set them use **todo add** command.'
 		else:
 			maximum = self.get_max_pages()
 			embed.set_author(
@@ -25,7 +29,9 @@ class TodoPageSource(menus.ListPageSource):
 
 
 class MyPages(menus.MenuPages):
-	'''My own paginator class.'''
+	"""My own paginator implementation.
+	Subclasses menus.MenuPages. Takes page-source as a main parameter.
+	Tries to delete a message when timeout comes, returns if any exceptions."""
 
 	def __init__(self, source, **kwargs):
 		super().__init__(source=source, check_embeds=True, **kwargs)
@@ -41,6 +47,8 @@ class MyPages(menus.MenuPages):
 
 
 class EmbedPageSource(menus.ListPageSource):
+	"""EmbedPageSource, a paginator that takes a list of embeds."""
+
 	def __init__(self, data):
 		super().__init__(data, per_page=1)
 
@@ -64,7 +72,7 @@ class Poll:
 			raise ValueError('Not enough data to create a poll.')
 		elif len(self.entries) > 10:
 			raise ValueError('Maximum limit 10 has reached.')
-		e = ctx.bot.embed.default(ctx, title=self.title, description="", color=self.color)
+		e = ctx.bot.embed.default(ctx, title=self.title, color=self.color)
 		self.emojis = []
 		for i, c in enumerate(self.entries):
 			if i < 9:
