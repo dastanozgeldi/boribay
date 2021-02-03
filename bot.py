@@ -4,6 +4,7 @@ from logging.handlers import RotatingFileHandler
 from discord import AllowedMentions, Game, Intents
 from discord.flags import MemberCacheFlags
 from utils.Bot import Bot
+from discord.ext.ipc import Server
 
 logging.basicConfig(filename='./data/logs/discord.log', filemode='w', level=logging.INFO)
 intents = Intents.default()
@@ -16,6 +17,12 @@ bot = Bot(
     chunk_guilds_at_startup=False,
     member_cache_flags=MemberCacheFlags.from_intents(intents),
     allowed_mentions=AllowedMentions(everyone=False, roles=False, replied_user=False),
+)
+bot.ipc = Server(
+    bot=bot,
+    host=bot.config['ipc']['host'],
+    port=bot.config['ipc']['port'],
+    secret_key=bot.config['ipc']['secret_key']
 )
 bot.log = logging.getLogger(__name__)
 handler = RotatingFileHandler('./data/logs/discord.log', maxBytes=5242880, backupCount=1)
@@ -35,11 +42,6 @@ async def on_ready():
     bot.log.info(f'Logged in as -> {bot.user.name}')
     bot.log.info(f'Client ID -> {bot.user.id}')
     bot.log.info(f'Guild Count -> {len(bot.guilds)}')
-
-
-@bot.event
-async def on_ipc_ready():
-    bot.log.info('IPC ready to go.')
 
 
 @bot.ipc.route()
