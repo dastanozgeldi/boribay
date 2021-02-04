@@ -21,7 +21,7 @@ class GroupHelp(menus.ListPageSource):
 		for cmd in cmds:
 			signature = f'{self.prefix}{cmd.qualified_name} {cmd.signature}'
 			embed.add_field(name=signature, value=cmd.help.format(prefix=self.prefix), inline=False)
-		if maximum := self.get_max_pages() > 1:
+		if (maximum := self.get_max_pages()) > 1:
 			embed.set_author(name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
 		embed.set_footer(text=f'{self.prefix}help to see all commands list.')
 		return embed
@@ -40,8 +40,7 @@ class MainHelp(menus.ListPageSource):
 			self.ctx,
 			description=f'{self.ctx.prefix}help [Category | group] to get module help\n'
 			f'[Invite]({self.ctx.bot.invite_url}) | [Support]({self.ctx.bot.support_url}) | [Source]({self.ctx.bot.github_url})'
-		)
-		embed.set_footer(text=f'{self.ctx.prefix}help <command> to get command help.')
+		).set_footer(text=f'{self.ctx.prefix}help <command> to get command help.')
 		embed.set_author(
 			name=f'Page {menu.current_page + 1} of {self.get_max_pages()} ({self.count} categories)',
 			icon_url=self.ctx.author.avatar_url_as(size=64)
