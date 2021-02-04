@@ -1,7 +1,7 @@
 from discord import File
 import textwrap
 from io import BytesIO
-from wand.image import Image as WI, Color
+from wand.image import Image as WI
 from PIL import Image, ImageDraw, ImageFont
 from utils.Converters import ImageConverter, ImageURLConverter
 
@@ -47,7 +47,7 @@ async def make_image(ctx, argument: str):
             image = await layout.read()
             return image
         else:
-            layout = ctx.author.avatar_url_as(static_format='png', format='png', size=128)
+            layout = ctx.author.avatar_url_as(static_format='png', format='png', size=256)
             image = await layout.read()
             return image
     else:
@@ -56,7 +56,7 @@ async def make_image(ctx, argument: str):
 
 class Manip:
 
-    @staticmethod  # (73, 185) | (262, 390)
+    @staticmethod
     def wanted(image: BytesIO):
         image = Image.open(image).resize((189, 205))
         with Image.open('./data/layouts/wanted.png') as img:
@@ -121,8 +121,6 @@ class Manip:
                 degree = 360
             elif int(degree) < -360:
                 degree = -360
-            else:
-                degree = degree
             img.swirl(degree=degree)
             buffer = BytesIO()
             img.save(file=buffer)
