@@ -14,9 +14,8 @@ class Events(Cog, command_attrs=dict(hidden=True)):
 
     @Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if member.guild.id == 765902232679481394:
-            f = await welcome_card(member)
-            await self.bot.get_channel(789161436499935242).send(file=f)
+        if (wc := await self.bot.pool.fetchval('SELECT welcome_channel FROM guild_config WHERE guild_id = $1', member.guild.id)):
+            await member.guild.get_channel(wc).send(file=await welcome_card(member))
 
     @Cog.listener()
     async def on_guild_unavailable(self, guild: discord.Guild):
