@@ -1,8 +1,8 @@
 # Folders
-jdk-11/
 .vscode/
-__pycache__/
 data/logs/
+__pycache__/
+website/
 
 # Files
 config.toml
