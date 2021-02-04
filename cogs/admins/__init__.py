@@ -1,10 +1,8 @@
-import discord
-import asyncio
 from typing import Optional
-from utils.Cog import Cog
+import discord
 from discord.ext import commands
-from utils.Converters import TimeConverter
 from utils.Checks import is_mod
+from utils.Cog import Cog
 
 
 class Management(Cog):
@@ -17,43 +15,8 @@ class Management(Cog):
         self.name = '🛡 Management'
 
     @commands.command()
-    @commands.has_guild_permissions(administrator=True)
-    async def addlog(self, ctx, message: str, channel: Optional[discord.TextChannel]):
-        """Adds log channel with log message to the DB. When someone joins to
-        your guild, that channel will be notified."""
-        channel = channel or ctx.channel
-        await self.bot.pool.execute('UPDATE guild_config SET member_log = $1, member_log_message = $2 WHERE guild_id = $3', channel.id, message, ctx.guild.id)
-        await ctx.message.add_reaction('✅')
-
-    @commands.command(aliases=['block'])
     @is_mod()
-    async def mute(self, ctx, member: discord.Member, time: Optional[TimeConverter]):
-        """Mutes a member for time you specify (role 'Muted' required).
-        Example: **mute Dosek 1d2h3m4s**
-        Args: member (discord.Member): a member you want to mute.
-        time (int, optional): time a user going to be muted. Defaults to None."""
-        role = discord.utils.get(ctx.guild.roles, name='Muted')
-        await member.add_roles(role)
-        await ctx.send(f'Muted **{member}** for **{time}s**' if time else f'Muted **{member}**')
-        if time:
-            if not role:
-                return
-            await asyncio.sleep(time)
-            await ctx.send(f'Time\'s up! Unmuting {member}...')
-            await member.remove_roles(role)
-
-    @commands.command(aliases=['unblock'])
-    @is_mod()
-    async def unmute(self, ctx, member: discord.Member):
-        """Unmutes a user (role 'Muted' required).
-        Args: member (discord.Member): already muted user."""
-        role = discord.utils.get(ctx.guild.roles, name="Muted")
-        await member.remove_roles(role)
-        await ctx.message.add_reaction('✅')
-
-    @commands.command()
-    @is_mod()
-    async def nick(self, ctx, member: discord.Member, *, new_nick: str):
+    async def changenick(self, ctx, member: discord.Member, *, new_nick: str):
         """Changes member's nickname in the server.
         Args: member (discord.Member): a member whose nickname you wanna change.
         new_nick (str): a new nickname for the member you specified."""
@@ -93,17 +56,17 @@ class Management(Cog):
 
     @commands.command(aliases=['clear'])
     @is_mod()
-    async def purge(self, ctx, amount: int = 2):
+    async def purge(self, ctx, amount: Optional[int] = 2):
         """Purges messages of a given amount. Limit is 100.
-        Args: amount (int, optional): amount of messages to clear. Defaults to 2"""
+        Args: amount (Optional): amount of messages to clear. Defaults to 2,"""
         if amount > 100:
             return await ctx.send('That is too big amount. The maximum is 100')
         await ctx.channel.purge(limit=amount)
 
-    @commands.command()
+    @commands.command(aliases=['add_category'])
     @is_mod()
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def categoryadd(self, ctx, role: discord.Role, *, name: str):
+    async def addcategory(self, ctx, role: discord.Role, *, name: str):
         """Adds a category for the current guild.
         Args: role (discord.Role): role that will have access to a category.
         name (str): name of a category."""
@@ -114,10 +77,10 @@ class Management(Cog):
         await ctx.guild.create_category(name=name, overwrites=overwrites)
         await ctx.message.add_reaction('✅')
 
-    @commands.command()
+    @commands.command(aliases=['add_channel'])
     @is_mod()
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def channeladd(self, ctx, role: discord.Role, *, name: str):
+    async def addchannel(self, ctx, role: discord.Role, *, name: str):
         """Adds a channel for the current guild.
         Args: role (discord.Role): role that will have access to a category.
         name (str): name of a channel."""
@@ -129,20 +92,20 @@ class Management(Cog):
         await ctx.guild.create_text_channel(name=name, overwrites=overwrites)
         await ctx.message.add_reaction('✅')
 
-    @commands.command()
+    @commands.command(aliases=['removecategory'])
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def delcat(self, ctx, category: discord.CategoryChannel, *, reason: Optional[str]):
+    async def deletecategory(self, ctx, category: discord.CategoryChannel, *, reason: Optional[str]):
         """Deletes a specififed category.
         Args: category (discord.CategoryChannel): ID of a category.
         reason (str, optional): Reason why you are deleting a category. Defaults to None."""
         await category.delete(reason=reason)
         await ctx.message.add_reaction('✅')
 
-    @commands.command()
+    @commands.command(aliases=['removechannel'])
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def delchan(self, ctx, channel: discord.TextChannel, *, reason: Optional[str]):
+    async def deletechannel(self, ctx, channel: discord.TextChannel, *, reason: Optional[str]):
         """Deletes a specified channel.
         Args: channel (Optional[discord.TextChannel]): channel ID,
         deletes current channel if argument is not specified.
@@ -192,9 +155,9 @@ class Management(Cog):
         await user.add_roles(role)
         await ctx.message.add_reaction('✅')
 
-    @commands.command(aliases=['remove_role'])
+    @commands.command(aliases=['take_role'])
     @is_mod()
-    async def removerole(self, ctx, role: discord.Role, user: discord.Member):
+    async def takerole(self, ctx, role: discord.Role, user: discord.Member):
         """Removes a specified role from a user.
         Args: role (discord.Role): role you want to take.
         user (discord.Member): member you want to take a role from."""
