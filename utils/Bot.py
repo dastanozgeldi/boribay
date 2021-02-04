@@ -1,6 +1,5 @@
 import re
 import toml
-import discord
 import asyncio
 import aiohttp
 import asyncpg
@@ -69,9 +68,10 @@ class Bot(commands.Bot):
 
 	async def cache_guilds(self):
 		await self.wait_until_ready()
-		guild_config = await self.pool.fetch('SELECT guild_id, prefix, embed_color FROM guild_config')
+		guild_config = await self.pool.fetch('SELECT * FROM guild_config')
 		self.config['prefixes'] = {i['guild_id']: i['prefix'] for i in guild_config}
 		self.config['embed_colors'] = {i['guild_id']: i['embed_color'] for i in guild_config}
+		self.config['welcome_channel'] = {i['guild_id']: i['welcome_channel'] for i in guild_config}
 
 	async def close(self):
 		await super().close()
@@ -92,11 +92,11 @@ class Bot(commands.Bot):
 			await cmd(ctx)
 		await self.process_commands(message)
 
-	async def on_guild_join(self, guild: discord.Guild):
-		query = 'INSERT INTO guild_config(guild_id, prefix, member_log, member_log_message, mod_log) VALUES($1, $2, $3, $4, $5)'
-		await self.pool.execute(query, guild.id, '.', None, None, None)
+	async def on_guild_join(self, guild):
+		query = 'INSERT INTO guild_config(guild_id) VALUES($1)'
+		await self.pool.execute(query, guild.id)
 
-	async def on_guild_remove(self, guild: discord.Guild):
+	async def on_guild_remove(self, guild):
 		await self.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild.id)
 
 	async def on_message_edit(self, before, after):
