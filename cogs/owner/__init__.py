@@ -25,10 +25,15 @@ class Owner(Cog, command_attrs={'hidden': True}):
                 count += 1
         return {str(self.bot.user): count}
 
-    @commands.group(invoke_without_command=True)
+    @commands.group()
     async def dev(self, ctx):
         """The parent command."""
-        pass
+        await ctx.message.add_reaction('✅')
+
+    @dev.command()
+    async def nick(self, ctx, *, nick: str):
+        """Nickname changing command. Just a quick tool for the owner nothing more."""
+        await ctx.me.edit(nick=nick)
 
     @dev.command()
     async def leave(self, ctx, guild_id: Optional[int]):
@@ -38,7 +43,7 @@ class Owner(Cog, command_attrs={'hidden': True}):
 
     @dev.command(aliases=['logout', 'close'])
     async def shutdown(self, ctx):
-        await ctx.message.add_reaction('👌')
+        """A shutdown command is just an alternative for CTRL-C in the terminal."""
         await self.bot.close()
 
     @dev.command()
@@ -54,37 +59,34 @@ class Owner(Cog, command_attrs={'hidden': True}):
             await ctx.send(f'```py\n{table.render()}\n```')
 
     @dev.command(aliases=['l'])
-    async def load(self, ctx, *, module: str):
+    async def load(self, ctx, *, module: str.lower):
         """Loads a module."""
+        module = f'cogs.{module}' if module != 'jishaku' else module
         try:
             self.bot.load_extension(module)
         except commands.ExtensionError as e:
             await ctx.send(f'{e.__class__.__name__}: {e}')
-        else:
-            await ctx.message.add_reaction('\N{OK HAND SIGN}')
 
     @dev.command(aliases=['u'])
-    async def unload(self, ctx, *, module: str):
+    async def unload(self, ctx, *, module: str.lower):
         """Unloads a module."""
+        module = f'cogs.{module}' if module != 'jishaku' else module
         try:
             self.bot.unload_extension(module)
         except commands.ExtensionError as e:
             await ctx.send(f'{e.__class__.__name__}: {e}')
-        else:
-            await ctx.message.add_reaction('\N{OK HAND SIGN}')
 
     @dev.command(aliases=['r'])
-    async def reload(self, ctx, *, module: str):
+    async def reload(self, ctx, *, module: str.lower):
         """Reloads a module."""
+        module = f'cogs.{module}' if module != 'jishaku' else module
         try:
             self.bot.reload_extension(module)
         except commands.ExtensionError as e:
             await ctx.send(f'{e.__class__.__name__}: {e}')
-        else:
-            await ctx.message.add_reaction('🔄')
 
     @dev.command()
-    async def cleanup(self, ctx, search=100):
+    async def cleanup(self, ctx, search=1):
         """Cleans up the bot's messages from the channel."""
         spammers = await self.basic_cleanup(ctx, search)
         deleted = sum(spammers.values())

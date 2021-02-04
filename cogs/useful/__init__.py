@@ -94,11 +94,9 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         todos = await self.todos.find_one({'_id': ctx.author.id})
         if number:
             return await ctx.send(embed=self.bot.embed.default(ctx, description=f'{number}: {todos["todo"][number]}'))
-        elif number is None:
-            todo_list = todos['todo']
-            todo_list = todo_list[1:]
+        else:
             return await MyPages(
-                TodoPageSource(ctx, todo_list),
+                TodoPageSource(ctx, todos['todo'][1:]),
                 clear_reactions_after=True,
                 timeout=60.0
             ).start(ctx)
@@ -127,17 +125,21 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     async def switch(self, ctx, task_1: int, task_2: int):
         '''Lets user switch their tasks. It is useful when you got more important task.
         Ex: **todo switch 1 12** — switches places of 1st and 12th tasks.'''
-        todos = await self.todos.find_one({'_id': ctx.author.id})
-        todo_list = todos['todo']
-        await self.todos.update_one({'_id': ctx.author.id}, {'$set': {f'todo.{task_1}': todo_list[task_2], f'todo.{task_2}': todo_list[task_1]}})
+        todo_list = (await self.todos.find_one({'_id': ctx.author.id}))['todo']
+        await self.todos.update_one(
+            {'_id': ctx.author.id},
+            {'$set': {
+                f'todo.{task_1}': todo_list[task_2],
+                f'todo.{task_2}': todo_list[task_1]}
+            }
+        )
         await ctx.message.add_reaction('✅')
 
     @todo.command(aliases=['delete', 'rm'])
     async def remove(self, ctx, *numbers: int):
         '''Removes specific to-do from the list
         Ex: **todo remove 7**'''
-        todos = await self.todos.find_one({'_id': ctx.author.id})
-        todo_list = todos['todo']
+        todo_list = (await self.todos.find_one({'_id': ctx.author.id}))['todo']
         if len(todo_list) <= 1:
             await ctx.send(f'You have no tasks to delete. To add a task type `{ctx.prefix}todo add <your task here>`')
         for number in numbers:
@@ -171,8 +173,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
                 title=results[i].title,
                 description=results[i].description,
                 url=results[i].url
-            )
-            embed.set_thumbnail(url=results[i].image_url)
+            ).set_thumbnail(url=results[i].image_url)
             embed.set_author(
                 name=f'Page {i + 1} / {10 if len(results) >= 10 else len(results)}',
                 icon_url=ctx.author.avatar_url
@@ -290,8 +291,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         r = await cs.get(f'https://some-random-api.ml/lyrics?title={args.replace(" ", "%20")}')
         js = await r.json()
         try:
-            song = str(js['lyrics'])
-            song = wrap(song, 1000, drop_whitespace=False, replace_whitespace=False)
+            song = wrap(str(js['lyrics']), 1000, drop_whitespace=False, replace_whitespace=False)
             embed_list = []
             for lyrics in song:
                 embed = self.bot.embed.default(

@@ -22,14 +22,15 @@ class TopGG(Cog):
     async def on_guild_post(self):
         await self.bot.log.info('-> Posted a fresh guild count on Top.GG')
 
-    @commands.command()
+    @commands.command(aliases=['lb'])
     async def leaderboard(self, ctx):
         d = dict(Counter([f"{i['username']}#{i['discriminator']}" for i in await self.bot.dblpy.get_bot_upvotes()]))
         d = sorted(d.items(), key=lambda x: x[1], reverse=True)
         embed = self.bot.embed.default(
             ctx,
             title=f'Top{" 10" if len(d) >= 10 else ""} voters of this month.',
-            description='\n'.join([f'**{k}** — {v} votes' for k, v in d])
+            description='\n'.join([f'**{k}** — {v} votes' for k, v in d]),
+            url=self.bot.topgg_url
         )
         await ctx.send(embed=embed)
 

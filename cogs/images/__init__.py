@@ -44,6 +44,8 @@ class Images(Cog):
 
     @commands.command()
     async def wanted(self, ctx, image: Optional[str]):
+        """A very simple `wanted` image command.
+        Puts given image into a layout and makes that person 'wanted'"""
         async with ctx.timer:
             image = await make_image(ctx, image)
             buffer = BytesIO(image)
