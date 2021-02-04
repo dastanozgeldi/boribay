@@ -42,43 +42,34 @@ class Anime(Cog):
         count etc. of your given anime.
         Args: anime (str): Anime that you specify."""
         anime = anime.replace(' ', '%20')
-        async with ctx.typing():
-            cs = self.bot.session
-            r = await cs.get(f'https://kitsu.io/api/edge/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
-            try:
-                js = await r.json()
-                _id = js['data'][0]['id']
-                attributes = js['data'][0]['attributes']
-            except (IndexError, KeyError):
-                return await ctx.send('Could not find anime that matches your request.')
-            genres_list = []
-            try:
-                for i in range(len(js['included'])):
-                    genres_list.append(js['included'][i]['attributes']['name'])
-                genres = ' • '.join(genres_list)
-            except KeyError:
-                genres = 'Not specified.'
-            fields = [
-                ('Status', attributes['status'], True),
-                ('Rating', f"{attributes['averageRating']}/100⭐", True),
-                ('Aired', f"from **{attributes['startDate']}** to **{attributes['endDate']}**", True),
-                ('NSFW', str(attributes['nsfw']), True),
-                ('Episodes', f"{attributes['episodeCount']} min", True),
-                ('Duration', attributes['episodeLength'], True),
-                ('Rank', attributes['ratingRank'], True),
-                ('Age Rating', attributes['ageRatingGuide'], True),
-                ('Genres', genres, True)
-            ]
-            embed = self.bot.embed.default(
-                ctx,
-                title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
-                description=attributes['description'],
-                url=f'https://kitsu.io/anime/{_id}'
-            )
-            embed.set_thumbnail(url=attributes['posterImage']['small'])
-            for name, value, inline in fields:
-                embed.add_field(name=name, value=value or 'Not specified.', inline=inline)
-            await ctx.send(embed=embed)
+        cs = self.bot.session
+        r = await cs.get(f'{ctx.bot.config["API"]["anime_api"]}/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
+        js = await r.json()
+        attributes = js['data'][0]['attributes']
+        try:
+            rl = js['included']
+            rl = ' • '.join([rl[i]['attributes']['name'] for i in range(len(rl))])
+        except KeyError:
+            rl = 'No genres specified.'
+        fields = [
+            ('Rank', attributes['ratingRank']),
+            ('Rating', f"{attributes['averageRating']}/100⭐"),
+            ('Status', attributes['status']),
+            ('Started', attributes['startDate']),
+            ('Ended', attributes['endDate']),
+            ('Episodes', str(attributes['episodeCount'])),
+            ('Duration', f"{attributes['episodeLength']} min"),
+            ('Age Rate', attributes['ageRatingGuide']),
+            ('Genres', rl)
+        ]
+        embed = self.bot.embed.default(
+            ctx,
+            title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
+            url=f"https://kitsu.io/anime/{js['data'][0]['id']}"
+        ).set_thumbnail(url=attributes['posterImage']['small'])
+        embed.add_field(name='Statistics', value='\n'.join([f'**{name}:** {value}' for name, value in fields]))
+        embed.add_field(name='Description', value=attributes['description'][:300] + '...')
+        await ctx.send(embed=embed)
 
     @command()
     async def manga(self, ctx, *, manga: str):
@@ -86,41 +77,34 @@ class Anime(Cog):
         of manga that you passed.
         Args: manga (str): A manga that you want to get info of."""
         manga = manga.replace(' ', '%20')
-        async with ctx.typing():
-            cs = self.bot.session
-            r = await cs.get(f'https://kitsu.io/api/edge/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
-            try:
-                js = await r.json()
-                attributes = js['data'][0]['attributes']
-                genres_list = []
-            except (IndexError, KeyError):
-                return await ctx.send('Could not find manga that matches your request.')
-            try:
-                for i in range(len(js['included'])):
-                    genres_list.append(js['included'][i]['attributes']['name'])
-                genres = ' • '.join(genres_list)
-            except KeyError:
-                genres = 'Not specified.'
-            fields = [
-                ('Status', attributes['status'], True),
-                ('Rating', attributes['averageRating'], True),
-                ('Aired', f"from **{attributes['startDate']}** to **{attributes['endDate']}**", True),
-                ('Chapters', attributes['chapterCount'], True),
-                ('Volume', attributes['volumeCount'], True),
-                ('Rank', attributes['ratingRank'], True),
-                ('Age Rating', attributes['ageRatingGuide'], True),
-                ('Genres', genres, True)
-            ]
-            embed = self.bot.embed.default(
-                ctx,
-                title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
-                description=attributes['description'],
-                url=f"https://kitsu.io/manga/{manga}"
-            )
-            embed.set_thumbnail(url=attributes['posterImage']['small'])
-            for name, value, inline in fields:
-                embed.add_field(name=name, value=value or 'Not specified.', inline=inline)
-            await ctx.send(embed=embed)
+        cs = self.bot.session
+        r = await cs.get(f'{ctx.bot.config["API"]["anime_api"]}/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
+        js = await r.json()
+        attributes = js['data'][0]['attributes']
+        try:
+            rl = js['included']
+            rl = ' • '.join([rl[i]['attributes']['name'] for i in range(len(rl))])
+        except KeyError:
+            rl = 'No genres specified.'
+        fields = [
+            ('Rank', attributes['ratingRank']),
+            ('Rating', f"{attributes['averageRating']}/100⭐"),
+            ('Status', attributes['status']),
+            ('Started', attributes['startDate']),
+            ('Ended', attributes['endDate']),
+            ('Chapters', attributes['chapterCount']),
+            ('Volume', attributes['volumeCount']),
+            ('Age Rate', attributes['ageRatingGuide']),
+            ('Genres', rl)
+        ]
+        embed = self.bot.embed.default(
+            ctx,
+            title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
+            url=f'https://kitsu.io/manga/{manga}'
+        ).set_thumbnail(url=attributes['posterImage']['small'])
+        embed.add_field(name='Statistics', value='\n'.join([f'**{name}:** {value}' for name, value in fields]))
+        embed.add_field(name='Description', value=attributes['description'][:300] + '...')
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
