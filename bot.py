@@ -32,7 +32,7 @@ os.environ['JISHAKU_HIDE'] = 'True'
 os.environ['JISHAKU_NO_UNDERSCORE'] = 'True'
 os.environ['JISHAKU_NO_DM_TRACEBACK'] = 'True'
 
-for ext in bot.exts:
+for ext in bot.config['bot']['exts']:
     bot.load_extension(ext)
     bot.log.info(f'-> [MODULE] {ext} loaded.')
 
@@ -45,12 +45,12 @@ async def on_ready():
 
 
 @bot.ipc.route()
-async def get_commands_page(self, data):
-    return ' • '.join([i.name for i in self.bot.commands])
+async def get_commands_page(data):
+    return ' • '.join([i.name for i in bot.commands])
 
 
 @bot.ipc.route()
-async def get_stats_page(self, data):
+async def get_stats_page(data):
     return f'''Guilds: {len(bot.guilds)}</br>
 Users: {sum(g.member_count for g in bot.guilds)}</br>
 Commands: {sum(1 for i in bot.commands)}</br>
