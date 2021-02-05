@@ -26,8 +26,6 @@ class Bot(commands.Bot):
 		self.embed = Embed
 		self.config = toml.load('config.toml')
 		self.owner_ids = {682950658671902730, 382183425815216128}
-		self.exts = self.config['bot']['exts']
-		self.owner_exts = ('Jishaku', 'Events', 'Owner', 'ErrorHandler', 'GuildSettings', 'TopGG')
 		self.regex = {
 			'RGB_REGEX': r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?',
 			'EMOJI_REGEX': r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>',
@@ -46,18 +44,13 @@ class Bot(commands.Bot):
 		))
 		self.session = aiohttp.ClientSession(loop=self.loop)
 		self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
-		self.owner_url = 'http://discord.com/users/682950658671902730'
-		self.invite_url = 'https://discord.com/api/oauth2/authorize?client_id=735397931355471893&permissions=8&scope=bot'
-		self.github_url = 'https://github.com/Dositan/boribay/'
-		self.support_url = 'https://discord.gg/cZy6TvDg79'
-		self.topgg_url = 'https://top.gg/bot/735397931355471893#/'
 
 	@property
 	def dosek(self):
 		return self.get_user(682950658671902730)
 
 	@property
-	async def uptime(self) -> timedelta:
+	def uptime(self) -> timedelta:
 		return int((datetime.now() - self.start_time).total_seconds())
 
 	async def db_latency(self):
@@ -93,8 +86,7 @@ class Bot(commands.Bot):
 			open('news.md', 'w').write(message.content)
 		if re.fullmatch(f'<@(!)?{self.user.id}>', message.content):
 			ctx = await self.get_context(message)
-			cmd = self.get_command('prefix')
-			await cmd(ctx)
+			await self.get_command('prefix')(ctx)
 		await self.process_commands(message)
 
 	async def on_guild_join(self, guild):
