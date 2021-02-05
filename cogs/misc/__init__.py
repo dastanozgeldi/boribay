@@ -14,12 +14,7 @@ class Miscellaneous(Cog):
     @commands.command()
     async def vote(self, ctx):
         """Vote for the bot on Top.GG!"""
-        await ctx.send('Alright the link is right here, thanks for the vote! %s' % self.bot.topgg_url)
-
-    @commands.command(aliases=['hi', 'hey'])
-    async def hello(self, ctx):
-        """Introduction"""
-        await ctx.send(f'Hello there! I am **{self.bot.user}**, created by **{self.bot.dosek}**')
+        await ctx.send('Alright the link is right here, thanks for the vote! %s' % ctx.bot.config['links']['topgg_url'])
 
     @commands.command()
     async def prefix(self, ctx):
@@ -31,8 +26,8 @@ class Miscellaneous(Cog):
     async def invite(self, ctx):
         """Some useful invites (support server and the bot itself)"""
         embed = self.bot.embed.default(
-            ctx, description=f'Invite me [here]({self.bot.invite_url})\n'
-            f'Support server [here]({self.bot.support_url})'
+            ctx, description=f'Invite me [here]({ctx.bot.config["links"]["invite_url"]})\n'
+            f'Support server [here]({ctx.bot.config["links"]["support_url"]})'
         )
         await ctx.send(embed=embed)
 
@@ -49,11 +44,6 @@ class Miscellaneous(Cog):
         ]
         embed = self.bot.embed.default(ctx, description='\n'.join([f'**{n}:** ```{v} ms```' for n, v in elements]))
         await msg.edit(embed=embed)
-
-    @commands.command(aliases=['src'])
-    async def source(self, ctx):
-        """Sends a GitHub source link."""
-        await ctx.send('AGPL-3.0+ ' + self.bot.github_url)
 
 
 def setup(bot):
