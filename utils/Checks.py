@@ -35,6 +35,6 @@ def has_voted():
             return True
         else:
             raise commands.CheckFailure('This message means that you didn\'t vote last 12 hours.\n'
-                                        f'Fix it clicking **[here!]({ctx.bot.topgg_url})**')
+                                        f'Fix it clicking **[here!]({ctx.bot.config["links"]["topgg_url"]})**')
             return False
     return commands.check(predicate)
