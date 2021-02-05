@@ -68,6 +68,11 @@ class Bot(commands.Bot):
 
 	async def cache_guilds(self):
 		await self.wait_until_ready()
+		_1 = {i.id for i in self.guilds}
+		_2 = {i['guild_id'] for i in await self.pool.fetch('select guild_id from guild_config')}
+		if difference := list(_1 - _2):
+			for _id in difference:
+				await self.pool.execute('INSERT INTO guild_config(guild_id) VALUES($1)', _id)
 		guild_config = await self.pool.fetch('SELECT * FROM guild_config')
 		self.config['prefixes'] = {i['guild_id']: i['prefix'] for i in guild_config}
 		self.config['embed_colors'] = {i['guild_id']: i['embed_color'] for i in guild_config}
