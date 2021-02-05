@@ -33,7 +33,7 @@ class Info(Cog):
 		for ext in self.bot.cogs.keys():
 			if ext is None:
 				continue
-			if not await self.bot.is_owner(ctx.author) and ext in self.bot.owner_exts:
+			if not await self.bot.is_owner(ctx.author) and ext in self.bot.config['bot']['owner_exts']:
 				continue
 			exts.append(ext)
 		exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
@@ -100,7 +100,7 @@ class Info(Cog):
 	async def info(self, ctx):
 		"""See some kind of information about me (such as command usage, links etc.)"""
 		embed = self.bot.embed.default(ctx)
-		embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url_as(size=64))
+		embed.set_author(name=str(self.bot.user), icon_url=self.bot.user.avatar_url_as(size=64))
 		fields = {
 			'Development': {
 				('Developer', str(self.bot.dosek)),
