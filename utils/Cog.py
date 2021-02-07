@@ -1,7 +1,7 @@
-from discord.ext import commands
+from discord.ext.commands import Cog as C
 
 
-class Cog(commands.Cog):
+class Cog(C):
     '''A Custom Cog with one extra feature lol.'''
 
     def __init__(self, bot, name):

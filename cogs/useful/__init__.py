@@ -1,6 +1,7 @@
 import decimal
 import random
 import re
+import zlib
 import zipfile
 from io import BytesIO
 from textwrap import wrap
@@ -15,6 +16,7 @@ from discord.ext.commands import (
     cooldown,
     Cooldown,
     BucketType,
+    BadArgument,
     NSFWChannelRequired
 )
 from googletrans import Translator
@@ -42,7 +44,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
 
     def __init__(self, bot):
         self.bot = bot
-        self.name = '📐 Useful'
+        self.name = '<:pickaxe:807534625785380904> Useful'
         self.todos = self.bot.db.Boribay.todos
 
     @command()
@@ -52,14 +54,37 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         """Zip All Emojis.
         Args: guild (Guild): The guild you wanna grab emojis from."""
         guild = guild or ctx.guild
-        buf = BytesIO()
+        buffer = BytesIO()
         async with ctx.typing():
-            with zipfile.ZipFile(buf, 'w') as f:
+            with zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED) as f:
                 for emoji in guild.emojis:
                     bts = await emoji.url.read()
                     f.writestr(f'{emoji.name}.{"gif" if emoji.animated else "png"}', bts)
-            buf.seek(0)
-        await ctx.reply('Sorry for being slow as hell but anyways:', file=discord.File(buf, filename='emojis.zip'))
+            buffer.seek(0)
+        await ctx.reply('Sorry for being slow as hell but anyways:', file=discord.File(buffer, filename='emojis.zip'))
+
+    @command(aliases=['ss'])
+    @has_voted()
+    async def screenshot(self, ctx, url: str):
+        """Screenshot command.
+        Args: url (str): a web-site that you want to get a screenshot from."""
+        if not re.search(self.bot.regex['URL_REGEX'], url):
+            return await ctx.send('Please leave a valid url!')
+        cs = self.bot.session
+        r = await cs.get(f'{self.bot.config["API"]["screenshot_api"]}{url}')
+        io = BytesIO(await r.read())
+        await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
+
+    @command()
+    async def password(self, ctx, length: int=25):
+        """A Password creator command.
+        Args: length (optional): Length of characters. Defaults to 25.
+        Raises: BadArgument: Too big length of the password was given."""        
+        if length > 50:
+            raise BadArgument(f'Too big length was given ({length}).')
+        else:
+            asset = random.choices(open('cogs/useful/chars.txt', 'r').read(), k=length)
+            await ctx.author.send(''.join(char for char in asset))
 
     @command(aliases=['wiki'])
     async def wikipedia(self, ctx, language: str, *, topic: str):
@@ -190,8 +215,11 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         """Make a simple poll using this command. You can also add an image.
         Args: question (str): Title of the poll.
         options (str): Maximum is 10. separate each option by quotation marks."""
-        limit = 10
-        if len(options) > limit:
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
+        if len(options) > 10:
             raise TooManyOptions('There were too many options to create a poll.')
         elif len(options) < 2:
             raise NotEnoughOptions('There were not enough options to create a poll.')

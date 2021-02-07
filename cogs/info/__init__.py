@@ -1,12 +1,11 @@
 from collections import Counter
 import glob
 import platform
-from datetime import datetime, timedelta
-from time import time
+from datetime import datetime
 from typing import Optional
 
 import discord
-import humanize
+from humanize import naturaldate, naturaltime
 import psutil
 from discord.ext.commands import command, guild_only
 from utils.Cog import Cog
@@ -18,7 +17,7 @@ class Info(Cog):
 
 	def __init__(self, bot):
 		self.bot = bot
-		self.name = 'ℹ Info'
+		self.name = '<:info:807534146745532446> Info'
 		self.status_emojis = {
 			'online': '<:online:800050433207828550>',
 			'idle': '<:idle:800050433141637130>',
@@ -56,29 +55,25 @@ class Info(Cog):
 	@command(aliases=['sys'])
 	async def system(self, ctx):
 		"""Information of the system that is running the bot."""
-		embed = self.bot.embed.default(ctx, title='System Info')
+		embed = self.bot.embed.default(ctx, title='System Information')
 		embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/735725378433187901/776524927708692490/data-server.png')
-		disk = psutil.disk_usage('/')
 		memory = psutil.virtual_memory()
-		cpu_times = psutil.cpu_times()
 		info = {
 			'System': {
 				'Host OS': platform.platform(),
-				'Uptime': timedelta(seconds=time() - psutil.boot_time()),
-				'Boot time': datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S"),
-			}, 'CPU': {
-				'Frequency': f"{psutil.cpu_freq(percpu=True)[0][0]} MHz",
-				'CPU Used': f"{psutil.cpu_percent(interval=1)}%",
-				'Time on CPU': timedelta(seconds=cpu_times.system + cpu_times.user),
-			}, 'Memory': {
-				'RAM Used': f"{memory.percent}%",
-				'RAM Available': f"{memory.available/(1024**3):,.3f} GB",
-				'Disk Used': f"{disk.percent}%",
-				'Disk Free': f"{disk.free/(1024**3):,.3f} GB",
+				'Last Boot': naturaltime(datetime.fromtimestamp(psutil.boot_time())),
+			},
+			'CPU': {
+				'Frequency': f'{psutil.cpu_freq(percpu=True)[0][0]} MHz',
+				'CPU Used': f'{psutil.cpu_percent(interval=1)}%'
+			},
+			'Memory': {
+				'RAM Used': f'{memory.percent} GB',
+				'RAM Available': f'{memory.available / (1024 ** 3):,.3f} GB'
 			}
 		}
 		for key in info:
-			embed.add_field(name=f'**{key}**', value='\n'.join([f'**{k}:** {v}' for k, v in info[key].items()]), inline=False)
+			embed.add_field(name=f'**{key}**', value='\n'.join([f'> **{k}:** {v}' for k, v in info[key].items()]), inline=False)
 		await ctx.send(embed=embed)
 
 	@command(aliases=['cs'])
@@ -110,7 +105,8 @@ class Info(Cog):
 			'General': {
 				('Currently in', f'{len(self.bot.guilds)} servers'),
 				('Commands working', f'{len(self.bot.commands)}'),
-				('Commands usage (last restart)', self.bot.command_usage)
+				('Commands usage (last restart)', self.bot.command_usage),
+				('Commands usage (last year)', await self.bot.pool.fetchval('SELECT command_usage FROM bot_stats'))
 			}
 		}
 		for key in fields:
@@ -127,8 +123,8 @@ class Info(Cog):
 		fields = [
 			('Top role', member.top_role.mention),
 			('Boosted server', bool(member.premium_since)),
-			('Account created', humanize.naturaldate(member.created_at)),
-			('Here since', humanize.naturaldate(member.joined_at))
+			('Account created', naturaldate(member.created_at)),
+			('Here since', naturaldate(member.joined_at))
 		]
 		embed.description = '\n'.join([f'**{name}:** {value}' for name, value in fields])
 		await ctx.send(embed=embed)
@@ -146,7 +142,7 @@ class Info(Cog):
 		embed.set_thumbnail(url=ctx.guild.banner_url_as(size=256))
 		fields = [
 			('Region', g.region),
-			('Created', humanize.time.naturaltime(g.created_at)),
+			('Created', naturaltime(g.created_at)),
 			('Members', g.member_count),
 			('Boosts', g.premium_subscription_count),
 			('Roles', len(g.roles)),

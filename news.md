@@ -1,2 +1,2 @@
-> **__Very important fix__**
-> Since now, Boribay won't explode the host's terminal because it checks for new guilds while it was offline before start and automatically caches them that prevents lots of errors and working issues.
+> **__Update v1.0.0__**
+> Made lots of fixes and optimized an `f` command that no longer has annoying black background on the rotated image. Temporarily stopped using image APIs by leaving only my own.

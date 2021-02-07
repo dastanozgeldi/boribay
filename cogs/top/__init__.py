@@ -30,7 +30,7 @@ class TopGG(Cog):
             ctx,
             title=f'Top{" 10" if len(d) >= 10 else ""} voters of this month.',
             description='\n'.join([f'**{k}** — {v} votes' for k, v in d]),
-            url=ctx.bot.config['links']['topgg_url']
+            url=self.bot.config['links']['topgg_url']
         )
         await ctx.send(embed=embed)
 

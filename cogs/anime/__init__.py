@@ -8,7 +8,7 @@ class Anime(Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.name = '✨ Anime'
+        self.name = '<:anime_glasses:807535041605402624> Anime'
 
     async def command_creator(self, ctx, topic: str, description: str):
         async with self.bot.session.get(f'https://nekos.life/api/v2/img/{topic}') as r:
@@ -43,7 +43,7 @@ class Anime(Cog):
         Args: anime (str): Anime that you specify."""
         anime = anime.replace(' ', '%20')
         cs = self.bot.session
-        r = await cs.get(f'{ctx.bot.config["API"]["anime_api"]}/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
+        r = await cs.get(f'{self.bot.config["API"]["anime_api"]}/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
         js = await r.json()
         attributes = js['data'][0]['attributes']
         try:
@@ -78,7 +78,7 @@ class Anime(Cog):
         Args: manga (str): A manga that you want to get info of."""
         manga = manga.replace(' ', '%20')
         cs = self.bot.session
-        r = await cs.get(f'{ctx.bot.config["API"]["anime_api"]}/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
+        r = await cs.get(f'{self.bot.config["API"]["anime_api"]}/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
         js = await r.json()
         attributes = js['data'][0]['attributes']
         try:

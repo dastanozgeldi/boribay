@@ -3,6 +3,8 @@
 data/logs/
 __pycache__/
 website/
+cogs/apimages/
+maybe/
 
 # Files
 config.toml

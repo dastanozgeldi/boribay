@@ -57,6 +57,19 @@ async def make_image(ctx, argument: str):
 class Manip:
 
     @staticmethod
+    def triggered(image: BytesIO):
+        color = Image.new('RGBA', (400, 400), color=(255, 0, 0, 80))
+        layout = Image.open('./data/layouts/triggered.png')
+        with Image.new('RGBA', (400, 400)) as empty_image:
+            empty_image.paste(Image.open(image).resize((400, 400)))
+            empty_image.paste(color, mask=color)
+            empty_image.paste(layout, mask=layout)
+            buffer = BytesIO()
+            empty_image.save(buffer, 'png')
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
     def wanted(image: BytesIO):
         image = Image.open(image).resize((189, 205))
         with Image.open('./data/layouts/wanted.png') as img:
@@ -81,7 +94,7 @@ class Manip:
     def theory(txt: str):
         with Image.open('./data/layouts/lisa.jpg') as img:
             wrapped = textwrap.wrap(txt, 24)
-            font = ImageFont.truetype('./data/fonts/impact.ttf', 30)
+            font = ImageFont.truetype('./data/fonts/arial_bold.ttf', 30)
             draw = ImageDraw.Draw(img)
             draw.text((161, 72), '\n'.join(wrapped), (0, 0, 0), font=font)
             buffer = BytesIO()
@@ -105,25 +118,29 @@ class Manip:
 
     @staticmethod
     def press_f(image: BytesIO):
-        image = Image.open(image).resize((47, 87))
-        image = image.convert(mode='RGBA').rotate(14)
-        with Image.open('./data/layouts/f.jpg') as img:
-            img.paste(image, (315, 72))
+        im = Image.open('./data/layouts/f.jpg')
+        b = BytesIO()
+        im.save(b, 'png')
+        b.seek(0)
+        layout = WI(file=b)
+        with WI(file=image) as img:
+            img.resize(52, 87)
+            img.rotate(-5)
             buffer = BytesIO()
-            img.save(buffer, 'png')
+            layout.watermark(img, left=310, top=71)
+            layout.save(file=buffer)
         buffer.seek(0)
         return buffer
 
     @staticmethod
-    def swirl(image: BytesIO, degree: int = 90):
+    def swirl(degree: int, image: BytesIO):
+        if degree > 360:
+            degree = 360
+        elif degree < -360:
+            degree = -360
         with WI(file=image) as img:
-            if int(degree) > 360:
-                degree = 360
-            elif int(degree) < -360:
-                degree = -360
             img.swirl(degree=degree)
             buffer = BytesIO()
             img.save(file=buffer)
-
         buffer.seek(0)
         return buffer

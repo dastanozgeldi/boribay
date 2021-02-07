@@ -66,20 +66,22 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
              commands.PartialEmojiConversionFailure)
         ):
             embed.description = str(error)
+            return await self.send(ctx, embed=embed)
 
         elif isinstance(error, commands.MissingRequiredArgument):
             return await ctx.send_help(ctx.command)
 
         elif isinstance(error, commands.CommandOnCooldown):
             embed.description = f'This command is on cooldown. **`{int(error.retry_after)}` seconds**'
+            return await self.send(ctx, embed=embed)
 
         elif isinstance(error, commands.MissingPermissions):
             embed.description = f'You are missing permission: `{error.missing_perms[0]}`'
+            return await self.send(ctx, embed=embed)
 
         elif isinstance(error, commands.BotMissingPermissions):
             embed.description = f'I am missing permission: `{error.missing_perms[0]}`'
-
-        return await self.send(ctx, embed=embed)
+            return await self.send(ctx, embed=embed)
 
         try:
             prettify_exceptions.DefaultFormatter().theme['_ansi_enabled'] = False

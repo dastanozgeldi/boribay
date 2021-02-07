@@ -1,10 +1,10 @@
 import random
-import re
 from io import BytesIO
 from typing import Optional
 import discord
 from discord.ext import commands
 from utils.Cog import Cog
+from utils.Bottom import from_bottom, to_bottom
 
 
 class Fun(Cog):
@@ -14,6 +14,23 @@ class Fun(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.name = '🎉 Fun'
+
+    @commands.group(invoke_without_command=True)
+    async def bottom(self, ctx):
+        """Bottom is an encoding format made by a set of "bottom" emojis.
+        You can find bottom-related repositories at https://github.com/bottom-software-foundation
+        Run `bottom encode hello world` to see how it works."""
+        await ctx.send_help('bottom')
+
+    @bottom.command()
+    async def encode(self, ctx, text):
+        """Encode the normal text into bottom."""
+        await ctx.send(to_bottom(text))
+
+    @bottom.command()
+    async def decode(self, ctx, text):
+        """Decode the normal text into bottom."""
+        await ctx.send(from_bottom(text))
 
     @commands.command(name='random')
     async def random_command(self, ctx):
@@ -36,17 +53,6 @@ class Fun(Cog):
         r = await cs.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
-
-    @commands.command(aliases=['ss'])
-    async def screenshot(self, ctx, url: str):
-        """Screenshot command.
-        Args: url (str): a web-site that you want to get a screenshot from."""
-        if not re.search("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", url):
-            return await ctx.send("Please leave a valid url!")
-        cs = self.bot.session
-        r = await cs.get(f'{self.bot.config["API"]["screenshot_api"]}{url}')
-        io = BytesIO(await r.read())
-        await ctx.send(file=discord.File(fp=io, filename="screenshot.png"))
 
     @commands.command(aliases=['pp', 'penis'])
     async def peepee(self, ctx, member: discord.Member = None):

@@ -17,14 +17,6 @@ class Owner(Cog, command_attrs={'hidden': True}):
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)
 
-    async def basic_cleanup(self, ctx, search):
-        count = 0
-        async for msg in ctx.history(limit=search, before=ctx.message):
-            if msg.author == ctx.me:
-                await msg.delete()
-                count += 1
-        return {str(self.bot.user): count}
-
     @commands.group()
     async def dev(self, ctx):
         """The parent command."""
@@ -85,17 +77,20 @@ class Owner(Cog, command_attrs={'hidden': True}):
         except commands.ExtensionError as e:
             await ctx.send(f'{e.__class__.__name__}: {e}')
 
-    @dev.command()
-    async def cleanup(self, ctx, search=1):
+    @dev.command(aliases=['sc'])
+    async def selfclear(self, ctx, search=1):
         """Cleans up the bot's messages from the channel."""
-        spammers = await self.basic_cleanup(ctx, search)
+        count = 0
+        async for msg in ctx.history(limit=search, before=ctx.message):
+            if msg.author == ctx.me:
+                await msg.delete()
+                count += 1
+        spammers = {str(self.bot.user): count}
         deleted = sum(spammers.values())
-        messages = [f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
         if deleted:
             spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
-            messages.extend(f'**{author}**: {count}' for author, count in spammers)
 
-        await ctx.send('\n'.join(messages))
+        await ctx.send(f'**{deleted}** message{" was" if deleted == 1 else "s were"} deleted.')
 
 
 def setup(bot):
