@@ -28,6 +28,18 @@ class ReactionRoles(Cog):
 
             await payload.member.add_roles(role)
 
+    @Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        if payload.message_id == 807660589559971940:
+            guild = utils.find(lambda g: g.id == payload.guild_id, self.bot.guilds)
+
+            for emoji_name, role_name in self.reactions.items():
+                if payload.emoji.name == emoji_name:
+                    role = utils.get(guild.roles, name=role_name)
+
+            member = utils.find(lambda m: m.id == payload.user_id, guild.members)
+            await member.remove_roles(role)
+
 
 def setup(bot):
     bot.add_cog(ReactionRoles(bot))
