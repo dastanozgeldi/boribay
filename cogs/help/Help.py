@@ -12,12 +12,16 @@ class GroupHelp(menus.ListPageSource):
 		self.ctx = ctx
 		self.group = group
 		self.prefix = prefix
-		self.title = f'Help for category: {self.group.name}'
 		self.description = '```fix\n<> ← required argument\n[] ← optional argument```'
 
 	async def format_page(self, menu, cmds):
-		doc = self.group.__doc__ if isinstance(self.group, Cog) else self.group.help
-		embed = self.ctx.bot.embed.default(self.ctx, title=self.title, description=f'{doc}\n{self.description}')
+		g = self.group
+		doc = g.__doc__ if isinstance(g, Cog) else g.help
+		embed = self.ctx.bot.embed.default(
+			self.ctx,
+			title=f'Help for category: {str(g)}',
+			description=f'{doc}\n{self.description}'
+		)
 		for cmd in cmds:
 			signature = f'{self.prefix}{cmd.qualified_name} {cmd.signature}'
 			embed.add_field(name=signature, value=cmd.help.format(prefix=self.prefix), inline=False)
@@ -54,25 +58,21 @@ class MainHelp(menus.ListPageSource):
 
 class MyHelpCommand(commands.HelpCommand):
 
-	async def get_ending_note(self):
-		return f'Type {self.clean_prefix}{self.invoked_with} [Category] to get help for a category.'
+	def get_ending_note(self):
+		return f'{self.clean_prefix}{self.invoked_with} [Category] to get a category help.'
 
 	async def send_bot_help(self, mapping):
 		cats = []
 		for cog, cmds in mapping.items():
-			if not hasattr(cog, 'name'):
-				continue
 			filtered = await self.filter_commands(cmds, sort=True)
 			if filtered:
-				all_cmds = ', '.join(f'`{c.name}`' for c in cmds)
+				all_cmds = ' → '.join(f'`{c.name}`' for c in cmds)
 				if cog:
-					cats.append([cog.name, f"> {all_cmds}\n"])
+					cats.append([str(cog), f'> {all_cmds}\n'])
 
 		await MyPages(MainHelp(self.context, cats), timeout=69.0).start(self.context)
 
 	async def send_cog_help(self, cog: Cog):
-		if not hasattr(cog, 'name'):
-			pass
 		entries = await self.filter_commands(cog.get_commands(), sort=True)
 		await MyPages(
 			GroupHelp(ctx := self.context, cog, entries, prefix=self.clean_prefix),
@@ -85,21 +85,17 @@ class MyHelpCommand(commands.HelpCommand):
 			self.context,
 			title=self.get_command_signature(command),
 			description=command.help or 'No help found...'
-		)
-		embed.set_footer(text=await self.get_ending_note())
+		).set_footer(text=self.get_ending_note())
 		if aliases := command.aliases:
 			embed.add_field(name='Aliases', value=' | '.join(aliases))
-		if category := command.cog_name:
+		if category := str(command.cog):
 			embed.add_field(name='Category', value=category)
 		await self.get_destination().send(embed=embed)
 
 	async def send_group_help(self, group: commands.Group):
-		if len(subcommands := group.commands) == 0:
+		if len(subcommands := group.commands) == 0 or len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
 			return await self.send_command_help(group)
-		if len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
-			return await self.send_command_help(group)
-		source = GroupHelp(ctx=(ctx := self.context), group=group, cmds=cmds, prefix=self.clean_prefix)
-		await MyPages(source, timeout=30.0).start(ctx)
+		await MyPages(GroupHelp(ctx=self.context, group=group, cmds=cmds, prefix=self.clean_prefix), timeout=30.0).start(self.context)
 
 	async def command_not_found(self, string):
 		msg = f'Could not find the command `{string}`.'

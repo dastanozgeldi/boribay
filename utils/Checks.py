@@ -15,7 +15,7 @@ async def check_guild_perms(ctx, perms, *, check=all):
     if is_owner:
         return True
 
-    if ctx.guild is None:
+    if not ctx.guild:
         return False
 
     resolved = ctx.author.guild_permissions

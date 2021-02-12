@@ -1,2 +1,2 @@
-> **__Update v1.0.0__**
-> Made lots of fixes and optimized an `f` command that no longer has annoying black background on the rotated image. Temporarily stopped using image APIs by leaving only my own.
+> **__Update v1.0.2__**
+> Enormous optimization. Divided `Images` category commands into three groups. For more info type `help Images`. Fixed some issues, now they work perfectly.

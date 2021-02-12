@@ -1,27 +1,9 @@
-from discord import File
 import textwrap
 from io import BytesIO
-from wand.image import Image as WI
 from PIL import Image, ImageDraw, ImageFont
+from wand.image import Image as WI
 from utils.Converters import ImageConverter, ImageURLConverter
-
-
-async def welcome_card(member):
-    font = ImageFont.truetype('./data/fonts/arial_bold.ttf', size=20)
-    join_text, member_text = (f'{member} just spawned in the server.', f'Member #{member.guild.member_count}')
-    (join_w, _), (member_w, _) = font.getsize(join_text), font.getsize(member_text)
-    buffer = BytesIO()
-    data = BytesIO(await member.avatar_url.read())
-    pfp = Image.open(data).resize((263, 263))
-    with Image.new('RGB', (600, 400)) as card:
-        card.paste(pfp, (170, 32))
-        draw = ImageDraw.Draw(card)
-        draw.text(((600 - join_w) / 2, 309), join_text, (255, 255, 255), font=font)
-        draw.text(((600 - member_w) / 2, 1), member_text, (169, 169, 169), font=font)
-        card.save(buffer, 'png', optimize=True)
-    buffer.seek(0)
-    file = File(buffer, 'welcomer.png')
-    return file
+from jishaku.functools import executor_function
 
 
 async def make_image_url(ctx, arg: str):
@@ -57,6 +39,22 @@ async def make_image(ctx, argument: str):
 class Manip:
 
     @staticmethod
+    @executor_function
+    def welcome(member: BytesIO, top_text, bottom_text):
+        font = ImageFont.truetype('./data/fonts/arial_bold.ttf', size=20)
+        join_w, member_w = font.getsize(bottom_text)[0], font.getsize(top_text)[0]
+        with Image.new('RGB', (600, 400)) as card:
+            card.paste(Image.open(member).resize((263, 263)), (170, 32))
+            draw = ImageDraw.Draw(card)
+            draw.text(((600 - join_w) / 2, 309), bottom_text, (255, 255, 255), font=font)
+            draw.text(((600 - member_w) / 2, 1), top_text, (169, 169, 169), font=font)
+            buffer = BytesIO()
+            card.save(buffer, 'png', optimize=True)
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
     def triggered(image: BytesIO):
         color = Image.new('RGBA', (400, 400), color=(255, 0, 0, 80))
         layout = Image.open('./data/layouts/triggered.png')
@@ -70,6 +68,7 @@ class Manip:
         return buffer
 
     @staticmethod
+    @executor_function
     def wanted(image: BytesIO):
         image = Image.open(image).resize((189, 205))
         with Image.open('./data/layouts/wanted.png') as img:
@@ -80,6 +79,7 @@ class Manip:
         return buffer
 
     @staticmethod
+    @executor_function
     def clyde(txt: str):
         with Image.open('./data/layouts/clyde.png') as img:
             font = ImageFont.truetype('./data/fonts/whitneybook.otf', 18)
@@ -91,6 +91,7 @@ class Manip:
         return buffer
 
     @staticmethod
+    @executor_function
     def theory(txt: str):
         with Image.open('./data/layouts/lisa.jpg') as img:
             wrapped = textwrap.wrap(txt, 24)
@@ -103,6 +104,7 @@ class Manip:
         return buffer
 
     @staticmethod
+    @executor_function
     def drake(no: str, yes: str):
         with Image.open('./data/layouts/drake.jpg') as img:
             no_wrapped = textwrap.wrap(text=no, width=13)
@@ -117,6 +119,7 @@ class Manip:
         return buffer
 
     @staticmethod
+    @executor_function
     def press_f(image: BytesIO):
         im = Image.open('./data/layouts/f.jpg')
         b = BytesIO()
@@ -133,6 +136,19 @@ class Manip:
         return buffer
 
     @staticmethod
+    @executor_function
+    def obama(image: BytesIO):
+        image = Image.open(image).resize((58, 80))
+        with Image.open('./data/layouts/obama.jpg') as img:
+            img.paste(image, (0, 15))
+            img.paste(image, (79, 0))
+            buffer = BytesIO()
+            img.save(buffer, 'png')
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
     def swirl(degree: int, image: BytesIO):
         if degree > 360:
             degree = 360

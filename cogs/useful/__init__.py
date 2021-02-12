@@ -12,6 +12,7 @@ import discord
 from async_cse import Search
 from discord.ext.commands import (
     group,
+    is_nsfw,
     command,
     cooldown,
     Cooldown,
@@ -32,7 +33,7 @@ from utils.Exceptions import (
     UndefinedVariable
 )
 from utils.Checks import has_voted
-from utils.Paginators import EmbedPageSource, MyPages, TodoPageSource
+from utils.Paginators import EmbedPageSource, MyPages, TodoPageSource, Trivia
 
 from . import calclex, calcparse
 
@@ -41,18 +42,23 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     '''Useful commands extension. Simply made to help people in some kind of
     specific situations, such as solving math expression, finding lyrics
     of the song and so on.'''
+    icon = '<:pickaxe:807534625785380904>'
+    name = 'Useful'
 
     def __init__(self, bot):
         self.bot = bot
-        self.name = '<:pickaxe:807534625785380904> Useful'
         self.todos = self.bot.db.Boribay.todos
+        self.bot.cse = Search(self.bot.config['API']['google_key'])
+
+    def __str__(self):
+        return '{0.icon} {0.name}'.format(self)
 
     @command()
     @has_voted()
     @cooldown(1, 60.0, BucketType.guild)
     async def zipemojis(self, ctx, guild: Optional[discord.Guild]):
         """Zip All Emojis.
-        Args: guild (Guild): The guild you wanna grab emojis from."""
+        Args: guild: The guild you want to grab emojis from."""
         guild = guild or ctx.guild
         buffer = BytesIO()
         async with ctx.typing():
@@ -65,23 +71,24 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
 
     @command(aliases=['ss'])
     @has_voted()
+    @is_nsfw()
     async def screenshot(self, ctx, url: str):
         """Screenshot command.
         Args: url (str): a web-site that you want to get a screenshot from."""
         if not re.search(self.bot.regex['URL_REGEX'], url):
-            return await ctx.send('Please leave a valid url!')
+            raise BadArgument('Invalid URL specified. Note that you should include http(s).')
         cs = self.bot.session
         r = await cs.get(f'{self.bot.config["API"]["screenshot_api"]}{url}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
 
     @command()
-    async def password(self, ctx, length: int=25):
+    async def password(self, ctx, length: int = 25):
         """A Password creator command.
         Args: length (optional): Length of characters. Defaults to 25.
-        Raises: BadArgument: Too big length of the password was given."""        
+        Raises: BadArgument: Too big length of the password was given."""
         if length > 50:
-            raise BadArgument(f'Too big length was given ({length}).')
+            raise BadArgument(f'Too big length was given ({length}) while the limit is 50 characters.')
         else:
             asset = random.choices(open('cogs/useful/chars.txt', 'r').read(), k=length)
             await ctx.author.send(''.join(char for char in asset))
@@ -89,7 +96,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     @command(aliases=['wiki'])
     async def wikipedia(self, ctx, language: str, *, topic: str):
         """Wikipedia Search Command.
-        Args: topic (str): The Wikipedia topic you wanna search for."""
+        Args: topic: The Wikipedia topic you want to search for."""
         self.bot.wikipedia = aiowiki.Wiki.wikipedia(language, session=self.bot.session)
         try:
             page = (await self.bot.wikipedia.opensearch(topic))[0]
@@ -112,19 +119,18 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         Call for this command to learn how to use to-do commands."""
         await ctx.send_help('todo')
 
-    @todo.command()
-    async def show(self, ctx, number: int = None):
+    @todo.command(aliases=['list'])
+    async def show(self, ctx, number: Optional[int]):
         '''Basically, shows author's todo list.
         Have nothing to explain, so try it and see.'''
         todos = await self.todos.find_one({'_id': ctx.author.id})
         if number:
             return await ctx.send(embed=self.bot.embed.default(ctx, description=f'{number}: {todos["todo"][number]}'))
-        else:
-            return await MyPages(
-                TodoPageSource(ctx, todos['todo'][1:]),
-                clear_reactions_after=True,
-                timeout=60.0
-            ).start(ctx)
+        await MyPages(
+            TodoPageSource(ctx, todos['todo'][1:]),
+            clear_reactions_after=True,
+            timeout=60.0
+        ).start(ctx)
 
     @todo.command()
     async def add(self, ctx, *, message: str):
@@ -155,8 +161,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             {'_id': ctx.author.id},
             {'$set': {
                 f'todo.{task_1}': todo_list[task_2],
-                f'todo.{task_2}': todo_list[task_1]}
-            }
+                f'todo.{task_2}': todo_list[task_1]}}
         )
         await ctx.message.add_reaction('✅')
 
@@ -188,9 +193,8 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         """Paginated Google-Search command.
         Args: query (str): Your search request. Results will be displayed,
         otherwise returns an error which means no results found."""
-        cse = Search(self.bot.config['API']['google_key'])
         safesearch = False if ctx.channel.is_nsfw() else True
-        results = await cse.search(query, safesearch=safesearch)
+        results = await self.bot.cse.search(query, safesearch=safesearch)
         embed_list = []
         for i in range(0, 10 if len(results) >= 10 else len(results)):
             embed = self.bot.embed.default(
@@ -204,7 +208,6 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
                 icon_url=ctx.author.avatar_url
             )
             embed_list.append(embed)
-        await cse.close()
         await MyPages(
             EmbedPageSource(embed_list),
             delete_message_after=True
@@ -215,10 +218,6 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         """Make a simple poll using this command. You can also add an image.
         Args: question (str): Title of the poll.
         options (str): Maximum is 10. separate each option by quotation marks."""
-        try:
-            await ctx.message.delete()
-        except discord.Forbidden:
-            pass
         if len(options) > 10:
             raise TooManyOptions('There were too many options to create a poll.')
         elif len(options) < 2:
@@ -233,6 +232,10 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         message = await ctx.send(embed=embed)
         for emoji in reactions[:len(options)]:
             await message.add_reaction(emoji)
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
     @command(aliases=['r'])
     @has_voted()
@@ -403,9 +406,8 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             ]
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value, inline=inline)
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send(f'City `{city}` not found.')
+            return await ctx.send(embed=embed)
+        await ctx.send(f'City `{city}` not found.')
 
     @command()
     async def translate(self, ctx, language, *, sentence):

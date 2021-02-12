@@ -5,10 +5,14 @@ from discord.ext.commands import command
 class Anime(Cog):
     '''Anime extension. Not anime at all, just had no idea
     how to name it otherways. Slap, anime search, manga and so on.'''
+    icon = '<:anime_glasses:807535041605402624>'
+    name = 'Anime'
 
     def __init__(self, bot):
         self.bot = bot
-        self.name = '<:anime_glasses:807535041605402624> Anime'
+
+    def __str__(self):
+        return '{0.icon} {0.name}'.format(self)
 
     async def command_creator(self, ctx, topic: str, description: str):
         async with self.bot.session.get(f'https://nekos.life/api/v2/img/{topic}') as r:

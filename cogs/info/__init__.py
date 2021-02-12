@@ -14,23 +14,21 @@ from utils.Cog import Cog
 class Info(Cog):
 	'''Info extension. A module that contains commands that show
 	different kinds of information. Host info, code count etc.'''
+	icon = '<:info:807534146745532446>'
+	name = 'Info'
 
 	def __init__(self, bot):
 		self.bot = bot
-		self.name = '<:info:807534146745532446> Info'
-		self.status_emojis = {
-			'online': '<:online:800050433207828550>',
-			'idle': '<:idle:800050433141637130>',
-			'dnd': '<:dnd:800050432478281738>',
-			'offline': '<:offline:800051781228167249>'
-		}
+
+	def __str__(self):
+		return '{0.icon} {0.name}'.format(self)
 
 	@command(aliases=['modules', 'exts'])
 	async def extensions(self, ctx):
 		"""List of modules that work at a current time."""
 		exts = []
 		for ext in self.bot.cogs.keys():
-			if ext is None:
+			if not ext:
 				continue
 			if not await self.bot.is_owner(ctx.author) and ext in self.bot.config['bot']['owner_exts']:
 				continue
@@ -46,10 +44,10 @@ class Info(Cog):
 	async def uptime(self, ctx):
 		"""Uptime command.
 		Returns: uptime: How much time bot is online."""
-		h, r = divmod((await self.bot.uptime), 3600)
+		h, r = divmod((self.bot.uptime), 3600)
 		(m, s), (d, h) = divmod(r, 60), divmod(h, 24)
 		embed = self.bot.embed.default(ctx)
-		embed.add_field(name='How many time I am online?', value=f'{d}d {h}h {m}m {s}s')
+		embed.add_field(name='How long I am online?', value=f'{d}d {h}h {m}m {s}s')
 		return await ctx.send(embed=embed)
 
 	@command(aliases=['sys'])
@@ -96,17 +94,18 @@ class Info(Cog):
 		"""See some kind of information about me (such as command usage, links etc.)"""
 		embed = self.bot.embed.default(ctx)
 		embed.set_author(name=str(self.bot.user), icon_url=self.bot.user.avatar_url_as(size=64))
+		me = self.bot
 		fields = {
 			'Development': {
-				('Developer', str(self.bot.dosek)),
+				('Developer', str(me.dosek)),
 				('Language', 'Python'),
 				('Library', 'Discord.py')
 			},
 			'General': {
-				('Currently in', f'{len(self.bot.guilds)} servers'),
-				('Commands working', f'{len(self.bot.commands)}'),
-				('Commands usage (last restart)', self.bot.command_usage),
-				('Commands usage (last year)', await self.bot.pool.fetchval('SELECT command_usage FROM bot_stats'))
+				('Currently in', f'{len(me.guilds)} servers'),
+				('Commands working', f'{sum(1 for i in me.walk_commands())}'),
+				('Commands usage (last restart)', me.command_usage),
+				('Commands usage (last year)', await me.pool.fetchval('SELECT command_usage FROM bot_stats'))
 			}
 		}
 		for key in fields:
@@ -134,14 +133,8 @@ class Info(Cog):
 	async def serverinfo(self, ctx):
 		"""See some general information about current guild."""
 		g = ctx.guild
-		embed = self.bot.embed.default(ctx).set_author(
-			name=g.name,
-			icon_url=g.icon_url_as(size=64),
-			url=g.icon_url
-		)
-		embed.set_thumbnail(url=ctx.guild.banner_url_as(size=256))
 		fields = [
-			('Region', g.region),
+			('Region', str(g.region).title()),
 			('Created', naturaltime(g.created_at)),
 			('Members', g.member_count),
 			('Boosts', g.premium_subscription_count),
@@ -150,7 +143,11 @@ class Info(Cog):
 			('Voice channels', len(g.voice_channels)),
 			('Categories', len(g.categories)),
 		]
-		embed.description = '\n'.join([f'**{n}:** {v}' for n, v in fields])
+		embed = self.bot.embed.default(ctx, description='\n'.join([f'**{n}:** {v}' for n, v in fields])).set_author(
+			name=g.name,
+			icon_url=g.icon_url_as(size=64),
+			url=g.icon_url
+		).set_thumbnail(url=ctx.guild.banner_url_as(size=256))
 		await ctx.send(embed=embed)
 
 

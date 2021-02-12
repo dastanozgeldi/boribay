@@ -1,7 +1,6 @@
 import asyncio
 from discord.ext import menus
 from discord import HTTPException
-from utils.Exceptions import NoReactionsPassed
 
 
 class TodoPageSource(menus.ListPageSource):
@@ -46,6 +45,18 @@ class MyPages(menus.MenuPages):
 			pass
 
 
+class SQLListPageSource(menus.ListPageSource):
+	def __init__(self, ctx, data, *, per_page=5):
+		super().__init__(data, per_page=per_page)
+		self.ctx = ctx
+
+	async def format_page(self, menu, page):
+		embed = self.ctx.bot.embed.default(
+			self.ctx, description='```py\n' + '\n'.join(page) + '\n```'
+		).set_author(name=f'Page {menu.current_page + 1} / {self.get_max_pages()}')
+		return embed
+
+
 class EmbedPageSource(menus.ListPageSource):
 	"""EmbedPageSource, a paginator that takes a list of embeds."""
 
@@ -58,21 +69,16 @@ class EmbedPageSource(menus.ListPageSource):
 		return embed
 
 
-class Poll:
-	def __init__(self, entries, title=None, footer=None, color=0x36393E, timeout=30.0, return_index=False):
+class Trivia:
+	def __init__(self, entries, title, timeout=30.0):
 		self.entries = entries
-		self.title = title or 'Untitled'
-		self.footer = footer
-		self.color = color
+		self.title = title
 		self.timeout = timeout
-		self.return_index = return_index
 
 	async def pagination(self, ctx, loc=None, user=None):
-		if len(self.entries) < 2:
-			raise ValueError('Not enough data to create a poll.')
-		elif len(self.entries) > 10:
-			raise ValueError('Maximum limit 10 has reached.')
-		e = ctx.bot.embed.default(ctx, title=self.title, color=self.color)
+		if len(self.entries) < 2 or len(self.entries) > 10:
+			raise ValueError('Poll limits have reached.')
+		e = ctx.bot.embed.default(ctx, title=self.title, description='')
 		self.emojis = []
 		for i, c in enumerate(self.entries):
 			if i < 9:
@@ -80,9 +86,6 @@ class Poll:
 			else:
 				self.emojis.append('\U0001F51F')
 			e.description = f'{e.description}{self.emojis[i]} {c}\n'
-
-		if self.footer:
-			e.set_footer(text=self.footer)
 
 		self.controller = e
 		return await self.reactions(ctx, user, loc)
@@ -113,14 +116,9 @@ class Poll:
 			r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=self.timeout)
 		except asyncio.TimeoutError:
 			await self.stop(mes)
-			raise NoReactionsPassed('You didn\'t choose anything.')
 
-		control = self.entries[self.emojis.index(str(r))]
 		await self.stop(mes)
-		if not self.return_index:
-			return control
-		else:
-			return self.emojis.index(str(r))
+		return self.entries[self.emojis.index(str(r))]
 
 	async def stop(self, msg):
 		try:

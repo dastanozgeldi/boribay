@@ -1,11 +1,24 @@
 from utils.Cog import Cog
-from discord.ext import tasks, commands
+from discord.ext import commands, tasks
 from collections import Counter
+from utils.Checks import has_voted
+from typing import Optional
+from discord import Member
 
 
 class TopGG(Cog):
+    """Top.GG related commands-events extension.
+    If you are a voter for Boribay, you can find
+    features of this module quite useful."""
+    icon = '<:topgg:809359742899978272>'
+    name = 'TopGG'
+
     def __init__(self, bot):
         self.bot = bot
+        self.update_stats.start()
+
+    def __str__(self):
+        return '{0.icon} {0.name}'.format(self)
 
     @tasks.loop(minutes=30.0)
     async def update_stats(self):
@@ -20,16 +33,39 @@ class TopGG(Cog):
 
     @Cog.listener()
     async def on_guild_post(self):
-        await self.bot.log.info('-> Posted a fresh guild count on Top.GG')
+        self.bot.log.info('-> Posted a fresh guild count on Top.GG')
 
-    @commands.command(aliases=['lb'])
+    @commands.group(name='top', invoke_without_command=True)
+    async def top_gg(self, ctx):
+        """A TopGG-related commands parent.
+        Type `help top` to see its subcommands."""
+        await ctx.send_help('top')
+
+    @top_gg.command()
+    @has_voted()
+    async def didivote(self, ctx):
+        """Check did you vote last 12 hours."""
+        await ctx.send('You\'ve already voted, thanks!')
+
+    @top_gg.command()
+    async def howmuch(self, ctx, member: Optional[Member]):
+        """Check how many times did you vote."""
+        member = member or ctx.author
+        data = Counter([f"{i['username']}#{i['discriminator']}" for i in await self.bot.dblpy.get_bot_upvotes()])
+        await ctx.reply(f'You have voted {data[str(member)]} times.')
+
+    @top_gg.command()
+    async def vote(self, ctx):
+        """Vote for the bot on Top.GG!"""
+        await ctx.send(f'Alright the link is right here, thanks for the vote! {self.bot.config["links"]["topgg_url"]}')
+
+    @top_gg.command(aliases=['lb'])
     async def leaderboard(self, ctx):
-        d = dict(Counter([f"{i['username']}#{i['discriminator']}" for i in await self.bot.dblpy.get_bot_upvotes()]))
-        d = sorted(d.items(), key=lambda x: x[1], reverse=True)
+        """Leaderboard of top voters for Boribay. Shows best 3 of them."""
+        d = Counter([f"{i['username']}#{i['discriminator']}" for i in await self.bot.dblpy.get_bot_upvotes()]).most_common(5)
         embed = self.bot.embed.default(
-            ctx,
-            title=f'Top{" 10" if len(d) >= 10 else ""} voters of this month.',
-            description='\n'.join([f'**{k}** — {v} votes' for k, v in d]),
+            ctx, title='Top voters of this month.',
+            description='\n'.join(f'{k} {i[0]} — {i[1]} votes' for i, k in zip(d, ['🥇', '🥈', '🥉', '🍫', '🍫'])),
             url=self.bot.config['links']['topgg_url']
         )
         await ctx.send(embed=embed)

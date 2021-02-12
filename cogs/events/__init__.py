@@ -1,8 +1,10 @@
+from io import BytesIO
+from discord import File
 from utils.Cog import Cog
-from utils.Manipulation import welcome_card
+from utils.Manipulation import Manip
 
 
-class Events(Cog, command_attrs=dict(hidden=True)):
+class Events(Cog, command_attrs={'hidden': True}):
     def __init__(self, bot):
         self.bot = bot
 
@@ -13,8 +15,16 @@ class Events(Cog, command_attrs=dict(hidden=True)):
 
     @Cog.listener()
     async def on_member_join(self, member):
-        if wc := self.bot.config['welcome_channel'][member.guild.id]:
-            await member.guild.get_channel(wc).send(file=await welcome_card(member))
+        g = member.guild
+        if wc := self.bot.config['welcome_channel'][g.id]:
+            await g.get_channel(wc).send(file=File(fp=await Manip.welcome(
+                BytesIO(await member.avatar_url.read()),
+                f'Member #{g.member_count}',
+                f'{member} just spawned in the server.',
+            ), filename=f'{member}.png'))
+
+        if role_id := self.bot.config['autorole'][g.id]:
+            await member.add_roles(g.get_role(role_id))
 
     @Cog.listener()
     async def on_guild_unavailable(self, guild):

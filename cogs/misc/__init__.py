@@ -6,20 +6,19 @@ from discord.ext import commands
 class Miscellaneous(Cog):
     '''Misc commands extension. Here owner inserts commands that aren't
     related to other categories, such as hello, ping etc.'''
+    icon = '💫'
+    name = 'Miscellaneous'
 
     def __init__(self, bot):
         self.bot = bot
-        self.name = '💫 Miscellaneous'
 
-    @commands.command()
-    async def vote(self, ctx):
-        """Vote for the bot on Top.GG!"""
-        await ctx.send('Alright the link is right here, thanks for the vote! %s' % self.bot.config['links']['topgg_url'])
+    def __str__(self):
+        return '{0.icon} {0.name}'.format(self)
 
     @commands.command()
     async def prefix(self, ctx):
         """See bot's prefix."""
-        prefix = '.' if not ctx.guild else self.bot.config['prefixes'][ctx.guild.id]
+        prefix = '.' if not ctx.guild else self.bot.config['prefix'][ctx.guild.id]
         await ctx.send(embed=self.bot.embed.default(ctx, description=f'The prefix is: `{prefix}` or {self.bot.user.mention}'))
 
     @commands.command(aliases=['links'])

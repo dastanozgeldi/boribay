@@ -1,18 +1,22 @@
 from typing import Optional
 from discord.ext import commands
+from utils.Paginators import MyPages, SQLListPageSource
 from jishaku.codeblocks import codeblock_converter
 from utils.Cog import Cog
-from utils.Formats import TabularData
 
 
 class Owner(Cog, command_attrs={'hidden': True}):
     '''Nothing really to see here. But, if you are that interested,
     those are commands that help me to manage the bot while it's online
     without restarting it. The favorite module of the Owner btw.'''
+    icon = '👑'
+    name = 'Owner'
 
     def __init__(self, bot):
         self.bot = bot
-        self.name = '👑 Owner'
+
+    def __str__(self):
+        return '{0.icon} {0.name}'.format(self)
 
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)
@@ -21,6 +25,14 @@ class Owner(Cog, command_attrs={'hidden': True}):
     async def dev(self, ctx):
         """The parent command."""
         await ctx.message.add_reaction('✅')
+
+    @dev.command(aliases=['mrs'])  # move to rr/__init__.py
+    async def messagereactionstats(self, ctx, message_link: str):
+        """See what reactions are there in a message, shortly,
+        message_reaction_stats."""
+        ids = [int(i) for i in message_link.split('/')[5:]]
+        msg = await ctx.guild.get_channel(ids[0]).fetch_message(ids[1])
+        await ctx.send({f'{i}': i.count for i in msg.reactions})
 
     @dev.command()
     async def nick(self, ctx, *, nick: str):
@@ -40,15 +52,12 @@ class Owner(Cog, command_attrs={'hidden': True}):
 
     @dev.command()
     async def sql(self, ctx, *, query: codeblock_converter):
-        """Does an SQL query.
-        Thanks again Danny for the output formatter!"""
+        """Does an SQL query."""
         query = query.content
-        async with ctx.timer:
-            results = await self.bot.pool.fetch(query) if query.lower().startswith('select') else await self.bot.pool.execute(query)
-            table = TabularData()
-            table.set_columns(list(results[0].keys()))
-            table.add_rows(list(r.values()) for r in results)
-            await ctx.send(f'```py\n{table.render()}\n```')
+        data = []
+        for result in (await ctx.bot.pool.fetch(query) if query.lower().startswith('select') else await ctx.bot.pool.execute(query)):
+            data.append(repr(result))
+        await MyPages(SQLListPageSource(ctx, data)).start(ctx)
 
     @dev.command(aliases=['l'])
     async def load(self, ctx, *, module: str.lower):
@@ -76,21 +85,6 @@ class Owner(Cog, command_attrs={'hidden': True}):
             self.bot.reload_extension(module)
         except commands.ExtensionError as e:
             await ctx.send(f'{e.__class__.__name__}: {e}')
-
-    @dev.command(aliases=['sc'])
-    async def selfclear(self, ctx, search=1):
-        """Cleans up the bot's messages from the channel."""
-        count = 0
-        async for msg in ctx.history(limit=search, before=ctx.message):
-            if msg.author == ctx.me:
-                await msg.delete()
-                count += 1
-        spammers = {str(self.bot.user): count}
-        deleted = sum(spammers.values())
-        if deleted:
-            spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
-
-        await ctx.send(f'**{deleted}** message{" was" if deleted == 1 else "s were"} deleted.')
 
 
 def setup(bot):

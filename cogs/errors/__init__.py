@@ -61,7 +61,6 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
              commands.NSFWChannelRequired,
              commands.MaxConcurrencyReached,
              commands.BadArgument,
-             commands.MissingPermissions,
              commands.RoleNotFound,
              commands.PartialEmojiConversionFailure)
         ):

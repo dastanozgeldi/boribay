@@ -31,11 +31,11 @@ class CalcParser(Parser):
         'abs': lambda x: x.copy_abs()
     }
     constants = {
-        "pi": decimal.Decimal(math.pi),
-        "e": decimal.Decimal(math.e),
-        "tau": decimal.Decimal(math.tau),
-        "inf": decimal.Decimal(math.inf),
-        "nan": decimal.Decimal(math.nan)
+        'pi': decimal.Decimal(math.pi),
+        'e': decimal.Decimal(math.e),
+        'tau': decimal.Decimal(math.tau),
+        'inf': decimal.Decimal(math.inf),
+        'nan': decimal.Decimal(math.nan)
     }
 
     @_('statement')
@@ -125,8 +125,7 @@ class CalcParser(Parser):
 
     @staticmethod
     def match(expression):
-        o = tuple("({[")
-        c = tuple(")}]")
+        o, c = tuple('({['), tuple(')}]')
         mapping = dict(zip(o, c))
         lis = []
 
