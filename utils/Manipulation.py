@@ -6,18 +6,15 @@ from utils.Converters import ImageConverter, ImageURLConverter
 from jishaku.functools import executor_function
 
 
-async def make_image_url(ctx, arg: str):
+async def make_image_url(ctx, argument: str):
     c = ImageURLConverter()
-    image = await c.convert(ctx, arg)
+    image = await c.convert(ctx, argument)
     if not image:
         if ctx.message.attachments:
             image = ctx.message.attachments[0].url
-            return image
         else:
             image = str(ctx.author.avatar_url_as(static_format='png', format='png', size=512))
-            return image
-    else:
-        return image
+    return image
 
 
 async def make_image(ctx, argument: str):
@@ -26,14 +23,10 @@ async def make_image(ctx, argument: str):
     if not image:
         if ctx.message.attachments:
             layout = ctx.message.attachments[0]
-            image = await layout.read()
-            return image
         else:
             layout = ctx.author.avatar_url_as(static_format='png', format='png', size=256)
-            image = await layout.read()
-            return image
-    else:
-        return image
+        image = await layout.read()
+    return image
 
 
 class Manip:
@@ -50,6 +43,19 @@ class Manip:
             draw.text(((600 - member_w) / 2, 1), top_text, (169, 169, 169), font=font)
             buffer = BytesIO()
             card.save(buffer, 'png', optimize=True)
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
+    def fiveguysonegirl(author: BytesIO, member: BytesIO):
+        author = Image.open(author)
+        with Image.open('./data/layouts/5g1g.png') as img:
+            img.paste(Image.open(member).resize((128, 128)), (500, 275))
+            for i in [(31, 120), (243, 53), (438, 85), (637, 90), (815, 20)]:
+                img.paste(author, i)
+            buffer = BytesIO()
+            img.save(buffer, 'png', optimize=True)
         buffer.seek(0)
         return buffer
 

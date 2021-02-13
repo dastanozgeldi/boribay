@@ -1,10 +1,12 @@
 # Folders
 .vscode/
+website/
 data/logs/
 __pycache__/
-website/
-cogs/apimages/
-maybe/
+cogs/music/
+cogs/profiles/
 
 # Files
 config.toml
+Lavalink.jar
+application.yml

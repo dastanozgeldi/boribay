@@ -3,6 +3,24 @@ from discord.ext import menus
 from discord import HTTPException
 
 
+class MyPages(menus.MenuPages):
+	"""My own paginator implementation.
+	Subclasses menus.MenuPages. Takes page-source as a main parameter.
+	Tries to delete a message when timeout comes, returns if any exceptions."""
+
+	def __init__(self, source, **kwargs):
+		super().__init__(source=source, check_embeds=True, **kwargs)
+
+	async def finalize(self, timed_out):
+		try:
+			if timed_out:
+				await self.message.clear_reactions()
+			else:
+				await self.message.delete()
+		except HTTPException:
+			pass
+
+
 class TodoPageSource(menus.ListPageSource):
 	"""TodoPageSource, a special paginator created for the todo commands parent.
 	Takes the list of data, enumerates, then paginates through."""
@@ -25,24 +43,6 @@ class TodoPageSource(menus.ListPageSource):
 			)
 			embed.description = '\n'.join(f'{i}. {v}' for i, v in enumerate(entries, start=offset))
 		return embed
-
-
-class MyPages(menus.MenuPages):
-	"""My own paginator implementation.
-	Subclasses menus.MenuPages. Takes page-source as a main parameter.
-	Tries to delete a message when timeout comes, returns if any exceptions."""
-
-	def __init__(self, source, **kwargs):
-		super().__init__(source=source, check_embeds=True, **kwargs)
-
-	async def finalize(self, timed_out):
-		try:
-			if timed_out:
-				await self.message.clear_reactions()
-			else:
-				await self.message.delete()
-		except HTTPException:
-			pass
 
 
 class SQLListPageSource(menus.ListPageSource):

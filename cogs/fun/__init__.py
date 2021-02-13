@@ -49,7 +49,7 @@ class Fun(Cog):
         **head → 47.5%**, **tail → 47.5%** and **side → 5%**"""
         if (choice := random.choices(population=['head', 'tail', 'side'], weights=[0.475, 0.475, 0.05], k=1)[0]) == 'side':
             return await ctx.send('You\'ve got an amazing luck since the coin was flipped to the side!')
-        await ctx.send('Coin flipped to the `%s`' % choice)
+        await ctx.send(f'Coin flipped to the `{choice}`')
 
     @commands.command()
     async def trivia(self, ctx, difficulty: str.lower = 'medium'):
@@ -74,13 +74,6 @@ class Fun(Cog):
         cs = self.bot.session
         r = await cs.get(self.bot.config['API']['quote_api'])
         buffer = BytesIO()
-
-        prepare = await ctx.send(3)
-        for i in reversed(range(3)):
-            await asyncio.sleep(1)
-            await prepare.edit(content=i)
-        await prepare.delete()
-
         to_wrap = random.choice(json.loads(await r.read()))['text']
         text = '\n'.join(textwrap.wrap(to_wrap, 30))
         font = ImageFont.truetype('./data/fonts/monoid.ttf', size=30)
@@ -160,7 +153,7 @@ class Fun(Cog):
         denied = ['random', 'jishaku', 'dev']
         command = random.choice([cmd.name for cmd in self.bot.commands if len(cmd.signature.split()) == 0 and cmd.name not in denied])
         cmd = self.bot.get_command(command)
-        await ctx.send('Invoking command `%s`...' % command)
+        await ctx.send(f'Invoking command {command}...')
         await cmd(ctx)
 
     @commands.command()
@@ -175,12 +168,12 @@ class Fun(Cog):
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
     @commands.command(aliases=['pp', 'penis'])
-    async def peepee(self, ctx, member: discord.Member = None):
+    async def peepee(self, ctx, member: Optional[discord.Member]):
         """Basically, returns your PP size."""
         member = member or ctx.author
         random.seed(member.id)
         sz = 100 if member.id in self.bot.owner_ids else random.randint(1, 10)
-        await ctx.send(f'{member.display_name}\'s pp size is:\n||%s||' % f'8{"=" * sz}D')
+        await ctx.send(f'{member.display_name}\'s pp size is:\n||' + f'8{"=" * sz}D||')
 
     @commands.command()
     async def uselessfact(self, ctx):

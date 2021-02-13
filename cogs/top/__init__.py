@@ -1,5 +1,5 @@
 from utils.Cog import Cog
-from discord.ext import commands, tasks
+from discord.ext import commands, tasks, flags
 from collections import Counter
 from utils.Checks import has_voted
 from typing import Optional
@@ -59,13 +59,16 @@ class TopGG(Cog):
         """Vote for the bot on Top.GG!"""
         await ctx.send(f'Alright the link is right here, thanks for the vote! {self.bot.config["links"]["topgg_url"]}')
 
-    @top_gg.command(aliases=['lb'])
-    async def leaderboard(self, ctx):
-        """Leaderboard of top voters for Boribay. Shows best 3 of them."""
-        d = Counter([f"{i['username']}#{i['discriminator']}" for i in await self.bot.dblpy.get_bot_upvotes()]).most_common(5)
+    @flags.add_flag('--limit', type=int, default=5)
+    @top_gg.command(cls=flags.FlagCommand, aliases=['lb'])
+    async def leaderboard(self, ctx, **flags):
+        """Leaderboard of top voters for Boribay. Defaults to 5 users,
+        however you can specify the limitation of the leaderboard."""
+        medals = ['🥇', '🥈', '🥉'] + ['🏅' for _ in range(flags['limit'] - 3)]
+        d = Counter([f"{i['username']}#{i['discriminator']}" for i in await self.bot.dblpy.get_bot_upvotes()]).most_common(flags['limit'])
         embed = self.bot.embed.default(
             ctx, title='Top voters of this month.',
-            description='\n'.join(f'{k} {i[0]} — {i[1]} votes' for i, k in zip(d, ['🥇', '🥈', '🥉', '🍫', '🍫'])),
+            description='\n'.join(f'{k} **{i[0]}** → {i[1]} votes' for i, k in zip(d, medals)),
             url=self.bot.config['links']['topgg_url']
         )
         await ctx.send(embed=embed)
