@@ -13,40 +13,37 @@ class Management(Cog):
     icon = '🛡'
     name = 'Management'
 
-    def __init__(self, bot):
-        self.bot = bot
-
     def __str__(self):
         return '{0.icon} {0.name}'.format(self)
 
-    def on_or_off(self, ctx, key, check):
-        if self.bot.config[key][ctx.guild.id] != check:
-            return '<:greenTick:596576670815879169>'
-        return '<:redTick:596576672149667840>'
+    def on_or_off(self, ctx, key, checks):
+        for check in checks:
+            if ctx.bot.cache[key][ctx.guild.id] == check:
+                return '<:redTick:596576672149667840>'
+        return '<:greenTick:596576670815879169>'
+
+    def get(self, ctx, key):
+        return ctx.bot.cache[key][ctx.guild.id]
 
     async def update(self, ctx, key, value):
         query = f'UPDATE guild_config SET {key} = $1 WHERE guild_id = $2'
-        ctx.bot.config[key][ctx.guild.id] = value
-        await self.bot.pool.execute(query, value, ctx.guild.id)
+        ctx.bot.cache[key][ctx.guild.id] = value
+        await ctx.bot.pool.execute(query, value, ctx.guild.id)
 
     @commands.group(invoke_without_command=True)
     async def settings(self, ctx):
         """The settings parent command.
         Shows settings statistic of the current server:
         Custom color and custom prefix."""
-        creds = {
-            ('Custom Prefix', '.'): 'prefix',
-            ('Custom Color', 3553598): 'embed_color',
-            ('Welcome Channel', None): 'welcome_channel',
-            ('Autorole', None): 'autorole'
-        }
-        await ctx.send(embed=self.bot.embed.default(
-            ctx, description='\n'.join([f'{self.on_or_off(ctx, v, k[1])} {k[0]}' for k, v in creds.items()])))
-
-    @settings.command()
-    async def show(self, ctx):
-        """Shows what settings are set in the server."""
-        pass  # Do the stuff that shows values from the db for each Record key.
+        g = ctx.guild
+        creds = {i: ctx.bot.cache[i][g.id] for i in ctx.bot.cache.keys()}
+        creds['embed_color'] = hex(self.get(ctx, 'embed_color'))
+        creds['welcome_channel'] = g.get_channel(self.get(ctx, 'welcome_channel'))
+        creds['autorole'] = g.get_role(self.get(ctx, 'autorole'))
+        embed = ctx.bot.embed.default(ctx)
+        embed.add_field(name='General', value='\n'.join([f'{self.on_or_off(ctx, k, [".", 3553598, None, None])} **{k.replace("_", " ").title()}**' for k in creds.keys()]))
+        embed.add_field(name='Values', value='\n'.join([f'**{v}**' for v in creds.values()]))
+        await ctx.send(embed=embed)
 
     @settings.command(aliases=['wc'])
     @is_mod()
@@ -97,7 +94,7 @@ class Management(Cog):
         Args: member (discord.Member): a member you want to ban.
         reason (str, optional): Reason why you are banning. Defaults to None."""
         r = reason or 'Reason not specified.'
-        embed = self.bot.embed.default(
+        embed = ctx.bot.embed.default(
             ctx, title=f'{ctx.author.display_name} banned → {member.display_name}', description=r)
         await member.ban(reason=r)
         await ctx.send(embed=embed)
@@ -155,7 +152,7 @@ class Management(Cog):
         reason (str, optional): Reason why you considered kicking. Defaults to None."""
         r = reason or 'Reason not specified.'
         await ctx.guild.kick(user=member, reason=r)
-        embed = self.bot.embed.default(
+        embed = ctx.bot.embed.default(
             ctx, title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
         await ctx.send(embed=embed)
 
@@ -225,4 +222,4 @@ class Management(Cog):
 
 
 def setup(bot):
-    bot.add_cog(Management(bot))
+    bot.add_cog(Management())

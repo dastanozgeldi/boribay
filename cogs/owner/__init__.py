@@ -1,6 +1,5 @@
 from typing import Optional
 from discord.ext import commands
-from utils.Paginators import MyPages, SQLListPageSource
 from jishaku.codeblocks import codeblock_converter
 from utils.Cog import Cog
 
@@ -12,80 +11,68 @@ class Owner(Cog, command_attrs={'hidden': True}):
     icon = '👑'
     name = 'Owner'
 
-    def __init__(self, bot):
-        self.bot = bot
-
     def __str__(self):
         return '{0.icon} {0.name}'.format(self)
 
     async def cog_check(self, ctx):
-        return await self.bot.is_owner(ctx.author)
+        return await ctx.bot.is_owner(ctx.author)
 
     @commands.group()
-    async def dev(self, ctx):
+    async def su(self, ctx):
         """The parent command."""
         await ctx.message.add_reaction('✅')
 
-    @dev.command(aliases=['mrs'])  # move to rr/__init__.py
-    async def messagereactionstats(self, ctx, message_link: str):
-        """See what reactions are there in a message, shortly,
-        message_reaction_stats."""
-        ids = [int(i) for i in message_link.split('/')[5:]]
-        msg = await ctx.guild.get_channel(ids[0]).fetch_message(ids[1])
-        await ctx.send({f'{i}': i.count for i in msg.reactions})
-
-    @dev.command()
+    @su.command()
     async def nick(self, ctx, *, nick: str):
         """Nickname changing command. Just a quick tool for the owner nothing more."""
         await ctx.me.edit(nick=nick)
 
-    @dev.command()
+    @su.command()
     async def leave(self, ctx, guild_id: Optional[int]):
         """Leave command. Takes current guild if id was not given."""
         guild_id = guild_id or ctx.guild.id
-        await self.bot.get_guild(guild_id).leave()
+        await ctx.bot.get_guild(guild_id).leave()
 
-    @dev.command(aliases=['logout', 'close'])
+    @su.command(aliases=['logout', 'close'])
     async def shutdown(self, ctx):
         """A shutdown command is just an alternative for CTRL-C in the terminal."""
-        await self.bot.close()
+        await ctx.bot.close()
 
-    @dev.command()
+    @su.command()
     async def sql(self, ctx, *, query: codeblock_converter):
-        """Does an SQL query."""
+        from utils.Formats import TabularData
         query = query.content
-        data = []
-        for result in (await ctx.bot.pool.fetch(query) if query.lower().startswith('select') else await ctx.bot.pool.execute(query)):
-            data.append(repr(result))
-        await MyPages(SQLListPageSource(ctx, data)).start(ctx)
+        if query.lower().startswith('select'):
+            strategy = ctx.bot.pool.fetch
+        else:
+            strategy = ctx.bot.pool.execute
+        results = await strategy(query)
+        if isinstance(results, list):
+            columns = list(results[0].keys())
+            table = TabularData()
+            table.set_columns(columns)
+            table.add_rows(list(result.values()) for result in results)
+            render = table.render()
+            msg = f'```py\n{render}\n```'
+        else:
+            msg = results
+        await ctx.send(msg)
 
-    @dev.command(aliases=['l'])
+    @su.command(aliases=['l'])
     async def load(self, ctx, *, module: str.lower):
         """Loads a module."""
-        module = f'cogs.{module}' if module != 'jishaku' else module
-        try:
-            self.bot.load_extension(module)
-        except commands.ExtensionError as e:
-            await ctx.send(f'{e.__class__.__name__}: {e}')
+        ctx.bot.load_extension(f'cogs.{module}' if module != 'jishaku' else module)
 
-    @dev.command(aliases=['u'])
+    @su.command(aliases=['u'])
     async def unload(self, ctx, *, module: str.lower):
         """Unloads a module."""
-        module = f'cogs.{module}' if module != 'jishaku' else module
-        try:
-            self.bot.unload_extension(module)
-        except commands.ExtensionError as e:
-            await ctx.send(f'{e.__class__.__name__}: {e}')
+        ctx.bot.unload_extension(f'cogs.{module}' if module != 'jishaku' else module)
 
-    @dev.command(aliases=['r'])
+    @su.command(aliases=['r'])
     async def reload(self, ctx, *, module: str.lower):
         """Reloads a module."""
-        module = f'cogs.{module}' if module != 'jishaku' else module
-        try:
-            self.bot.reload_extension(module)
-        except commands.ExtensionError as e:
-            await ctx.send(f'{e.__class__.__name__}: {e}')
+        ctx.bot.reload_extension(f'cogs.{module}' if module != 'jishaku' else module)
 
 
 def setup(bot):
-    bot.add_cog(Owner(bot))
+    bot.add_cog(Owner())

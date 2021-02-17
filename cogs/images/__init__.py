@@ -2,7 +2,7 @@ import random
 from io import BytesIO
 from typing import Optional
 import discord
-from discord.ext import commands
+from discord.ext import commands, flags
 from polaroid import Image
 from utils.Cog import Cog
 from utils.Manipulation import Manip, make_image, make_image_url
@@ -66,14 +66,6 @@ class Images(Cog):
         await ctx.send_help('text')
 
     @filters.command()
-    async def noise(self, ctx, image: Optional[str]):
-        """Randomly adds noises to an image.
-        Args: image (str): A specified image, either user, emoji or attachment."""
-        image = await make_image(ctx, image)
-        file = self.polaroid_filter(ctx, image, method='add_noise_rand')
-        await ctx.send(file=file)
-
-    @filters.command()
     async def invert(self, ctx, image: Optional[str]):
         """Inverts given image."""
         image = await make_image(ctx, image)
@@ -119,11 +111,16 @@ class Images(Cog):
         file = self.polaroid_filter(ctx, image, method='brighten', kwargs={'treshold': 69})
         await ctx.send(file=file)
 
-    @commands.command()
-    async def avatar(self, ctx, member: Optional[discord.Member]):
+    @flags.add_flag('--circle', type=bool)
+    @flags.command()
+    async def avatar(self, ctx, member: Optional[discord.Member], **flags):
         """Returns either author or member avatar if specified.
         Ex: avatar Dosek."""
         member = member or ctx.author
+        if flags['circle'] is True:
+            image = await member.avatar_url.read()
+            buffer = await Manip.circlize(BytesIO(image))
+            return await ctx.send(file=discord.File(buffer, f'{member}.png'))
         await ctx.send(str(member.avatar_url))
 
     @meme.command()
@@ -131,7 +128,7 @@ class Images(Cog):
         """Do you remember that meme where Obama rewards himself? Yeah, that."""
         image = await make_image(ctx, image)
         buffer = await Manip.obama(BytesIO(image))
-        await ctx.send(file=discord.File(fp=buffer, filename='obama.png'))
+        await ctx.send(file=discord.File(buffer, 'obama.png'))
 
     @meme.command()
     async def triggered(self, ctx, image: Optional[str]):
@@ -140,7 +137,7 @@ class Images(Cog):
         Args: image (Optional[str]): user, image url or an attachment."""
         image = await make_image(ctx, image)
         buffer = await Manip.triggered(BytesIO(image))
-        await ctx.send(file=discord.File(fp=buffer, filename='triggered.png'))
+        await ctx.send(file=discord.File(buffer, 'triggered.png'))
 
     @meme.command()
     async def wanted(self, ctx, image: Optional[str]):
@@ -148,7 +145,7 @@ class Images(Cog):
         Puts given image into a layout and makes that person 'wanted'"""
         image = await make_image(ctx, image)
         buffer = await Manip.wanted(BytesIO(image))
-        await ctx.send(file=discord.File(fp=buffer, filename='wanted.png'))
+        await ctx.send(file=discord.File(buffer, 'wanted.png'))
 
     @meme.command()
     async def spawn(self, ctx, member: Optional[discord.Member], top_text: Optional[str], bottom_text: Optional[str]):
@@ -161,7 +158,7 @@ class Images(Cog):
         top_text = top_text or f'Member #{member.guild.member_count}'
         image = await member.avatar_url.read()
         buffer = await Manip.welcome(BytesIO(image), top_text, bottom_text)
-        await ctx.send(file=discord.File(fp=buffer, filename='newbie.png'))
+        await ctx.send(file=discord.File(buffer, 'newbie.png'))
 
     @meme.command(name='f')
     async def press_f(self, ctx, image: Optional[str]):
@@ -169,7 +166,7 @@ class Images(Cog):
         Args: image (optional): Image that you want to see on the canvas."""
         image = await make_image(ctx, image)
         buffer = await Manip.press_f(BytesIO(image))
-        msg = await ctx.send(file=discord.File(fp=buffer, filename='f.png'))
+        msg = await ctx.send(file=discord.File(buffer, 'f.png'))
         await msg.add_reaction('<:press_f:796264575065653248>')
 
     @meme.command(aliases=['5g1g', 'fivegoneg'])
@@ -189,7 +186,30 @@ class Images(Cog):
         image = await make_image(ctx, image)
         degrees = degrees or random.randint(-360, 360)
         buffer = await Manip.swirl(degrees, BytesIO(image))
-        await ctx.send(file=discord.File(fp=buffer, filename='swirl.png'))
+        await ctx.send(file=discord.File(buffer, 'swirl.png'))
+
+    @meme.command()
+    async def communist(self, ctx, image: Optional[str]):
+        """The communist meme maker.
+        Args: image: image that you specify. it's either member/emoji/url."""
+        image = await make_image(ctx, image)
+        buffer = await Manip.communist(BytesIO(image))
+        await ctx.send(file=discord.File(buffer, 'communist.png'))
+
+    @meme.command()
+    async def wider(self, ctx, image: Optional[str]):
+        """Widerize an image."""
+        image = await make_image(ctx, image)
+        buffer = await Manip.wide(BytesIO(image))
+        await ctx.send(file=discord.File(buffer, 'wider.png'))
+
+    @meme.command(aliases=['gay', 'gayize'])
+    async def rainbow(self, ctx, image: Optional[str]):
+        """Put rainbow filter on a user.
+        Args: image: image that you specify. it's either member/emoji/url."""
+        image = await make_image(ctx, image)
+        buffer = await Manip.rainbow(BytesIO(image))
+        await ctx.send(file=discord.File(buffer, 'rainbow.png'))
 
     @text.command()
     async def drake(self, ctx, no: str, yes: str):
@@ -200,7 +220,7 @@ class Images(Cog):
         if len(yes) > 90 or len(no) > 90:
             raise commands.BadArgument('The text was too long to render.')
         buffer = await Manip.drake(no, yes)
-        await ctx.send(file=discord.File(fp=buffer, filename='drake.png'))
+        await ctx.send(file=discord.File(buffer, 'drake.png'))
 
     @text.command()
     async def clyde(self, ctx, *, text: str):
@@ -209,7 +229,7 @@ class Images(Cog):
         if len(text) > 75:
             raise commands.BadArgument('The text was too long to render.')
         buffer = await Manip.clyde(text)
-        await ctx.send(file=discord.File(fp=buffer, filename='clyde.png'))
+        await ctx.send(file=discord.File(buffer, 'clyde.png'))
 
     @text.command()
     async def theory(self, ctx, *, text: str):
@@ -220,7 +240,7 @@ class Images(Cog):
         if len(text) > 144:
             raise commands.BadArgument('The text was too long to render.')
         buffer = await Manip.theory(text)
-        await ctx.send(file=discord.File(fp=buffer, filename='theory.png'))
+        await ctx.send(file=discord.File(buffer, 'theory.png'))
 
     @api.command(aliases=['colours'])
     async def colors(self, ctx, member: Optional[str]):
@@ -312,9 +332,9 @@ class Images(Cog):
         Can handle either image, member or even URL.
         Ex: **caption Dosek**'''
         image = await make_image_url(ctx, arg)
-        cs = self.bot.session
-        r = await cs.post(self.bot.config['API']['caption_api'], json={'Content': image, 'Type': 'CaptionRequest'})
-        embed = self.bot.embed.default(ctx, title=await r.text())
+        cs = ctx.bot.session
+        r = await cs.post(ctx.bot.config['API']['caption_api'], json={'Content': image, 'Type': 'CaptionRequest'})
+        embed = ctx.bot.embed.default(ctx, title=await r.text())
         await ctx.send(embed=embed.set_image(url=image))
 
     @api.command()
@@ -323,8 +343,8 @@ class Images(Cog):
         A great way to make your friends get rickrolled!
         P.S: this command accepts only URLs.'''
         url = await make_image_url(ctx, url)
-        cs = self.bot.session
-        r = await cs.get(self.bot.config['API']['qr_api'] + url)
+        cs = ctx.bot.session
+        r = await cs.get(ctx.bot.config['API']['qr_api'] + url)
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='qr.png'))
 

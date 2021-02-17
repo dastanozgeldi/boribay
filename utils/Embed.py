@@ -13,7 +13,7 @@ class Embed(discord.Embed):
 	def default(cls, ctx, **kwargs):
 		instance = cls(**kwargs)
 		try:
-			instance.color = ctx.bot.config['embed_color'][ctx.guild.id]
+			instance.color = ctx.bot.cache['embed_color'][ctx.guild.id]
 		except (AttributeError, KeyError):
 			instance.color = 0x36393e
 		return instance

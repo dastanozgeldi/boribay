@@ -1,6 +1,6 @@
 import textwrap
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from wand.image import Image as WI
 from utils.Converters import ImageConverter, ImageURLConverter
 from jishaku.functools import executor_function
@@ -30,6 +30,29 @@ async def make_image(ctx, argument: str):
 
 
 class Manip:
+
+    @staticmethod
+    @executor_function
+    def wide(image: BytesIO):
+        im = WI(file=image)
+        w, h = im.size
+        im.resize(w * 2, int(h / 2))
+        buffer = BytesIO()
+        im.save(file=buffer)
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
+    def circlize(image: BytesIO):
+        mask = Image.open('./data/layouts/circle-mask.png').convert('L')
+        with Image.open(image) as im:
+            output = ImageOps.fit(im, mask.size, centering=(0.5, 0.5))
+            output.putalpha(mask)
+            buffer = BytesIO()
+            output.save(buffer, 'png')
+        buffer.seek(0)
+        return buffer
 
     @staticmethod
     @executor_function
@@ -138,6 +161,40 @@ class Manip:
             buffer = BytesIO()
             layout.watermark(img, left=310, top=71)
             layout.save(file=buffer)
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
+    def rainbow(image: BytesIO):
+        mask = Image.open('./data/layouts/rainbow.png')
+        b = BytesIO()
+        mask.save(b, 'png')
+        b.seek(0)
+        layout = WI(file=b)
+        with WI(file=image) as img:
+            w, h = img.size
+            layout.resize(w, h)
+            img.watermark(layout, 0.5)
+            buffer = BytesIO()
+            img.save(file=buffer)
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
+    def communist(image: BytesIO):
+        mask = Image.open('./data/layouts/communist-flag.jpg')
+        b = BytesIO()
+        mask.save(b, 'png')
+        b.seek(0)
+        layout = WI(file=b)
+        with WI(file=image) as img:
+            w, h = img.size
+            layout.resize(w, h)
+            img.watermark(layout, 0.7)
+            buffer = BytesIO()
+            img.save(file=buffer)
         buffer.seek(0)
         return buffer
 

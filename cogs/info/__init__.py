@@ -17,9 +17,6 @@ class Info(Cog):
 	icon = '<:info:807534146745532446>'
 	name = 'Info'
 
-	def __init__(self, bot):
-		self.bot = bot
-
 	def __str__(self):
 		return '{0.icon} {0.name}'.format(self)
 
@@ -27,10 +24,10 @@ class Info(Cog):
 	async def extensions(self, ctx):
 		"""List of modules that work at a current time."""
 		exts = []
-		for ext in self.bot.cogs.keys():
+		for ext in ctx.bot.cogs.keys():
 			if not ext:
 				continue
-			if not await self.bot.is_owner(ctx.author) and ext in self.bot.config['bot']['owner_exts']:
+			if not await ctx.bot.is_owner(ctx.author) and ext in ctx.bot.config['bot']['owner_exts']:
 				continue
 			exts.append(ext)
 		exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
@@ -38,22 +35,22 @@ class Info(Cog):
 		rows = []
 		for row in exts:
 			rows.append(''.join(e.ljust(max(length) + 2) for e in row))
-		await ctx.send(embed=self.bot.embed.default(ctx, title='Modules that are working rn', description='```%s```' % '\n'.join(rows)))
+		await ctx.send(embed=ctx.bot.embed.default(ctx, title='Modules that are working rn', description='```%s```' % '\n'.join(rows)))
 
 	@command()
 	async def uptime(self, ctx):
 		"""Uptime command.
 		Returns: uptime: How much time bot is online."""
-		h, r = divmod((self.bot.uptime), 3600)
+		h, r = divmod((ctx.bot.uptime), 3600)
 		(m, s), (d, h) = divmod(r, 60), divmod(h, 24)
-		embed = self.bot.embed.default(ctx)
+		embed = ctx.bot.embed.default(ctx)
 		embed.add_field(name='How long I am online?', value=f'{d}d {h}h {m}m {s}s')
 		return await ctx.send(embed=embed)
 
 	@command(aliases=['sys'])
 	async def system(self, ctx):
 		"""Information of the system that is running the bot."""
-		embed = self.bot.embed.default(ctx, title='System Information')
+		embed = ctx.bot.embed.default(ctx, title='System Information')
 		embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/735725378433187901/776524927708692490/data-server.png')
 		memory = psutil.virtual_memory()
 		info = {
@@ -87,14 +84,14 @@ class Info(Cog):
 					ctr['functions (def)'] += line.startswith('def')
 					ctr['coroutines (async def)'] += line.startswith('async def')
 					ctr['docstrings'] += line.startswith('"""') + line.startswith("'''")
-		await ctx.send(embed=self.bot.embed.default(ctx, description='\n'.join(f'**{key.capitalize()}:** {value}' for key, value in ctr.items())))
+		await ctx.send(embed=ctx.bot.embed.default(ctx, description='\n'.join(f'**{key.capitalize()}:** {value}' for key, value in ctr.items())))
 
-	@command(aliases=['bi', 'about'])
-	async def info(self, ctx):
+	@command(aliases=['bi', 'botinfo'])
+	async def about(self, ctx):
 		"""See some kind of information about me (such as command usage, links etc.)"""
-		embed = self.bot.embed.default(ctx)
-		embed.set_author(name=str(self.bot.user), icon_url=self.bot.user.avatar_url_as(size=64))
-		me = self.bot
+		me = ctx.bot
+		embed = me.embed.default(ctx)
+		embed.set_author(name=str(me.user), icon_url=me.user.avatar_url_as(size=64))
 		fields = {
 			'Development': {
 				('Developer', str(me.dosek)),
@@ -117,7 +114,7 @@ class Info(Cog):
 	async def userinfo(self, ctx, member: Optional[discord.Member]):
 		"""See some general information about mentioned user."""
 		member = member or ctx.author
-		embed = self.bot.embed.default(ctx).set_thumbnail(url=member.avatar_url)
+		embed = ctx.bot.embed.default(ctx).set_thumbnail(url=member.avatar_url)
 		embed.set_author(name=str(member), icon_url=ctx.guild.icon_url_as(size=64))
 		fields = [
 			('Top role', member.top_role.mention),
@@ -143,7 +140,7 @@ class Info(Cog):
 			('Voice channels', len(g.voice_channels)),
 			('Categories', len(g.categories)),
 		]
-		embed = self.bot.embed.default(ctx, description='\n'.join([f'**{n}:** {v}' for n, v in fields])).set_author(
+		embed = ctx.bot.embed.default(ctx, description='\n'.join([f'**{n}:** {v}' for n, v in fields])).set_author(
 			name=g.name,
 			icon_url=g.icon_url_as(size=64),
 			url=g.icon_url
@@ -152,4 +149,4 @@ class Info(Cog):
 
 
 def setup(bot):
-	bot.add_cog(Info(bot))
+	bot.add_cog(Info())

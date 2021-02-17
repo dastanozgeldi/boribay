@@ -1,2 +1,3 @@
-> **__Update v1.0.2__**
-> Enormous optimization. Divided `Images` category commands into three groups. For more info type `help Images`. Fixed some issues, now they work perfectly.
+14 Feb, 2021
+> **__Update v1.0.4__**
+> Huge extensions optimization with some changes in settings command. Type `settings` to see what is going on there.

@@ -2,23 +2,20 @@ from utils.Cog import Cog
 from discord.ext.commands import command
 
 
-class Anime(Cog):
+class Ani(Cog):
     '''Anime extension. Not anime at all, just had no idea
     how to name it otherways. Slap, anime search, manga and so on.'''
     icon = '<:anime_glasses:807535041605402624>'
-    name = 'Anime'
-
-    def __init__(self, bot):
-        self.bot = bot
+    name = 'Ani'
 
     def __str__(self):
         return '{0.icon} {0.name}'.format(self)
 
     async def command_creator(self, ctx, topic: str, description: str):
-        async with self.bot.session.get(f'https://nekos.life/api/v2/img/{topic}') as r:
+        async with ctx.bot.session.get(f'https://nekos.life/api/v2/img/{topic}') as r:
             json = await r.json()
         url = str(json['url'])
-        embed = self.bot.embed.default(ctx=ctx, description=f'**[{description}]({url})**')
+        embed = ctx.bot.embed.default(ctx, description=f'**[{description}]({url})**')
         embed.set_image(url=url)
         return embed
 
@@ -46,8 +43,8 @@ class Anime(Cog):
         count etc. of your given anime.
         Args: anime (str): Anime that you specify."""
         anime = anime.replace(' ', '%20')
-        cs = self.bot.session
-        r = await cs.get(f'{self.bot.config["API"]["anime_api"]}/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
+        cs = ctx.bot.session
+        r = await cs.get(f'{ctx.bot.config["API"]["anime_api"]}/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
         js = await r.json()
         attributes = js['data'][0]['attributes']
         try:
@@ -66,7 +63,7 @@ class Anime(Cog):
             ('Age Rate', attributes['ageRatingGuide']),
             ('Genres', rl)
         ]
-        embed = self.bot.embed.default(
+        embed = ctx.bot.embed.default(
             ctx,
             title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
             url=f"https://kitsu.io/anime/{js['data'][0]['id']}"
@@ -81,8 +78,8 @@ class Anime(Cog):
         of manga that you passed.
         Args: manga (str): A manga that you want to get info of."""
         manga = manga.replace(' ', '%20')
-        cs = self.bot.session
-        r = await cs.get(f'{self.bot.config["API"]["anime_api"]}/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
+        cs = ctx.bot.session
+        r = await cs.get(f'{ctx.bot.config["API"]["anime_api"]}/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
         js = await r.json()
         attributes = js['data'][0]['attributes']
         try:
@@ -101,7 +98,7 @@ class Anime(Cog):
             ('Age Rate', attributes['ageRatingGuide']),
             ('Genres', rl)
         ]
-        embed = self.bot.embed.default(
+        embed = ctx.bot.embed.default(
             ctx,
             title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
             url=f'https://kitsu.io/manga/{manga}'
@@ -112,4 +109,4 @@ class Anime(Cog):
 
 
 def setup(bot):
-    bot.add_cog(Anime(bot))
+    bot.add_cog(Ani())

@@ -7,8 +7,6 @@ from utils.Cog import Cog
 
 
 class ErrorHandler(Cog, command_attrs={'hidden': True}):
-    def __init__(self, bot):
-        self.bot = bot
 
     async def send(self, ctx, exc: str = None, *args, **kwargs) -> Optional[Message]:
         try:
@@ -23,8 +21,8 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
         return None
 
     async def send_error(self, ctx, exc):
-        channel = self.bot.get_channel(781874343868629073)
-        embed = self.bot.embed.error(description=f'```py\nError:\n{exc}\n```')
+        channel = ctx.bot.get_channel(781874343868629073)
+        embed = ctx.bot.embed.error(description=f'```py\nError:\n{exc}\n```')
         embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
         if ctx.guild:
             command = 'None' if isinstance(ctx.command, type(None)) else ctx.command.qualified_name
@@ -41,19 +39,17 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
     @Cog.listener()
     async def on_command_error(self, ctx, error):
         error = getattr(error, 'original', error)
-        embed = self.bot.embed.error(title='⚠ Wait...')
+        embed = ctx.bot.embed.error(title='⚠ Wait...')
         if isinstance(error, commands.CommandNotFound):
             return
         setattr(ctx, 'original_author_id', getattr(ctx, 'original_author_id', ctx.author.id))
         invokes = (commands.MissingRole, commands.MissingAnyRole, commands.CommandOnCooldown, commands.MissingPermissions, commands.DisabledCommand)
-        if isinstance(error, invokes) and ctx.original_author_id in self.bot.owner_ids:
+        if isinstance(error, invokes) and ctx.original_author_id in ctx.bot.owner_ids:
             return await ctx.reinvoke()
 
         elif isinstance(
             error,
-            (IndexError,
-             KeyError,
-             Exceptions.TooManyOptions,
+            (Exceptions.TooManyOptions,
              Exceptions.NotEnoughOptions,
              commands.NotOwner,
              commands.CheckFailure,
@@ -62,6 +58,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
              commands.MaxConcurrencyReached,
              commands.BadArgument,
              commands.RoleNotFound,
+             commands.ExtensionError,
              commands.PartialEmojiConversionFailure)
         ):
             embed.description = str(error)
@@ -92,11 +89,11 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             await ctx.send('Unexpected error occured. Gotta send the traceback to my owner.')
             await self.send_error(ctx, error)
         else:
-            await self.send(ctx, embed=self.bot.embed.error(description=f'Details: ```py\n{exc}\n```'))
+            await self.send(ctx, embed=ctx.bot.embed.error(description=f'Details: ```py\n{exc}\n```'))
             await self.send_error(ctx, exc)
 
         raise error
 
 
 def setup(bot):
-    bot.add_cog(ErrorHandler(bot))
+    bot.add_cog(ErrorHandler())
