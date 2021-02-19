@@ -1,8 +1,6 @@
 import decimal
 import math
-
 from sly import Parser
-
 from .calclex import CalcLexer
 from utils.Exceptions import (
     CalcError,
@@ -101,11 +99,11 @@ class CalcParser(Parser):
         except KeyError:
             raise UndefinedVariable(p.NAME)
 
-    @_("NUMBER")
+    @_('NUMBER')
     def expression(self, p):
         return p.NUMBER
 
-    @_("NAME")
+    @_('NAME')
     def expression(self, p):
         try:
             try:
@@ -116,7 +114,7 @@ class CalcParser(Parser):
             raise UndefinedVariable(p.NAME)
 
     def error(self, p):
-        raise CalcError(getattr(p, "value", "EOF"))
+        raise CalcError(getattr(p, 'value', 'EOF'))
 
     def __init__(self):
         self.variables = {}

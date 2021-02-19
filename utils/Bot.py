@@ -126,8 +126,8 @@ class Bot(commands.Bot):
             return
         if message.channel.id == 789791676632662017:
             with open('news.md', 'w') as f:
-                f.write(__import__('humanize').naturaltime(message.created_at) + '\n')
-                f.write(message.content)
+                msg = message.content.split('\n')
+                f.write(msg[0] + '\n' + '\n'.join(msg[1:]))
         if re.fullmatch(f'<@(!)?{self.user.id}>', message.content):
             ctx = await self.get_context(message)
             await self.get_command('prefix')(ctx)

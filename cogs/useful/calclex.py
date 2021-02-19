@@ -6,9 +6,7 @@ from utils.Exceptions import CalcError
 class CalcLexer(Lexer):
     tokens = {NUMBER, NEWLINE_CHAR, NAME}
     ignore = ' \t'
-    literals = {
-        '+', '-', '*', '/', '%', '!', '^', '(', ')', '='
-    }
+    literals = {'+', '-', '*', '/', '%', '!', '^', '(', ')', '='}
     NAME = '[a-zA-Z_][a-zA-Z0-9_]*'
 
     def error(self, t):

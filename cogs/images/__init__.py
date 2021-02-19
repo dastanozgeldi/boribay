@@ -211,6 +211,16 @@ class Images(Cog):
         buffer = await Manip.rainbow(BytesIO(image))
         await ctx.send(file=discord.File(buffer, 'rainbow.png'))
 
+    @meme.command(aliases=['wayg'])
+    async def whyareyougay(self, ctx, member: Optional[str]):
+        """A legendary "Why are you gay?" meme maker.
+        Member argument is optional, so if you call for a command
+        without specifying a member you just wayg yourself."""
+        author = await ctx.author.avatar_url_as(size=128).read()
+        member = await make_image(ctx, member)
+        buffer = await Manip.whyareyougae(BytesIO(author), BytesIO(member))
+        await ctx.send(file=discord.File(buffer, 'wayg.png'))
+
     @text.command()
     async def drake(self, ctx, no: str, yes: str):
         """Legendary 'Drake yes/no' meme maker.
@@ -347,18 +357,6 @@ class Images(Cog):
         r = await cs.get(ctx.bot.config['API']['qr_api'] + url)
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='qr.png'))
-
-    @api.command(aliases=['wayg'])
-    async def whyareyougay(self, ctx, member: Optional[str]):
-        '''A legendary "Why are you gay?" meme maker.
-        Member argument is optional, so if you call for a command
-        without specifying a member you just wayg yourself.'''
-        image = await make_image_url(ctx, member)
-        file = await self.dagpi_image(
-            url=f'whyareyougay/?url={ctx.author.avatar_url}&url2={image}',
-            fn='wayg.png'
-        )
-        await ctx.send(file=file)
 
 
 def setup(bot):

@@ -1,10 +1,6 @@
 # Folders
-.vscode/
-website/
 data/logs/
 __pycache__/
-cogs/music/
-cogs/profiles/
 
 # Files
 config.toml

@@ -49,7 +49,9 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
 
         elif isinstance(
             error,
-            (Exceptions.TooManyOptions,
+            (IndexError,
+             KeyError,
+             Exceptions.TooManyOptions,
              Exceptions.NotEnoughOptions,
              commands.NotOwner,
              commands.CheckFailure,

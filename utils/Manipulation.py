@@ -71,6 +71,18 @@ class Manip:
 
     @staticmethod
     @executor_function
+    def whyareyougae(author: BytesIO, member: BytesIO):
+        author = Image.open(author)
+        with Image.open('./data/layouts/wayg.jpg') as img:
+            img.paste(author, (507, 103))
+            img.paste(Image.open(member).resize((128, 128)), (77, 120))
+            buffer = BytesIO()
+            img.save(buffer, 'png', optimize=True)
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
     def fiveguysonegirl(author: BytesIO, member: BytesIO):
         author = Image.open(author)
         with Image.open('./data/layouts/5g1g.png') as img:

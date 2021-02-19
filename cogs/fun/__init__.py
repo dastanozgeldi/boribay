@@ -152,9 +152,8 @@ class Fun(Cog):
         what to call."""
         denied = ['random', 'jishaku', 'dev']
         command = random.choice([cmd.name for cmd in self.bot.commands if len(cmd.signature.split()) == 0 and cmd.name not in denied])
-        cmd = self.bot.get_command(command)
         await ctx.send(f'Invoking command {command}...')
-        await cmd(ctx)
+        await self.bot.get_command(command)(ctx)
 
     @commands.command()
     async def eject(self, ctx, color: str.lower, is_impostor: bool, *, name: Optional[str]):

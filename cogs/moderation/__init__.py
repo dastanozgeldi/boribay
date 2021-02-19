@@ -6,12 +6,12 @@ from utils.Converters import ColorConverter
 from utils.Checks import is_mod
 
 
-class Management(Cog):
+class Moderation(Cog):
     '''Administration extension. A module that is created to keep
     discipline in the server. Purging messages, muting members, channel create
     command, all of them are here.'''
     icon = '🛡'
-    name = 'Management'
+    name = 'Moderation'
 
     def __str__(self):
         return '{0.icon} {0.name}'.format(self)
@@ -30,7 +30,7 @@ class Management(Cog):
         ctx.bot.cache[key][ctx.guild.id] = value
         await ctx.bot.pool.execute(query, value, ctx.guild.id)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, aliases=['gs'])
     async def settings(self, ctx):
         """The settings parent command.
         Shows settings statistic of the current server:
@@ -41,8 +41,10 @@ class Management(Cog):
         creds['welcome_channel'] = g.get_channel(self.get(ctx, 'welcome_channel'))
         creds['autorole'] = g.get_role(self.get(ctx, 'autorole'))
         embed = ctx.bot.embed.default(ctx)
-        embed.add_field(name='General', value='\n'.join([f'{self.on_or_off(ctx, k, [".", 3553598, None, None])} **{k.replace("_", " ").title()}**' for k in creds.keys()]))
-        embed.add_field(name='Values', value='\n'.join([f'**{v}**' for v in creds.values()]))
+        embed.add_field(
+            name='Guild Settings',
+            value='\n'.join([f'{self.on_or_off(ctx, k, [".", 3553598, None, None])} **{k.replace("_", " ").title()}:** {v}' for k, v in creds.items()])
+        )
         await ctx.send(embed=embed)
 
     @settings.command(aliases=['wc'])
@@ -74,7 +76,7 @@ class Management(Cog):
 
     @settings.command()
     @is_mod()
-    async def autorole(self, ctx, role: discord.Role):
+    async def autorole(self, ctx, role):
         """Sets the autorole for the current server.
         This will handle all joined users and give them the role
         that you have specified."""
@@ -222,4 +224,4 @@ class Management(Cog):
 
 
 def setup(bot):
-    bot.add_cog(Management())
+    bot.add_cog(Moderation())

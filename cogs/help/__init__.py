@@ -1,7 +1,8 @@
 from difflib import get_close_matches
 from discord.ext import commands, menus
+from jishaku.features.python import PythonFeature
 from utils.Cog import Cog
-from utils.Paginators import MyPages
+from utils.Paginators import MyPages, HelpPages
 
 
 class GroupHelp(menus.ListPageSource):
@@ -16,7 +17,7 @@ class GroupHelp(menus.ListPageSource):
 
     async def format_page(self, menu, cmds):
         g = self.group
-        doc = g.__doc__ if isinstance(g, Cog) else g.help
+        doc = g.__doc__ if isinstance(g, (Cog, PythonFeature)) else g.help
         embed = self.ctx.bot.embed.default(
             self.ctx,
             title=f'Help for category: {str(g)}',
@@ -24,56 +25,34 @@ class GroupHelp(menus.ListPageSource):
         )
         for cmd in cmds:
             signature = f'{self.prefix}{cmd.qualified_name} {cmd.signature}'
-            embed.add_field(name=signature, value=cmd.help.format(
-                prefix=self.prefix), inline=False)
+            embed.add_field(name=signature, value=cmd.help.format(prefix=self.prefix), inline=False)
         if (maximum := self.get_max_pages()) > 1:
-            embed.set_author(
-                name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
-        embed.set_footer(text=f'{self.prefix}help to see all commands list.')
-        return embed
-
-
-class MainHelp(menus.ListPageSource):
-    '''Creates an embedded message including all commands (if not hidden).'''
-
-    def __init__(self, ctx, categories: list):
-        super().__init__(entries=categories, per_page=3)
-        self.ctx = ctx
-        self.count = len(categories)
-
-    async def format_page(self, menu, category):
-        links = self.ctx.bot.config['links']
-        embed = self.ctx.bot.embed.default(
-            self.ctx,
-            description=f'{self.ctx.prefix}help [Category | group] to get module help\n'
-            f'[Invite]({links["invite_url"]}) | [Support]({links["support_url"]}) | [Source]({links["github_url"]}) | [Vote]({links["topgg_url"]})'
-        ).set_footer(text=f'{self.ctx.prefix}help <command> to get command help.')
-        embed.set_author(
-            name=f'Page {menu.current_page + 1} of {self.get_max_pages()} ({self.count} categories)',
-            icon_url=self.ctx.author.avatar_url_as(size=64)
-        )
-        news = open('news.md', 'r').readlines()
-        embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
-        for name, value in category:
-            embed.add_field(name=name, value=value, inline=False)
+            embed.set_author(name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
+        embed.set_footer(text=f'{self.prefix}help <cmd> to get help for a specific command.')
         return embed
 
 
 class MyHelpCommand(commands.HelpCommand):
-
     def get_ending_note(self):
-        return f'{self.clean_prefix}{self.invoked_with} [Category] to get a category help.'
+        return f'Send {self.clean_prefix}{self.invoked_with} [Category] to get a category help.'
 
     async def send_bot_help(self, mapping):
+        ctx = self.context
+        links = ctx.bot.config['links']
         cats = []
         for cog, cmds in mapping.items():
             filtered = await self.filter_commands(cmds, sort=True)
             if filtered:
-                all_cmds = ' → '.join(f'`{c.name}`' for c in cmds)
                 if cog:
-                    cats.append([str(cog), f'> {all_cmds}\n'])
-
-        await MyPages(MainHelp(self.context, cats), timeout=69.0).start(self.context)
+                    cats.append(str(cog))
+        embed = ctx.bot.embed.default(
+            ctx, description=f'[Invite]({links["invite_url"]}) | [Support]({links["support_url"]}) | [Source]({links["github_url"]}) | [Vote]({links["topgg_url"]})'
+        ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url_as(size=64))
+        embed.add_field(name='Modules:', value='\n'.join([m for m in cats]))
+        news = open('news.md', 'r').readlines()
+        embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
+        embed.set_footer(text=self.get_ending_note())
+        await HelpPages(embed).start(ctx)
 
     async def send_cog_help(self, cog):
         ctx = self.context
@@ -96,10 +75,10 @@ class MyHelpCommand(commands.HelpCommand):
             embed.add_field(name='Category', value=category)
         await self.get_destination().send(embed=embed)
 
-    async def send_group_help(self, group: commands.Group):
+    async def send_group_help(self, group):
         if len(subcommands := group.commands) == 0 or len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
             return await self.send_command_help(group)
-        await MyPages(GroupHelp(ctx=self.context, group=group, cmds=cmds, prefix=self.clean_prefix), timeout=30.0).start(self.context)
+        await MyPages(GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0).start(self.context)
 
     async def command_not_found(self, string):
         msg = f'Could not find the command `{string}`.'
@@ -119,8 +98,7 @@ class Help(Cog):
     def __init__(self, bot):
         self.bot = bot
         self._original_help_command = bot.help_command
-        bot.help_command = MyHelpCommand(
-            command_attrs=dict(hidden=True, aliases=['h']))
+        bot.help_command = MyHelpCommand(command_attrs=dict(hidden=True, aliases=['h']))
         bot.help_command.cog = self
 
     def __str__(self):

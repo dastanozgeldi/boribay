@@ -61,17 +61,17 @@ class Owner(Cog, command_attrs={'hidden': True}):
     @su.command(aliases=['l'])
     async def load(self, ctx, *, module: str.lower):
         """Loads a module."""
-        ctx.bot.load_extension(f'cogs.{module}' if module != 'jishaku' else module)
+        ctx.bot.load_extension(f'cogs.{module}')
 
     @su.command(aliases=['u'])
     async def unload(self, ctx, *, module: str.lower):
         """Unloads a module."""
-        ctx.bot.unload_extension(f'cogs.{module}' if module != 'jishaku' else module)
+        ctx.bot.unload_extension(f'cogs.{module}')
 
     @su.command(aliases=['r'])
     async def reload(self, ctx, *, module: str.lower):
         """Reloads a module."""
-        ctx.bot.reload_extension(f'cogs.{module}' if module != 'jishaku' else module)
+        ctx.bot.reload_extension(f'cogs.{module}')
 
 
 def setup(bot):
