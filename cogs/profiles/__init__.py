@@ -7,9 +7,6 @@ class Profiles(Cog):
     icon = '🎚'
     name = 'Leveling'
 
-    def __init__(self, bot):
-        self.bot = bot
-
     async def make_rank(self, ctx):
         """Rank card maker function layout.
         TODO use PIL to manipulate with images,
@@ -51,4 +48,4 @@ class Profiles(Cog):
 
 
 def setup(bot):
-    bot.add_cog(Profiles(bot))
+    bot.add_cog(Profiles())

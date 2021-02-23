@@ -2,7 +2,49 @@ from difflib import get_close_matches
 from discord.ext import commands, menus
 from jishaku.features.python import PythonFeature
 from utils.Cog import Cog
-from utils.Paginators import MyPages, HelpPages
+from utils.Paginators import MyPages
+
+
+class HelpPages(menus.Menu):
+    def __init__(self, embed, **kwargs):
+        super().__init__(timeout=69.0, clear_reactions_after=True, **kwargs)
+        self.embed = embed
+
+    async def send_initial_message(self, ctx, channel):
+        return await channel.send(embed=self.embed)
+
+    @menus.button('\U000025c0')
+    async def go_back(self, payload):
+        """Go back to the main page."""
+        await self.message.edit(embed=self.embed)
+
+    @menus.button('<:info:807534146745532446>')
+    async def on_info(self, payload):
+        """Shows this information page."""
+        embed = self.bot.embed.default(self.ctx, title='Reactions Information')
+        messages = [f'{emoji}: {button.action.__doc__}' for emoji, button in self.buttons.items()]
+        embed.add_field(name='What are these reactions for?', value='\n'.join(messages))
+        await self.message.edit(embed=embed)
+
+    @menus.button('\U00002753')
+    async def on_question(self, payload):
+        """Shows how to use the bot."""
+        embed = self.bot.embed.default(self.ctx, title='Welcome to the FAQ page.')
+        fields = [
+            ('How to use commands?', 'Follow the given signature for the command.'),
+            ('What is <argument>?', 'This means the argument is **required**.'),
+            ('What about [argument]?', 'This means the argument is **optional**.'),
+            ('[argument...]?', 'This means there can be multiple arguments.'),
+            ('What the hell is [--flag FLAG]?', f'This means the optional argument\nExample: **{self.ctx.prefix}todo show --dm True**')
+        ]
+        for name, value in fields:
+            embed.add_field(name=name, value=value, inline=False)
+        await self.message.edit(embed=embed)
+
+    @menus.button('\U0001f5d1')
+    async def stop(self, payload):
+        """Deletes this message."""
+        await self.message.delete()
 
 
 class GroupHelp(menus.ListPageSource):
@@ -33,6 +75,14 @@ class GroupHelp(menus.ListPageSource):
 
 
 class MyHelpCommand(commands.HelpCommand):
+    def __init__(self):
+        super().__init__(command_attrs={
+            'hidden': True,
+            'aliases': ['h'],
+            'cooldown': commands.Cooldown(1, 5.0, commands.BucketType.user),
+            'help': 'Shows help about modules, command groups or commands.'
+        })
+
     def get_ending_note(self):
         return f'Send {self.clean_prefix}{self.invoked_with} [Category] to get a category help.'
 
@@ -63,16 +113,21 @@ class MyHelpCommand(commands.HelpCommand):
             clear_reactions_after=True
         ).start(ctx)
 
+    def get_flags(self, command):
+        return [f'**--{a.dest}** {a.help}' for a in command.callback._def_parser._actions if lambda x: '_OPTIONAL' not in a.dest]
+
     async def send_command_help(self, command):
         embed = self.context.bot.embed.default(
             self.context,
             title=self.get_command_signature(command),
             description=command.help or 'No help found...'
         ).set_footer(text=self.get_ending_note())
-        if aliases := command.aliases:
-            embed.add_field(name='Aliases', value=' | '.join(aliases))
         if category := str(command.cog):
             embed.add_field(name='Category', value=category)
+        if aliases := command.aliases:
+            embed.add_field(name='Aliases', value=' | '.join(aliases))
+        if hasattr(command.callback, '_def_parser'):
+            embed.add_field(name='Flags', value='\n'.join(self.get_flags(command)), inline=False)
         await self.get_destination().send(embed=embed)
 
     async def send_group_help(self, group):
@@ -98,7 +153,7 @@ class Help(Cog):
     def __init__(self, bot):
         self.bot = bot
         self._original_help_command = bot.help_command
-        bot.help_command = MyHelpCommand(command_attrs=dict(hidden=True, aliases=['h']))
+        bot.help_command = MyHelpCommand()
         bot.help_command.cog = self
 
     def __str__(self):

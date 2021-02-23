@@ -1,6 +1,5 @@
-20 Feb, 2021
-**__Update v1.0.5__**
-
-**Changes:** Fixed settings formatting, moved `Info` category into `Miscellaneous`, so currently there are 12 commands.
-**New command:** meme wayg.
-**Soon:** Music support with Leveling system.
+21 Feb, 2021
+**__Update v1.0.6__**
+**Changes:** Implemented some useful flags into `todo show` command, like **--dm** or **--count**. Added flags support into command help, which becomes even stronger.
+**New commands:** connect, disconnect, play, pause, stop, volume, skip, previous, queue and equalizer.
+**Sooner:** Leveling system with Economics.

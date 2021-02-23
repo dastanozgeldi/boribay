@@ -1,15 +1,15 @@
 import re
 import typing as t
+from textwrap import wrap
+
 import discord
 import wavelink
 from discord.ext import commands
-from utils.Exceptions import (
-    QueueIsEmpty,
-    PlayerIsAlreadyPaused,
-    NoPreviousTracks
-)
-from .tools import Player
 from utils.Cog import Cog
+from utils.Exceptions import NoPreviousTracks, PlayerIsAlreadyPaused, QueueIsEmpty
+from utils.Paginators import EmbedPageSource, MyPages
+
+from .tools import Player
 
 
 class Music(Cog, wavelink.WavelinkMixin):
@@ -35,7 +35,7 @@ class Music(Cog, wavelink.WavelinkMixin):
 
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node):
-        self.bot.log.info(f'Wavelink node -> `{node.identifier}`')
+        self.bot.log.info(f'[MUSIC] Wavelink node -> `{node.identifier}` is ready.')
 
     @wavelink.WavelinkMixin.listener('on_track_stuck')
     @wavelink.WavelinkMixin.listener('on_track_end')
@@ -51,15 +51,16 @@ class Music(Cog, wavelink.WavelinkMixin):
 
     async def start_nodes(self):
         await self.bot.wait_until_ready()
-        creds = self.bot.config['music']
-        await self.wavelink.initiate_node(
-            creds['host'],
-            creds['port'],
-            rest_uri=creds['rest_uri'],
-            password=creds['password'],
-            region=creds['region'],
-            identifier=creds['identifier']
-        )
+        nodes = {'MAIN': {
+            'host': '127.0.0.1',
+            'port': 8080,
+            'rest_uri': 'http://127.0.0.1:8080',
+            'password': 'youshallnotpass',
+            'identifier': 'MAIN',
+            'region': 'europe'
+        }}
+        for n in nodes.values():
+            await self.wavelink.initiate_node(**n)
 
     def get_player(self, obj):
         if isinstance(obj, commands.Context):
@@ -85,10 +86,8 @@ class Music(Cog, wavelink.WavelinkMixin):
 
     @commands.command()
     async def play(self, ctx, *, query: t.Optional[str]):
-        """Play command. This lets you join youtube URL or search through bot
-        itself to the query.
-        Args: query (t.Optional[str]): The thing that you want to play. Either
-        searching words or URL.
+        """Play command. Search through or give it a URL.
+        Args: query: The thing that you want to play. Either searching words or URL.
         Raises: QueueIsEmpty: If no query is specified."""
         player = self.get_player(ctx)
         if not player.is_connected:
@@ -99,20 +98,69 @@ class Music(Cog, wavelink.WavelinkMixin):
             await player.set_pause(False)
             await ctx.send('Playback successfully resumed.')
         else:
-            query = query.strip("<>")
+            query = query.strip('<>')
             if not re.match(self.bot.regex['URL_REGEX'], query):
                 query = f'ytsearch:{query}'
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
 
-    @commands.command()
-    async def pause(self, ctx):
-        """Pause command. Lets you pause the current playing query.
+    @commands.command(aliases=['song', 'lyric'])
+    async def lyrics(self, ctx, *, song: str):
+        '''Powerful lyrics command.
+        You can find lyrics for song that you want.'''
+        cs = self.bot.session
+        r = await cs.get(f'https://some-random-api.ml/lyrics?title={song.replace(" ", "%20")}')
+        js = await r.json()
+        song = wrap(str(js['lyrics']), 1000, drop_whitespace=False, replace_whitespace=False)
+        embed_list = []
+        for lyrics in song:
+            embed = self.bot.embed.default(
+                ctx,
+                title=f'{js["author"]} — {js["title"]}',
+                description=lyrics
+            ).set_thumbnail(url=js['thumbnail']['genius'])
+            embed_list.append(embed)
+        await MyPages(EmbedPageSource(embed_list)).start(ctx)
+
+    @commands.command(aliases=['vol'])
+    async def volume(self, ctx, *, vol: int):
+        """Change the players volume, between 1 and 100.
         Raises: PlayerIsAlreadyPaused: If none of songs are playing."""
         player = self.get_player(ctx)
-        if player.is_paused:
+        if not player.is_connected:
+            return
+        if not 0 < vol < 101:
+            return await ctx.send('Please enter a value between 1 and 100.')
+        await player.set_volume(vol)
+        await ctx.send(f'Set the volume to **{vol}**%')
+
+    @commands.command(aliases=['eq'])
+    async def equalizer(self, ctx, *, equalizer):
+        """Changes the player's equalizer."""
+        player = self.get_player(ctx)
+        if not player.is_connected:
+            return
+        eqs = {
+            'flat': wavelink.Equalizer.flat(),
+            'boost': wavelink.Equalizer.boost(),
+            'metal': wavelink.Equalizer.metal(),
+            'piano': wavelink.Equalizer.piano()
+        }
+        eq = eqs.get(equalizer.lower(), None)
+
+        if not eq:
+            return await ctx.send('Invalid EQ provided. Valid EQs:\n%s' % '\n'.join(eqs.keys()))
+
+        await ctx.send(f'Successfully changed equalizer to {equalizer}')
+        await player.set_eq(eq)
+
+    @commands.command()
+    async def pause(self, ctx: commands.Context):
+        """Pause the currently playing song."""
+        player = self.get_player(ctx)
+        if player.is_paused or not player.is_connected:
             raise PlayerIsAlreadyPaused
-        await player.set_pause(True)
-        await ctx.send('Playback successfully paused.')
+        await ctx.send('DJ has paused the player.')
+        return await player.set_pause(True)
 
     @commands.command()
     async def stop(self, ctx):
@@ -125,7 +173,7 @@ class Music(Cog, wavelink.WavelinkMixin):
     @commands.command(aliases=['next'])
     async def skip(self, ctx):
         """Next command. Makes bot play next song in the queue.
-        Returns: Stop Command: Stops music if no songs are incoming."""
+        Returns: Stops music if no songs are incoming."""
         player = self.get_player(ctx)
         if not player.queue.upcoming:
             return await self.stop(ctx)
@@ -146,23 +194,17 @@ class Music(Cog, wavelink.WavelinkMixin):
     @commands.command(aliases=['q'])
     async def queue(self, ctx, show: t.Optional[int] = 10):
         """Queue command. Shows the current queue.
-        Args: show (optional): Number of songs you want to see in the queue.
-        Defaults to 10.
+        Args: show: Number of songs you want to see in the queue.
         Raises: QueueIsEmpty: If no songs are there in the queue."""
         player = self.get_player(ctx)
-
         if player.queue.is_empty:
             raise QueueIsEmpty
-
         embed = self.bot.embed.default(
             ctx, title='Queue', description=f'Showing up to next {show} tracks'
         ).set_author(name='Query Results')
-        embed.set_footer(text=f'Requested by {ctx.author}', icon_url=ctx.author.avatar_url)
         embed.add_field(name='Currently playing...', value=player.queue.current_track.title, inline=False)
         if upcoming := player.queue.upcoming:
-            embed.add_field(
-                name='Next up', value='\n'.join(t.title for t in upcoming), inline=False
-            )
+            embed.add_field(name='Next up', value='\n'.join(t.title for t in upcoming), inline=False)
         await ctx.send(embed=embed)
 
 

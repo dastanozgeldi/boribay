@@ -115,14 +115,12 @@ class Player(wavelink.Player):
 
     async def choose_track(self, ctx, tracks):
         def _check(r, u):
-            return (
-                r.emoji in OPTIONS.keys() and u == ctx.author and r.message.id == msg.id
-            )
+            return (r.emoji in OPTIONS.keys() and u == ctx.author and r.message.id == msg.id)
 
         embed = self.bot.embed.default(
             ctx, title="Choose a song",
             description=(
-                "\n".join(
+                '\n'.join(
                     f"**{i + 1}.** {t.title} ({t.length // 60000}:{str(t.length % 60).zfill(2)})"
                     for i, t in enumerate(tracks[:5])
                 )

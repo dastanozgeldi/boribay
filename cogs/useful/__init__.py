@@ -1,7 +1,6 @@
 import decimal
 import random
 import re
-import zlib
 import zipfile
 from io import BytesIO
 from textwrap import wrap
@@ -20,7 +19,7 @@ from discord.ext.commands import (
     BadArgument,
     NSFWChannelRequired
 )
-from googletrans import Translator
+from discord.ext import flags
 from utils.Converters import ColorConverter
 from utils.Cog import Cog
 from utils.Exceptions import (
@@ -33,7 +32,8 @@ from utils.Exceptions import (
     UndefinedVariable
 )
 from utils.Checks import has_voted
-from utils.Paginators import EmbedPageSource, MyPages, TodoPageSource, Trivia
+from utils.Manipulation import Manip
+from utils.Paginators import EmbedPageSource, MyPages, TodoPageSource
 
 from . import calclex, calcparse
 
@@ -75,10 +75,10 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     async def screenshot(self, ctx, url: str):
         """Screenshot command.
         Args: url (str): a web-site that you want to get a screenshot from."""
-        if not re.search(self.bot.regex['URL_REGEX'], url):
+        if not re.search(ctx.bot.regex['URL_REGEX'], url):
             raise BadArgument('Invalid URL specified. Note that you should include http(s).')
-        cs = self.bot.session
-        r = await cs.get(f'{self.bot.config["API"]["screenshot_api"]}{url}')
+        cs = ctx.bot.session
+        r = await cs.get(f'{ctx.bot.config["API"]["screenshot_api"]}{url}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
 
@@ -99,7 +99,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         Args: topic: The Wikipedia topic you want to search for."""
         self.bot.wikipedia = aiowiki.Wiki.wikipedia(language, session=self.bot.session)
         try:
-            page = (await self.bot.wikipedia.opensearch(topic))[0]
+            page = (await ctx.bot.wikipedia.opensearch(topic))[0]
             text = await page.summary()
         except (aiowiki.exceptions.PageNotFound, IndexError):
             return await ctx.send('No wikipedia article found, sorry.')
@@ -108,7 +108,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         text = wrap(text, 1000, drop_whitespace=False, replace_whitespace=False)
         embed_list = []
         for description in text:
-            embed = self.bot.embed.default(ctx, title=page.title, description=description).set_thumbnail(url=(await page.media())[0])
+            embed = ctx.bot.embed.default(ctx, title=page.title, description=description).set_thumbnail(url=(await page.media())[0])
             embed_list.append(embed)
         await MyPages(EmbedPageSource(embed_list)).start(ctx)
 
@@ -119,18 +119,23 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         Call for this command to learn how to use to-do commands."""
         await ctx.send_help('todo')
 
-    @todo.command(aliases=['list'])
-    async def show(self, ctx, number: Optional[int]):
+    @flags.add_flag('--count', type=bool, help='Sends the count of todos.')
+    @flags.add_flag('--dm', type=bool, help='Figures out whether to DM todo list or send in a current channel.')
+    @todo.command(cls=flags.FlagCommand, aliases=['list'])
+    async def show(self, ctx, number: Optional[int], **flags):
         '''Basically, shows author's todo list.
         Have nothing to explain, so try it and see.'''
-        todos = await self.todos.find_one({'_id': ctx.author.id})
+        todos = (await self.todos.find_one({'_id': ctx.author.id}))['todo'][1:]
+        dest = ctx.author if flags.pop('dm', False) else ctx
         if number:
-            return await ctx.send(embed=self.bot.embed.default(ctx, description=f'{number}: {todos["todo"][number]}'))
+            return await dest.send(embed=ctx.bot.embed.default(ctx, description=f'{number}: {todos[number]}'))
+        if flags.pop('count', False):
+            return await dest.send(len(todos))
         await MyPages(
-            TodoPageSource(ctx, todos['todo'][1:]),
+            TodoPageSource(ctx, todos),
             clear_reactions_after=True,
             timeout=60.0
-        ).start(ctx)
+        ).start(ctx, channel=dest)
 
     @todo.command()
     async def add(self, ctx, *, message: str):
@@ -194,10 +199,10 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         Args: query (str): Your search request. Results will be displayed,
         otherwise returns an error which means no results found."""
         safesearch = False if ctx.channel.is_nsfw() else True
-        results = await self.bot.cse.search(query, safesearch=safesearch)
+        results = await ctx.bot.cse.search(query, safesearch=safesearch)
         embed_list = []
         for i in range(0, 10 if len(results) >= 10 else len(results)):
-            embed = self.bot.embed.default(
+            embed = ctx.bot.embed.default(
                 ctx,
                 title=results[i].title,
                 description=results[i].description,
@@ -226,7 +231,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             reactions = ['<:thumbs_up:746352051717406740>', '<:thumbs_down:746352095510265881>']
         else:
             reactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
-        embed = self.bot.embed.default(ctx, title=question.replace('\n', ''), description='\n'.join([f'{reactions[x]} {option}' for x, option in enumerate(options)]))
+        embed = ctx.bot.embed.default(ctx, title=question.replace('\n', ''), description='\n'.join([f'{reactions[x]} {option}' for x, option in enumerate(options)]))
         if ctx.message.attachments:
             embed.set_image(url=ctx.message.attachments[0].url)
         message = await ctx.send(embed=embed)
@@ -241,13 +246,13 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     @has_voted()
     async def reddit(self, ctx, subreddit: str):
         """Find a randomized post from subreddit that you want to."""
-        cs = self.bot.session
+        cs = ctx.bot.session
         r = await cs.get(f'https://www.reddit.com/r/{subreddit}/hot.json')
         r = await r.json()
         data = r['data']['children'][random.randint(0, 10)]['data']
         if not ctx.channel.is_nsfw() and data['over_18'] is True:
             raise NSFWChannelRequired(ctx.channel)
-        embed = self.bot.embed.default(ctx).set_image(url=data['url'])
+        embed = ctx.bot.embed.default(ctx).set_image(url=data['url'])
         embed.set_author(name=data['title'], icon_url='https://icons.iconarchive.com/icons/papirus-team/papirus-apps/96/reddit-icon.png')
         embed.set_footer(text=f'from {data["subreddit_name_prefixed"]}')
         await ctx.send(embed=embed)
@@ -256,7 +261,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     async def youtube(self, ctx, *, search: str):
         """Youtube-Search command. Lets you to search YouTube videos through Discord.
         Args: search (str): Search topic. The bot will send the first faced result."""
-        cs = self.bot.session
+        cs = ctx.bot.session
         r = await cs.get('https://youtube.com/results', params={'search_query': search}, headers={'User-Agent': 'Mozilla/5.0'})
         found = re.findall(r'watch\?v=(\S{11})', await r.text())
         await ctx.send(f'https://youtu.be/{found[0]}')
@@ -265,11 +270,11 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     async def urbandictionary(self, ctx, *, word: str):
         """Urban Dictionary words' definition wrapper.
         Args: word (str): A word you want to know the definition of."""
-        cs = self.bot.session
-        r = await cs.get(f'{self.bot.config["API"]["ud_api"]}?term={word}')
+        cs = ctx.bot.session
+        r = await cs.get(f'{ctx.bot.config["API"]["ud_api"]}?term={word}')
         js = await r.json()
         source = js['list'][0]
-        embed = self.bot.embed.default(ctx, description=f"**{source['definition'].replace('[', '').replace(']', '')}**")
+        embed = ctx.bot.embed.default(ctx, description=f"**{source['definition'].replace('[', '').replace(']', '')}**")
         embed.set_author(
             name=word,
             url=source['permalink'],
@@ -294,7 +299,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             result = parser.parse(lexer.tokenize(expression))
         except Exception as e:
             if isinstance(e, Overflow):
-                return await ctx.send('Overflow number given.')
+                return await ctx.send('Too big number was given.')
             if isinstance(e, UndefinedVariable):
                 return await ctx.send(e.exc)
             if isinstance(e, KeywordAlreadyTaken):
@@ -306,34 +311,10 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             if isinstance(e, decimal.InvalidOperation):
                 return await ctx.send('Invalid expression given.')
         res = '\n'.join([str(i) for i in result])
-        embed = self.bot.embed.default(ctx)
+        embed = ctx.bot.embed.default(ctx)
         embed.add_field(name='Input', value=f'```\n{expression}\n```', inline=False)
         embed.add_field(name='Output', value=f'```\n{res}\n```', inline=False)
         await ctx.send(embed=embed)
-
-    @command(aliases=['song', 'lyric'])
-    async def lyrics(self, ctx, *, args: str):
-        '''Powerful lyrics command.
-        Ex: lyrics believer.
-        Has no limits.
-        You can find lyrics for song that you want.
-        Raises an exception if song does not exist in API data.'''
-        cs = self.bot.session
-        r = await cs.get(f'https://some-random-api.ml/lyrics?title={args.replace(" ", "%20")}')
-        js = await r.json()
-        try:
-            song = wrap(str(js['lyrics']), 1000, drop_whitespace=False, replace_whitespace=False)
-            embed_list = []
-            for lyrics in song:
-                embed = self.bot.embed.default(
-                    ctx,
-                    title=f'{js["author"]} — {js["title"]}',
-                    description=lyrics
-                ).set_thumbnail(url=js['thumbnail']['genius'])
-                embed_list.append(embed)
-            await MyPages(EmbedPageSource(embed_list)).start(ctx)
-        except KeyError:
-            await ctx.send(f'Could not find lyrics for **{args}**')
 
     @command(aliases=['colour'])
     async def color(self, ctx, *, color: ColorConverter):
@@ -342,34 +323,43 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         Args: color (ColorConverter): Color that you specify.
         It can be either RGB, HEX, or even a human-friendly word."""
         rgb = color.to_rgb()
-        embed = self.bot.embed(
+        embed = ctx.bot.embed(
             color=discord.Color.from_rgb(*rgb)
         ).set_thumbnail(url=f'https://kal-byte.co.uk/colour/{"/".join(str(i) for i in rgb)}')
         embed.add_field(name='Hex', value=str(color), inline=False)
         embed.add_field(name='RGB', value=str(rgb), inline=False)
         await ctx.send(embed=embed)
 
-    @command(aliases=['ncov', 'coronavirus'])
-    async def covid(self, ctx, *, country: Optional[str]):
+    @flags.add_flag('--continent', type=str, help='Search through continents.')
+    @flags.add_flag('--country', type=str, help='Search through countries.')
+    @flags.command(aliases=['ncov', 'coronavirus'])
+    async def covid(self, ctx, **flags):
         '''Coronavirus command.
         Returns world statistics if no country is mentioned.
-        • Cases, deaths, recovered cases, active cases, critical cases'''
-        cs = self.bot.session
-        if not country:
-            r = await cs.get(f'{self.bot.config["API"]["covid_api"]}all?yesterday=true&twoDaysAgo=true')
+        Cases, deaths, recovered cases, active cases, and critical cases'''
+        cs = ctx.bot.session
+        if bool(flags):
+            r = await cs.get(f'{ctx.bot.config["API"]["covid_api"]}all')
             js = await r.json()
             title = 'Covid-19 World Statistics'
             field = ('Affected Countries', str(js['affectedCountries']))
-            url = 'https://www.isglobal.org/documents/10179/7759027/Coronavirus+SARS-CoV-2+de+CDC+en+Unsplash'
-        if country:
-            r = await cs.get(f'{self.bot.config["API"]["covid_api"]}countries/{country}?yesterday=true&twoDaysAgo=true&strict=true')
+            url = 'https://www.freepngimg.com/thumb/globe/40561-7-earth-globe-png-download-free.png'
+
+        if continent := flags.pop('continent', False):
+            r = await cs.get(f'{ctx.bot.config["API"]["covid_api"]}continents/{continent}?strict=true')
             js = await r.json()
-            country = country.replace(' ', '+')
-            title = f'Covid-19 Statistics for {country}'
+            title = f'Covid-19 Statistics for {continent.title()}'
+            field = ('Tests', str(js['tests']))
+            url = ctx.guild.icon_url
+
+        if country := flags.pop('country', False):
+            r = await cs.get(f'{ctx.bot.config["API"]["covid_api"]}countries/{country}?strict=true')
+            js = await r.json()
+            title = f'Covid-19 Statistics for {country.title()}'
             field = ('Continent', str(js['continent']))
             url = str(js['countryInfo']['flag'])
 
-        embed = self.bot.embed.default(ctx).set_thumbnail(url=url)
+        embed = ctx.bot.embed.default(ctx, title=title).set_thumbnail(url=url)
         fields = [
             ('Total Cases', str(js['cases'])),
             ('Today Cases', str(js['todayCases'])),
@@ -381,7 +371,6 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             ('Critical', str(js['critical'])),
             field
         ]
-        embed.set_author(name=title, icon_url=ctx.author.avatar_url_as(size=64))
         for name, value in fields:
             embed.add_field(name=name, value=value)
         await ctx.send(embed=embed)
@@ -390,13 +379,13 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     async def weather(self, ctx, *, city: str.capitalize):
         '''Simply gets weather statistics of a given city.
         Gives: Description, temperature, humidity%, atmospheric pressure (hPa)'''
-        cs = self.bot.session
-        r = await cs.get(f'{self.bot.config["API"]["weather_api"]}appid={self.bot.config["API"]["weather_id"]}&q={city}')
+        cs = ctx.bot.session
+        r = await cs.get(f'{ctx.bot.config["API"]["weather_api"]}appid={ctx.bot.config["API"]["weather_id"]}&q={city}')
         x = await r.json()
         if x['cod'] != '404':
             y = x['main']
             z = x['weather']
-            embed = self.bot.embed.default(ctx, title=f'Weather in {city}')
+            embed = ctx.bot.embed.default(ctx, title=f'Weather in {city}')
             embed.set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
             fields = [
                 ('Description', f'**{z[0]["description"]}**', False),
@@ -412,13 +401,11 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     @command()
     async def translate(self, ctx, language, *, sentence):
         '''Translates a given text to language you want.
-        It also shows the pronunciation of a text.
-        Ex: **translate ru hello world!**'''
-        t = Translator()
-        a = t.translate(sentence, dest=language)
-        embed = self.bot.embed.default(ctx, title=f'Translating from {a.src} to {a.dest}:')
+        Shows the translation and pronunciation of a text.'''
+        a = await Manip.translate(language, sentence=sentence)
+        embed = ctx.bot.embed.default(ctx, title=f'Translating from {a.src} to {a.dest}:')
         embed.add_field(name='Translation:', value=f'```{a.text}```', inline=False)
-        embed.add_field(name='Pronunciation:', value=f'```{a.pronunciation}```', inline=False)
+        embed.add_field(name='Pronunciation:', value=f'```{a.pronunciation}```')
         await ctx.send(embed=embed)
 
 

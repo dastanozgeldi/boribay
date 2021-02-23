@@ -3,61 +3,13 @@ from discord.ext import menus
 from discord import HTTPException
 
 
-class HelpPages(menus.Menu):
-    def __init__(self, embed, **kwargs):
-        super().__init__(timeout=69.0, clear_reactions_after=True, **kwargs)
-        self.embed = embed
-
-    async def send_initial_message(self, ctx, channel):
-        return await channel.send(embed=self.embed)
-
-    @menus.button('<:pickaxe:807534625785380904>')
-    async def useful(self, payload):
-        await self.message.delete()
-        await self.ctx.send_help('Useful')
-
-    @menus.button('\U0001f389')
-    async def fun(self, payload):
-        await self.message.delete()
-        await self.ctx.send_help('Fun')
-
-    @menus.button('\U0001f5bc')
-    async def images(self, payload):
-        await self.message.delete()
-        await self.ctx.send_help('Images')
-
-    @menus.button('<:anime_glasses:807535041605402624>')
-    async def ani(self, payload):
-        await self.message.delete()
-        await self.ctx.send_help('Ani')
-
-    @menus.button('\U0001f6e1')
-    async def moderation(self, payload):
-        await self.message.delete()
-        await self.ctx.send_help('Moderation')
-
-    @menus.button('\U0001f4ab')
-    async def miscellaneous(self, payload):
-        await self.message.delete()
-        await self.ctx.send_help('Miscellaneous')
-
-    @menus.button('<:topgg:809359742899978272>')
-    async def top_gg(self, payload):
-        await self.message.delete()
-        await self.ctx.send_help('TopGG')
-
-    @menus.button('\U0001f5d1')
-    async def stop(self, payload):
-        await self.message.delete()
-
-
 class MyPages(menus.MenuPages):
     """My own paginator implementation.
     Subclasses menus.MenuPages. Takes page-source as a main parameter.
     Tries to delete a message when timeout comes, returns if any exceptions."""
 
     def __init__(self, source, **kwargs):
-        super().__init__(source=source, check_embeds=True, **kwargs)
+        super().__init__(source, check_embeds=True, **kwargs)
 
     async def finalize(self, timed_out):
         try:
@@ -89,7 +41,7 @@ class TodoPageSource(menus.ListPageSource):
                 name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} todos)',
                 icon_url=self.ctx.author.avatar_url
             )
-            embed.description = '\n'.join(f'{i}. {v}' for i, v in enumerate(entries, start=offset))
+            embed.description = '\n'.join(f'{i}: {v}' for i, v in enumerate(entries, start=offset))
         return embed
 
 

@@ -9,9 +9,9 @@ from typing import Optional
 
 import discord
 from discord.ext import commands
-from PIL import Image, ImageDraw, ImageFont
 from utils.Cog import Cog
 from utils.Paginators import Trivia
+from utils.Manipulation import Manip
 
 
 class Fun(Cog):
@@ -20,16 +20,13 @@ class Fun(Cog):
     icon = '🎉'
     name = 'Fun'
 
-    def __init__(self, bot):
-        self.bot = bot
-
     def __str__(self):
         return '{0.icon} {0.name}'.format(self)
 
-    async def question(self, difficulty: str):
+    async def question(self, ctx, difficulty: str):
         if difficulty not in ('easy', 'medium', 'hard'):
             raise ValueError('Invalid difficulty specified.')
-        async with self.bot.session.get(f"{self.bot.config['API']['trivia_api']}&difficulty={difficulty}") as r:
+        async with ctx.bot.session.get(f"{ctx.bot.config['API']['trivia_api']}&difficulty={difficulty}") as r:
             js = await r.json()
         js = js['results'][0]
         js['incorrect_answers'] = [unescape(x) for x in js['incorrect_answers']]
@@ -57,7 +54,7 @@ class Fun(Cog):
         Args: difficulty (optional): Questions difficulty in the game. Defaults to "easy".
         Returns: A correct answer."""
         try:
-            q = await self.question(difficulty)
+            q = await self.question(ctx, difficulty)
         except ValueError:
             raise commands.BadArgument('Invalid difficulty specified.')
         if await self.answer(ctx, q):
@@ -66,37 +63,26 @@ class Fun(Cog):
             msg = f'**{ctx.author}** was a bit wrong'
         await ctx.send(msg + f'\nThe answer was: `{q["correct_answer"]}`.')
 
-    @commands.command(aliases=['tr'])
+    @commands.command(aliases=['tr', 'typerace'])
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def typeracer(self, ctx):
         """Typeracer Command. Compete with others!
         Returns: Average WPM of the winner, time spent to type and the original text."""
-        cs = self.bot.session
-        r = await cs.get(self.bot.config['API']['quote_api'])
-        buffer = BytesIO()
+        cs = ctx.bot.session
+        r = await cs.get(ctx.bot.config['API']['quote_api'])
         to_wrap = random.choice(json.loads(await r.read()))['text']
-        text = '\n'.join(textwrap.wrap(to_wrap, 30))
-        font = ImageFont.truetype('./data/fonts/monoid.ttf', size=30)
-        w, h = font.getsize_multiline(text)
-        with Image.new('RGB', (w + 10, h + 10)) as base:
-            canvas = ImageDraw.Draw(base)
-            canvas.multiline_text((5, 5), text, font=font)
-            base.save(buffer, 'png', optimize=True)
-        buffer.seek(0)
-        embed = self.bot.embed.default(ctx, title='Typeracer', description='see who is fastest at typing.')
-        race = await ctx.send(
-            file=discord.File(buffer, 'typeracer.png'),
-            embed=embed.set_image(url='attachment://typeracer.png'))
+        buffer = await Manip.typeracer('\n'.join(textwrap.wrap(to_wrap, 30)))
+        embed = ctx.bot.embed.default(
+            ctx, title='Typeracer', description='see who is fastest at typing.'
+        ).set_image(url='attachment://typeracer.png')
+        race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
         start = time()
         try:
-            msg = await self.bot.wait_for('message', check=lambda m: m.content == to_wrap, timeout=60.0)
-            if not msg:
+            if not (msg := await ctx.bot.wait_for('message', check=lambda m: m.content == to_wrap, timeout=60.0)):
                 return
-            end = time()
-            final = round(end - start, 2)
-            await ctx.send(embed=self.bot.embed.default(
-                ctx,
-                title=f'{msg.author.display_name} won!',
+            final = round(time() - start, 2)
+            await ctx.send(embed=ctx.bot.embed.default(
+                ctx, title=f'{msg.author.display_name} won!',
                 description=f'**Done in**: {final}s\n'
                 f'**Average WPM**: {round(len(to_wrap.split()) * (60.0 / final))} words\n'
                 f'**Original text:**```diff\n+ {to_wrap}```',
@@ -118,18 +104,17 @@ class Fun(Cog):
             '✂': {'🪨': 'lose', '📄': 'win', '✂': 'draw'}
         }
         choice = random.choice([*rps_dict.keys()])
-        embed = self.bot.embed.default(ctx, description='**Choose one 👇**')
+        embed = ctx.bot.embed.default(ctx, description='**Choose one 👇**')
         msg = await ctx.send(embed=embed.set_footer(text='10 seconds left⏰'))
         for r in rps_dict.keys():
             await msg.add_reaction(r)
         try:
-            r, u = await self.bot.wait_for(
-                'reaction_add',
-                timeout=10,
+            r, u = await ctx.bot.wait_for(
+                'reaction_add', timeout=10,
                 check=lambda re, us: us == ctx.author and str(re) in rps_dict.keys() and re.message.id == msg.id
             )
             game = rps_dict.get(str(r.emoji))
-            await msg.edit(embed=self.bot.embed.default(ctx, description=f'''Result: **{game[choice].upper()}**\nMy choice: **{choice}**\nYour choice: **{str(r.emoji)}**'''))
+            await msg.edit(embed=ctx.bot.embed.default(ctx, description=f'''Result: **{game[choice].upper()}**\nMy choice: **{choice}**\nYour choice: **{str(r.emoji)}**'''))
         except asyncio.TimeoutError:
             await msg.delete()
 
@@ -143,17 +128,17 @@ class Fun(Cog):
         elif (a == b) or (a == c) or (b == c):
             await ctx.send(f'{text}2 match, you won! 🎉')
         else:
-            await ctx.send(f'{text}No matches, unlucky retard.')
+            await ctx.send(f'{text}No matches, I wish you win next time.')
 
     @commands.command(name='random')
-    async def random_command(self, ctx):
+    async def _random(self, ctx):
         """Executes a random command that the bot has.
         Perfect feature when you want to use Boribay but don't even know
         what to call."""
-        denied = ['random', 'jishaku', 'dev']
-        command = random.choice([cmd.name for cmd in self.bot.commands if len(cmd.signature.split()) == 0 and cmd.name not in denied])
+        denied = ['random', 'jishaku', 'su']
+        command = random.choice([cmd.name for cmd in ctx.bot.commands if len(cmd.signature.split()) == 0 and cmd.name not in denied])
         await ctx.send(f'Invoking command {command}...')
-        await self.bot.get_command(command)(ctx)
+        await ctx.bot.get_command(command)(ctx)
 
     @commands.command()
     async def eject(self, ctx, color: str.lower, is_impostor: bool, *, name: Optional[str]):
@@ -161,7 +146,7 @@ class Fun(Cog):
         Colors: black • blue • brown • cyan • darkgreen • lime • orange • pink • purple • red • white • yellow.
         Ex: eject blue True Dosek.'''
         name = name or ctx.author.display_name
-        cs = self.bot.session
+        cs = ctx.bot.session
         r = await cs.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
@@ -171,17 +156,17 @@ class Fun(Cog):
         """Basically, returns your PP size."""
         member = member or ctx.author
         random.seed(member.id)
-        sz = 100 if member.id in self.bot.owner_ids else random.randint(1, 10)
-        await ctx.send(f'{member.display_name}\'s pp size is:\n||' + f'8{"=" * sz}D||')
+        sz = 100 if member.id in ctx.bot.owner_ids else random.randint(1, 10)
+        await ctx.send(f'{member.display_name}\'s pp size is:\n3{"=" * sz}D')
 
     @commands.command()
     async def uselessfact(self, ctx):
         """Returns an useless fact."""
-        cs = self.bot.session
+        cs = ctx.bot.session
         r = await cs.get('https://uselessfacts.jsph.pl/random.json?language=en')
         js = await r.json()
-        await ctx.send(embed=self.bot.embed.default(ctx, description=js['text']))
+        await ctx.send(embed=ctx.bot.embed.default(ctx, description=js['text']))
 
 
 def setup(bot):
-    bot.add_cog(Fun(bot))
+    bot.add_cog(Fun())

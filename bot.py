@@ -12,7 +12,7 @@ async def get_general_stats(data):
     return {
         'invite_url': bot.config['links']['invite_url'],
         'guild_count': len(bot.guilds),
-        'command_count': sum(1 for c in bot.walk_commands()),
+        'command_count': len([*bot.walk_commands()]),
         'command_usage': await bot.pool.fetchval('SELECT command_usage FROM bot_stats')
     }
 

@@ -1,7 +1,7 @@
 from discord import Forbidden, Member
 from utils.Cog import Cog
 from time import perf_counter
-from discord.ext import commands
+from discord.ext import commands, flags
 from typing import Optional
 from humanize import naturaldate, naturaltime
 import psutil
@@ -20,22 +20,59 @@ class Miscellaneous(Cog):
     def __str__(self):
         return '{0.icon} {0.name}'.format(self)
 
+    @commands.command()
+    async def github(self, ctx, login: str = 'Dositan'):
+        """See some GitHub account information about user.
+        Args: profile (optional): Account you want to get the data of."""
+        cs = ctx.bot.session
+        data = await (await cs.get(f'https://api.github.com/users/{login}')).json()
+        repos = await (await cs.get(data['repos_url'])).json()
+        fields = [
+            ('Following', data['following']),
+            ('Followers', data['followers']),
+            ('Total Repos', data['public_repos']),
+            ('Total Stars', sum(i['stargazers_count'] for i in repos)),
+            ('One Repository', f'[here]({repos[0]["html_url"]})')
+        ]
+        embed = ctx.bot.embed.default(
+            ctx, title=data['bio'],
+            description='\n'.join(f'**{k}:** {v}' for k, v in fields)
+        ).set_author(name=f'{data["login"]} ({data["name"]})', url=data['html_url'], icon_url='https://icons-for-free.com/iconfiles/png/64/part+1+github-1320568339880199515.png')
+        embed.set_thumbnail(url=data['avatar_url'])
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases=['cs'])
+    async def codestats(self, ctx):
+        """See the code statictics of the bot."""
+        ctr = Counter()
+        for ctr['files'], f in enumerate(glob.glob('./**/*.py', recursive=True)):
+            with open(f, encoding='UTF-8') as fp:
+                for ctr['lines'], line in enumerate(fp, ctr['lines']):
+                    line = line.lstrip()
+                    ctr['imports'] += line.startswith('import') + line.startswith('from')
+                    ctr['classes'] += line.startswith('class')
+                    ctr['comments'] += '#' in line
+                    ctr['functions'] += line.startswith('def')
+                    ctr['coroutines'] += line.startswith('async def')
+                    ctr['docstrings'] += line.startswith('"""') + line.startswith("'''")
+        await ctx.send(embed=ctx.bot.embed.default(ctx, description='\n'.join([f'**{k.capitalize()}:** {v}' for k, v in ctr.items()])))
+
     @commands.command(aliases=['modules', 'exts'])
     async def extensions(self, ctx):
         """List of modules that work at a current time."""
         exts = []
-        for ext in ctx.bot.cogs.keys():
-            if not ext:
+        for ext in ctx.bot.cogs.values():
+            name = ext.qualified_name
+            if not await ctx.bot.is_owner(ctx.author) and name in ctx.bot.config['bot']['owner_exts']:
                 continue
-            if not await ctx.bot.is_owner(ctx.author) and ext in ctx.bot.config['bot']['owner_exts']:
-                continue
-            exts.append(ext)
+            exts.append(name)
         exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
         length = [len(element) for row in exts for element in row]
-        rows = []
-        for row in exts:
-            rows.append(''.join(e.ljust(max(length) + 2) for e in row))
-        await ctx.send(embed=ctx.bot.embed.default(ctx, title='Modules that are working rn', description='```%s```' % '\n'.join(rows)))
+        rows = [''.join(e.ljust(max(length) + 2) for e in row) for row in exts]
+        await ctx.send(embed=ctx.bot.embed.default(
+            ctx, title='Currently working modules.',
+            description='```%s```' % '\n'.join(rows)
+        ))
 
     @commands.command()
     async def uptime(self, ctx):
@@ -51,18 +88,15 @@ class Miscellaneous(Cog):
     async def system(self, ctx):
         """Information of the system that is running the bot."""
         embed = ctx.bot.embed.default(ctx, title='System Information')
-        embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/735725378433187901/776524927708692490/data-server.png')
         memory = psutil.virtual_memory()
         info = {
             'System': {
                 'Host OS': platform.platform(),
                 'Last Boot': naturaltime(datetime.fromtimestamp(psutil.boot_time())),
-            },
-            'CPU': {
+            }, 'CPU': {
                 'Frequency': f'{psutil.cpu_freq(percpu=True)[0][0]} MHz',
                 'CPU Used': f'{psutil.cpu_percent(interval=1)}%'
-            },
-            'Memory': {
+            }, 'Memory': {
                 'RAM Used': f'{memory.percent} GB',
                 'RAM Available': f'{memory.available / (1024 ** 3):,.3f} GB'
             }
@@ -71,23 +105,8 @@ class Miscellaneous(Cog):
             embed.add_field(name=f'**{key}**', value='\n'.join([f'> **{k}:** {v}' for k, v in info[key].items()]), inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['cs'])
-    async def codestats(self, ctx):
-        """Code statistic of the bot."""
-        ctr = Counter()
-        for ctr['files'], f in enumerate(glob.glob('./**/*.py', recursive=True)):
-            with open(f, encoding='UTF-8') as fp:
-                for ctr['lines'], line in enumerate(fp, ctr['lines']):
-                    line = line.lstrip()
-                    ctr['comments (#)'] += '#' in line
-                    ctr['classes'] += line.startswith('class')
-                    ctr['functions (def)'] += line.startswith('def')
-                    ctr['coroutines (async def)'] += line.startswith('async def')
-                    ctr['docstrings'] += line.startswith('"""') + line.startswith("'''")
-        await ctx.send(embed=ctx.bot.embed.default(ctx, description='\n'.join(f'**{key.capitalize()}:** {value}' for key, value in ctr.items())))
-
-    @commands.command(aliases=['bi', 'botinfo'])
-    async def about(self, ctx):
+    @commands.command(aliases=['about', 'bi', 'botinfo'])
+    async def info(self, ctx):
         """See some kind of information about me (such as command usage, links etc.)"""
         me = ctx.bot
         embed = me.embed.default(ctx)
@@ -97,16 +116,15 @@ class Miscellaneous(Cog):
                 ('Developer', str(me.dosek)),
                 ('Language', 'Python'),
                 ('Library', 'Discord.py')
-            },
-            'General': {
+            }, 'General': {
                 ('Currently in', f'{len(me.guilds)} servers'),
-                ('Commands working', f'{sum(1 for i in me.walk_commands())}'),
+                ('Commands working', f'{len([*me.walk_commands()])}'),
                 ('Commands usage (last restart)', me.command_usage),
                 ('Commands usage (last year)', await me.pool.fetchval('SELECT command_usage FROM bot_stats'))
             }
         }
         for key in fields:
-            embed.add_field(name=key, value='\n'.join([f'> **{name}:** {value}' for name, value in fields[key]]), inline=False)
+            embed.add_field(name=key, value='\n'.join([f'> **{k}:** {v}' for k, v in fields[key]]), inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['memberinfo', 'ui', 'mi'])
@@ -140,22 +158,22 @@ class Miscellaneous(Cog):
             ('Voice channels', len(g.voice_channels)),
             ('Categories', len(g.categories)),
         ]
-        embed = ctx.bot.embed.default(ctx, description='\n'.join([f'**{n}:** {v}' for n, v in fields])).set_author(
-            name=g.name,
-            icon_url=g.icon_url_as(size=64),
-            url=g.icon_url
-        ).set_thumbnail(url=ctx.guild.banner_url_as(size=256))
+        embed = ctx.bot.embed.default(
+            ctx, description='\n'.join([f'**{n}:** {v}' for n, v in fields])
+        ).set_author(name=g.name, icon_url=g.icon_url_as(size=64), url=g.icon_url)
         await ctx.send(embed=embed)
 
-    @commands.command()
-    async def say(self, ctx, *, message: str):
+    @flags.add_flag('--tts', type=bool, help='Whether to send a tts message.')
+    @flags.command()
+    async def say(self, ctx, message: str, **flags):
         """Make the bot say what you want.
-        Args: message: A message that will be sent."""
+        Args: message: A message that will be sent.
+        Make sure to put your message in double quotes."""
         try:
             await ctx.message.delete()
         except Forbidden:
             pass
-        await ctx.send(message)
+        await ctx.send(message, tts=flags.pop('tts', False))
 
     @commands.command()
     async def prefix(self, ctx):

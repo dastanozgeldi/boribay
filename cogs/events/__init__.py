@@ -26,7 +26,8 @@ class Events(Cog, command_attrs={'hidden': True}):
         await self.bot.cache_guilds()
         embed = self.bot.embed(
             title=f'Joined a server: {guild}🎉',
-            description=f'Total members: {guild.member_count}',
+            description=f'Total members: {guild.member_count}'
+            f'Now in {len(self.bot.guilds)} guilds!',
             color=0x2ecc71
         ).set_thumbnail(url=guild.icon_url_as(size=256))
         await self.webhook.send(embed=embed)
@@ -36,7 +37,8 @@ class Events(Cog, command_attrs={'hidden': True}):
         await self.bot.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild.id)
         embed = self.bot.embed(
             title=f'Lost a server: {guild}💔',
-            description=f'Total members: {guild.member_count}',
+            description=f'Total members: {guild.member_count}'
+            f'Now in {len(self.bot.guilds)} guilds.',
             color=0xff0000
         ).set_thumbnail(url=guild.icon_url_as(size=256))
         await self.webhook.send(embed=embed)

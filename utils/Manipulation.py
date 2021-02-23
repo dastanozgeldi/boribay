@@ -1,9 +1,12 @@
 import textwrap
 from io import BytesIO
+from discord import File
+from polaroid import Image as PI
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from wand.image import Image as WI
 from utils.Converters import ImageConverter, ImageURLConverter
 from jishaku.functools import executor_function
+from googletrans import Translator
 
 
 async def make_image_url(ctx, argument: str):
@@ -29,7 +32,22 @@ async def make_image(ctx, argument: str):
     return image
 
 
+def polaroid_filter(ctx, image: bytes, *, method: str, args: list = None, kwargs: dict = None):
+    args = args or []
+    kwargs = kwargs or {}
+    img = PI(image)
+    filt = getattr(img, method)
+    filt(*args, **kwargs)
+    return File(BytesIO(img.save_bytes()), f'{method}.png')
+
+
 class Manip:
+
+    @staticmethod
+    @executor_function
+    def translate(language, *, sentence):
+        t = Translator()
+        return t.translate(sentence, dest=language)
 
     @staticmethod
     @executor_function
@@ -96,20 +114,6 @@ class Manip:
 
     @staticmethod
     @executor_function
-    def triggered(image: BytesIO):
-        color = Image.new('RGBA', (400, 400), color=(255, 0, 0, 80))
-        layout = Image.open('./data/layouts/triggered.png')
-        with Image.new('RGBA', (400, 400)) as empty_image:
-            empty_image.paste(Image.open(image).resize((400, 400)))
-            empty_image.paste(color, mask=color)
-            empty_image.paste(layout, mask=layout)
-            buffer = BytesIO()
-            empty_image.save(buffer, 'png')
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
     def wanted(image: BytesIO):
         image = Image.open(image).resize((189, 205))
         with Image.open('./data/layouts/wanted.png') as img:
@@ -128,6 +132,19 @@ class Manip:
             draw.text((72, 33), txt, (255, 255, 255), font=font)
             buffer = BytesIO()
             img.save(buffer, 'png')
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
+    def typeracer(txt: str):
+        font = ImageFont.truetype('./data/fonts/monoid.ttf', size=30)
+        w, h = font.getsize_multiline(txt)
+        with Image.new('RGB', (w + 10, h + 10)) as base:
+            canvas = ImageDraw.Draw(base)
+            canvas.multiline_text((5, 5), txt, font=font)
+            buffer = BytesIO()
+            base.save(buffer, 'png', optimize=True)
         buffer.seek(0)
         return buffer
 

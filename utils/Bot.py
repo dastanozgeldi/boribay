@@ -96,6 +96,7 @@ class Bot(commands.Bot):
         return end - start
 
     async def cache_guilds(self):
+        await self.wait_until_ready()
         guild_config = await self.pool.fetch('SELECT * FROM guild_config')
         for key in ['prefix', 'embed_color', 'welcome_channel', 'autorole']:
             self.cache[key] = {g['guild_id']: g[key] for g in guild_config}
