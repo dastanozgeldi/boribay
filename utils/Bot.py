@@ -30,7 +30,7 @@ def get_prefix(bot, message):
     if not message.guild:
         prefix = '.'
     else:
-        prefix = bot.cache['prefix'][message.guild.id]
+        prefix = bot.cache['prefix'].get(message.guild.id, '.')
     return commands.when_mentioned_or(prefix)(bot, message)
 
 
@@ -80,6 +80,7 @@ class Bot(commands.Bot):
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
         self.loop.create_task(self.cache_guilds())
+        self.columns = ['prefix', 'embed_color', 'welcome_channel', 'autorole']
 
     @property
     def dosek(self):
@@ -96,9 +97,8 @@ class Bot(commands.Bot):
         return end - start
 
     async def cache_guilds(self):
-        await self.wait_until_ready()
         guild_config = await self.pool.fetch('SELECT * FROM guild_config')
-        for key in ['prefix', 'embed_color', 'welcome_channel', 'autorole']:
+        for key in self.columns:
             self.cache[key] = {g['guild_id']: g[key] for g in guild_config}
 
         if difference := list({i.id for i in self.guilds} - {i['guild_id'] for i in guild_config}):
