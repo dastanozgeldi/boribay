@@ -9,16 +9,7 @@ from typing import Optional
 import aiowiki
 import discord
 from async_cse import Search
-from discord.ext.commands import (
-    group,
-    is_nsfw,
-    command,
-    cooldown,
-    Cooldown,
-    BucketType,
-    BadArgument,
-    NSFWChannelRequired
-)
+from discord.ext import commands
 from discord.ext import flags
 from utils.Converters import ColorConverter
 from utils.Cog import Cog
@@ -38,7 +29,7 @@ from utils.Paginators import EmbedPageSource, MyPages, TodoPageSource
 from . import calclex, calcparse
 
 
-class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
+class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.BucketType.user)}):
     '''Useful commands extension. Simply made to help people in some kind of
     specific situations, such as solving math expression, finding lyrics
     of the song and so on.'''
@@ -53,9 +44,9 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
     def __str__(self):
         return '{0.icon} {0.name}'.format(self)
 
-    @command()
+    @commands.command()
     @has_voted()
-    @cooldown(1, 60.0, BucketType.guild)
+    @commands.cooldown(1, 60.0, commands.BucketType.guild)
     async def zipemojis(self, ctx, guild: Optional[discord.Guild]):
         """Zip All Emojis.
         Args: guild: The guild you want to grab emojis from."""
@@ -69,31 +60,31 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             buffer.seek(0)
         await ctx.reply('Sorry for being slow as hell but anyways:', file=discord.File(buffer, filename='emojis.zip'))
 
-    @command(aliases=['ss'])
+    @commands.command(aliases=['ss'])
     @has_voted()
-    @is_nsfw()
+    @commands.is_nsfw()
     async def screenshot(self, ctx, url: str):
         """Screenshot command.
         Args: url (str): a web-site that you want to get a screenshot from."""
         if not re.search(ctx.bot.regex['URL_REGEX'], url):
-            raise BadArgument('Invalid URL specified. Note that you should include http(s).')
+            raise commands.BadArgument('Invalid URL specified. Note that you should include http(s).')
         cs = ctx.bot.session
         r = await cs.get(f'{ctx.bot.config["API"]["screenshot_api"]}{url}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
 
-    @command()
+    @commands.command()
     async def password(self, ctx, length: int = 25):
         """A Password creator command.
         Args: length (optional): Length of characters. Defaults to 25.
         Raises: BadArgument: Too big length of the password was given."""
         if length > 50:
-            raise BadArgument(f'Too big length was given ({length}) while the limit is 50 characters.')
+            raise commands.BadArgument(f'Too big length was given ({length}) while the limit is 50 characters.')
         else:
             asset = random.choices(open('cogs/useful/chars.txt', 'r').read(), k=length)
             await ctx.author.send(''.join(char for char in asset))
 
-    @command(aliases=['wiki'])
+    @commands.command(aliases=['wiki'])
     async def wikipedia(self, ctx, language: str, *, topic: str):
         """Wikipedia Search Command.
         Args: topic: The Wikipedia topic you want to search for."""
@@ -112,15 +103,15 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             embed_list.append(embed)
         await MyPages(EmbedPageSource(embed_list)).start(ctx)
 
-    @group(invoke_without_command=True, aliases=['to-do'])
+    @commands.group(invoke_without_command=True, aliases=['to-do'])
     async def todo(self, ctx):
         """Todo commands parent.
         It just basically sends the help for its category.
         Call for this command to learn how to use to-do commands."""
         await ctx.send_help('todo')
 
-    @flags.add_flag('--count', type=bool, help='Sends the count of todos.')
-    @flags.add_flag('--dm', type=bool, help='Figures out whether to DM todo list or send in a current channel.')
+    @flags.add_flag('--count', action='store_true', help='Sends the count of todos.')
+    @flags.add_flag('--dm', action='store_true', help='Figures out whether to DM todo list or send in a current channel.')
     @todo.command(cls=flags.FlagCommand, aliases=['list'])
     async def show(self, ctx, number: Optional[int], **flags):
         '''Basically, shows author's todo list.
@@ -193,7 +184,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         )
         await ctx.message.add_reaction('✅')
 
-    @command(aliases=['g'])
+    @commands.command(aliases=['g'])
     async def google(self, ctx, *, query: str):
         """Paginated Google-Search command.
         Args: query (str): Your search request. Results will be displayed,
@@ -218,7 +209,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             delete_message_after=True
         ).start(ctx)
 
-    @command()
+    @commands.command()
     async def poll(self, ctx, question, *options):
         """Make a simple poll using this command. You can also add an image.
         Args: question (str): Title of the poll.
@@ -242,7 +233,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         except discord.Forbidden:
             pass
 
-    @command(aliases=['r'])
+    @commands.command(aliases=['r'])
     @has_voted()
     async def reddit(self, ctx, subreddit: str):
         """Find a randomized post from subreddit that you want to."""
@@ -251,13 +242,13 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         r = await r.json()
         data = r['data']['children'][random.randint(0, 10)]['data']
         if not ctx.channel.is_nsfw() and data['over_18'] is True:
-            raise NSFWChannelRequired(ctx.channel)
+            raise commands.NSFWChannelRequired(ctx.channel)
         embed = ctx.bot.embed.default(ctx).set_image(url=data['url'])
         embed.set_author(name=data['title'], icon_url='https://icons.iconarchive.com/icons/papirus-team/papirus-apps/96/reddit-icon.png')
         embed.set_footer(text=f'from {data["subreddit_name_prefixed"]}')
         await ctx.send(embed=embed)
 
-    @command(aliases=['yt'])
+    @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search: str):
         """Youtube-Search command. Lets you to search YouTube videos through Discord.
         Args: search (str): Search topic. The bot will send the first faced result."""
@@ -266,7 +257,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         found = re.findall(r'watch\?v=(\S{11})', await r.text())
         await ctx.send(f'https://youtu.be/{found[0]}')
 
-    @command(aliases=['ud', 'urban'])
+    @commands.command(aliases=['ud', 'urban'])
     async def urbandictionary(self, ctx, *, word: str):
         """Urban Dictionary words' definition wrapper.
         Args: word (str): A word you want to know the definition of."""
@@ -283,7 +274,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         embed.set_footer(text=f'{source["thumbs_up"]}👍 | {source["thumbs_down"]}👎 | {source["written_on"][0:10]}')
         await ctx.send(embed=embed)
 
-    @command(aliases=['calculate', 'calculator'])
+    @commands.command(aliases=['calculate', 'calculator'])
     async def calc(self, ctx, *, expression: str):
         """A simple calculator that supports useful features.
         Args: expression (str): Maths expression to solve."""
@@ -316,7 +307,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
         embed.add_field(name='Output', value=f'```\n{res}\n```', inline=False)
         await ctx.send(embed=embed)
 
-    @command(aliases=['colour'])
+    @commands.command(aliases=['colour'])
     async def color(self, ctx, *, color: ColorConverter):
         """Color command.
         Example: **color green**
@@ -375,7 +366,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             embed.add_field(name=name, value=value)
         await ctx.send(embed=embed)
 
-    @command(aliases=['temp', 'temperature'])
+    @commands.command(aliases=['temp', 'temperature'])
     async def weather(self, ctx, *, city: str.capitalize):
         '''Simply gets weather statistics of a given city.
         Gives: Description, temperature, humidity%, atmospheric pressure (hPa)'''
@@ -398,7 +389,7 @@ class Useful(Cog, command_attrs={'cooldown': Cooldown(1, 5, BucketType.user)}):
             return await ctx.send(embed=embed)
         await ctx.send(f'City `{city}` not found.')
 
-    @command()
+    @commands.command()
     async def translate(self, ctx, language, *, sentence):
         '''Translates a given text to language you want.
         Shows the translation and pronunciation of a text.'''

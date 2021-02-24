@@ -163,17 +163,18 @@ class Miscellaneous(Cog):
         ).set_author(name=g.name, icon_url=g.icon_url_as(size=64), url=g.icon_url)
         await ctx.send(embed=embed)
 
-    @flags.add_flag('--tts', type=bool, help='Whether to send a tts message.')
+    @flags.add_flag('--tts', action='store_true', help='Whether to send a tts message.')
     @flags.command()
     async def say(self, ctx, message: str, **flags):
         """Make the bot say what you want.
         Args: message: A message that will be sent.
         Make sure to put your message in double quotes."""
+        tts = flags.pop('tts', False)
         try:
             await ctx.message.delete()
         except Forbidden:
             pass
-        await ctx.send(message, tts=flags.pop('tts', False))
+        await ctx.send(message, tts=tts)
 
     @commands.command()
     async def prefix(self, ctx):

@@ -95,7 +95,7 @@ class Images(Cog):
         image = await make_image(ctx, image)
         await ctx.send(file=polaroid_filter(ctx, image, method='brighten', kwargs={'treshold': 69}))
 
-    @flags.add_flag('--circle', type=bool, help='Whether to circlize an avatar.')
+    @flags.add_flag('--circle', action='store_true', help='Whether to circlize an avatar.')
     @flags.command()
     async def avatar(self, ctx, member: Optional[discord.Member], **flags):
         """Returns either author or member avatar if specified.
