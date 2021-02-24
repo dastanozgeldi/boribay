@@ -23,9 +23,6 @@ class Events(Cog, command_attrs={'hidden': True}):
 
     @Cog.listener()
     async def on_guild_join(self, guild):
-        config = await self.bot.pool.fetchrow('SELECT * FROM guild_config WHERE guild_id = $1', guild.id)
-        for key in self.bot.columns:
-            self.cache[key][guild.id] = config[key]
         embed = self.bot.embed(
             title=f'Joined a server: {guild}🎉',
             description=f'Total members: {guild.member_count}\n'
@@ -37,8 +34,6 @@ class Events(Cog, command_attrs={'hidden': True}):
     @Cog.listener()
     async def on_guild_remove(self, guild):
         await self.bot.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild.id)
-        for key in self.columns:
-            del self.cache[key][guild.id]
         embed = self.bot.embed(
             title=f'Lost a server: {guild}💔',
             description=f'Total members: {guild.member_count}\n'
