@@ -22,7 +22,7 @@ from utils.Exceptions import (
     UnclosedBrackets,
     UndefinedVariable
 )
-from utils.Checks import has_voted
+from utils.Checks import has_voted, beta_command
 from utils.Manipulation import Manip
 from utils.Paginators import EmbedPageSource, MyPages, TodoPageSource
 
@@ -113,6 +113,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     @flags.add_flag('--count', action='store_true', help='Sends the count of todos.')
     @flags.add_flag('--dm', action='store_true', help='Figures out whether to DM todo list or send in a current channel.')
     @todo.command(cls=flags.FlagCommand, aliases=['list'])
+    @beta_command()
     async def show(self, ctx, number: Optional[int], **flags):
         '''Basically, shows author's todo list.
         Have nothing to explain, so try it and see.'''
