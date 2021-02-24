@@ -28,6 +28,15 @@ def is_mod():
     return commands.check(predicate)
 
 
+def beta_command():
+    async def predicate(ctx):
+        if ctx.author.id not in ctx.bot.owner_ids:
+            raise commands.CheckFailure(f'Command `{ctx.command}` is currently in beta-testing and cannot be executed now.')
+            return False
+        return True
+    return commands.check(predicate)
+
+
 def has_voted():
     async def predicate(ctx):
         check = await ctx.bot.dblpy.get_user_vote(ctx.author.id)
