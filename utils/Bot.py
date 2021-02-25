@@ -12,7 +12,6 @@ import toml
 from dbl import DBLClient
 from discord import AllowedMentions, Game, Intents, flags
 from discord.ext import commands, ipc
-from motor.motor_asyncio import AsyncIOMotorClient
 
 from utils.Context import Context
 from utils.Embed import Embed
@@ -62,7 +61,6 @@ class Bot(commands.Bot):
             'URL_REGEX': r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
         }
         self.command_usage = 0
-        self.db = AsyncIOMotorClient(f'mongodb+srv://{self.config["mongo"]["username"]}:{self.config["mongo"]["password"]}@{self.config["mongo"]["project"]}.xyuwh.mongodb.net/{self.config["mongo"]["database"]}?authSource=admin&w=majority&readPreference=primary&retryWrites=true')
         self.start_time = datetime.now()
         self.loop = asyncio.get_event_loop()
         self.pool = self.loop.run_until_complete(asyncpg.create_pool(
@@ -80,7 +78,6 @@ class Bot(commands.Bot):
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
         self.loop.create_task(self.cache_guilds())
-        self.columns = ['prefix', 'embed_color', 'welcome_channel', 'autorole']
 
     @property
     def dosek(self):
@@ -98,7 +95,7 @@ class Bot(commands.Bot):
 
     async def cache_guilds(self):
         guild_config = await self.pool.fetch('SELECT * FROM guild_config')
-        for key in self.columns:
+        for key in ['prefix', 'embed_color', 'welcome_channel', 'autorole']:
             self.cache[key] = {g['guild_id']: g[key] for g in guild_config}
 
         if difference := list({i.id for i in self.guilds} - {i['guild_id'] for i in guild_config}):

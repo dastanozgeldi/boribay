@@ -1,7 +1,12 @@
+import re
+from io import BytesIO
 from typing import Optional
-from discord.ext import commands
+
+import discord
+from discord.ext import commands, flags
 from jishaku.codeblocks import codeblock_converter
 from utils.Cog import Cog
+from utils.Formats import TabularData
 
 
 class Owner(Cog, command_attrs={'hidden': True}):
@@ -17,15 +22,30 @@ class Owner(Cog, command_attrs={'hidden': True}):
     async def cog_check(self, ctx):
         return await ctx.bot.is_owner(ctx.author)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def su(self, ctx):
-        """The parent command."""
-        await ctx.message.add_reaction('✅')
+        """The super-user commands parent."""
 
     @su.command()
     async def nick(self, ctx, *, nick: str):
         """Nickname changing command. Just a quick tool for the owner nothing more."""
         await ctx.me.edit(nick=nick)
+
+    @su.command()
+    async def clear(self, ctx, limit: int = 5):
+        await ctx.channel.purge(limit=limit, bulk=False, check=lambda r: r.author == ctx.me)
+        await ctx.send(f'Deleted {limit} messages.')
+
+    @su.command(aliases=['ss'])
+    @commands.is_nsfw()
+    async def screenshot(self, ctx, url: str):
+        """Screenshot command.
+        Args: url (str): a web-site that you want to get a screenshot from."""
+        if not re.search(ctx.bot.regex['URL_REGEX'], url):
+            raise commands.BadArgument('Invalid URL specified. Note that you should include http(s).')
+        r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["screenshot_api"]}{url}')
+        io = BytesIO(await r.read())
+        await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
 
     @su.command()
     async def leave(self, ctx, guild_id: Optional[int]):
@@ -40,7 +60,7 @@ class Owner(Cog, command_attrs={'hidden': True}):
 
     @su.command()
     async def sql(self, ctx, *, query: codeblock_converter):
-        from utils.Formats import TabularData
+        """Does some nice SQL queries."""
         query = query.content
         if query.lower().startswith('select'):
             strategy = ctx.bot.pool.fetch
@@ -58,20 +78,20 @@ class Owner(Cog, command_attrs={'hidden': True}):
             msg = results
         await ctx.send(msg)
 
-    @su.command(aliases=['l'])
-    async def load(self, ctx, *, module: str.lower):
-        """Loads a module."""
-        ctx.bot.load_extension(f'cogs.{module}')
-
-    @su.command(aliases=['u'])
-    async def unload(self, ctx, *, module: str.lower):
-        """Unloads a module."""
-        ctx.bot.unload_extension(f'cogs.{module}')
-
-    @su.command(aliases=['r'])
-    async def reload(self, ctx, *, module: str.lower):
-        """Reloads a module."""
-        ctx.bot.reload_extension(f'cogs.{module}')
+    @flags.add_flag('--mode', choices=['r', 'l', 'u'], default='r')
+    @flags.add_flag('ext', nargs="*")
+    @su.command(cls=flags.FlagCommand)
+    async def ext(self, ctx, **flags):
+        """Extensions manager."""
+        modes = {
+            'r': ctx.bot.reload_extension,
+            'l': ctx.bot.load_extension,
+            'u': ctx.bot.unload_extension,
+        }
+        exts = ctx.bot.config['bot']['exts'] if flags['ext'][0] == '~' else flags['ext']
+        for ext in exts:
+            modes.get(flags['mode'])(ext)
+        await ctx.message.add_reaction('✅')
 
 
 def setup(bot):

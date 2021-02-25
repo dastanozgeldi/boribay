@@ -43,10 +43,6 @@ class Events(Cog, command_attrs={'hidden': True}):
         await self.webhook.send(embed=embed)
 
     @Cog.listener()
-    async def on_dbl_vote(self, data):
-        await self.webhook.send(f'**New upvote** by {data["user"]}!')
-
-    @Cog.listener()
     async def on_command_completion(self, ctx):
         self.bot.command_usage += 1
         await self.bot.pool.execute('UPDATE bot_stats SET command_usage = command_usage + 1')

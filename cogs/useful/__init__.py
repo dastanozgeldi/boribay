@@ -2,6 +2,7 @@ import decimal
 import random
 import re
 import zipfile
+from datetime import datetime
 from io import BytesIO
 from textwrap import wrap
 from typing import Optional
@@ -9,20 +10,12 @@ from typing import Optional
 import aiowiki
 import discord
 from async_cse import Search
-from discord.ext import commands
-from discord.ext import flags
-from utils.Converters import ColorConverter
+from discord.ext import commands, flags
+from humanize import time
+from utils import Exceptions
+from utils.Checks import has_voted
 from utils.Cog import Cog
-from utils.Exceptions import (
-    EmptyBrackets,
-    KeywordAlreadyTaken,
-    NotEnoughOptions,
-    Overflow,
-    TooManyOptions,
-    UnclosedBrackets,
-    UndefinedVariable
-)
-from utils.Checks import has_voted, beta_command
+from utils.Converters import ColorConverter
 from utils.Manipulation import Manip
 from utils.Paginators import EmbedPageSource, MyPages, TodoPageSource
 
@@ -38,7 +31,6 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
 
     def __init__(self, bot):
         self.bot = bot
-        self.todos = self.bot.db.Boribay.todos
         self.bot.cse = Search(self.bot.config['API']['google_key'])
 
     def __str__(self):
@@ -59,19 +51,6 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
                     f.writestr(f'{emoji.name}.{"gif" if emoji.animated else "png"}', bts)
             buffer.seek(0)
         await ctx.reply('Sorry for being slow as hell but anyways:', file=discord.File(buffer, filename='emojis.zip'))
-
-    @commands.command(aliases=['ss'])
-    @has_voted()
-    @commands.is_nsfw()
-    async def screenshot(self, ctx, url: str):
-        """Screenshot command.
-        Args: url (str): a web-site that you want to get a screenshot from."""
-        if not re.search(ctx.bot.regex['URL_REGEX'], url):
-            raise commands.BadArgument('Invalid URL specified. Note that you should include http(s).')
-        cs = ctx.bot.session
-        r = await cs.get(f'{ctx.bot.config["API"]["screenshot_api"]}{url}')
-        io = BytesIO(await r.read())
-        await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
 
     @commands.command()
     async def password(self, ctx, length: int = 25):
@@ -106,21 +85,21 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     @commands.group(invoke_without_command=True, aliases=['to-do'])
     async def todo(self, ctx):
         """Todo commands parent.
-        It just basically sends the help for its category.
+        It just sends the help for its subcommands.
         Call for this command to learn how to use to-do commands."""
         await ctx.send_help('todo')
 
     @flags.add_flag('--count', action='store_true', help='Sends the count of todos.')
     @flags.add_flag('--dm', action='store_true', help='Figures out whether to DM todo list or send in a current channel.')
     @todo.command(cls=flags.FlagCommand, aliases=['list'])
-    @beta_command()
     async def show(self, ctx, number: Optional[int], **flags):
-        '''Basically, shows author's todo list.
-        Have nothing to explain, so try it and see.'''
-        todos = (await self.todos.find_one({'_id': ctx.author.id}))['todo'][1:]
+        """To-Do show command, a visual way to manipulate with your list.
+        Args: number (Optional): Index of to-do you want to see."""
+        query = 'SELECT content FROM todos WHERE user_id = $1'
+        todos = [todo['content'] for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
         dest = ctx.author if flags.pop('dm', False) else ctx
         if number:
-            return await dest.send(embed=ctx.bot.embed.default(ctx, description=f'{number}: {todos[number]}'))
+            return await dest.send(embed=ctx.bot.embed.default(ctx, description=f'{number}: {todos[number - 1]}'))
         if flags.pop('count', False):
             return await dest.send(len(todos))
         await MyPages(
@@ -130,59 +109,49 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         ).start(ctx, channel=dest)
 
     @todo.command()
-    async def add(self, ctx, *, message: str):
+    async def add(self, ctx, *, content: str):
+        """Add anything you think you have to-do to your list.
+        Args: content: Basically a message which will be added to the list."""
         '''To-do add command. The message you send will be added to your to-do list.
         Ex: **todo add art project.**'''
-        await self.todos.update_one(
-            {'_id': ctx.author.id},
-            {'$addToSet': {'todo': message}}
-        )
+        query = 'INSERT INTO todos(user_id, content, added_at, jump_url) VALUES($1, $2, $3, $4)'
+        await ctx.bot.pool.execute(query, ctx.author.id, content, datetime.utcnow(), ctx.message.jump_url)
         await ctx.message.add_reaction('✅')
 
     @todo.command()
-    async def edit(self, ctx, number: int, *, new_todo: str):
-        '''Lets you edit todo with a given number, for example, if you messed up some details.
-        Ex: **todo edit 5 play rocket league with teammate at 5 pm**'''
-        await self.todos.update_one(
-            {'_id': ctx.author.id},
-            {'$set': {f'todo.{number}': new_todo}}
-        )
+    async def remove(self, ctx, numbers: commands.Greedy[int]):
+        """Remove done to-do's from your list. Multiple numbers may be specified.
+        Args: numbers: Number or range of numbers of to-do's you want to delete."""
+        query = '''WITH enumerated AS (SELECT todos.content, row_number() OVER (ORDER BY added_at ASC) AS count FROM todos WHERE user_id = $1)
+        DELETE FROM todos WHERE user_id = $1 AND content IN (SELECT enumerated.content FROM enumerated WHERE enumerated.count=ANY($2::bigint[]))
+        RETURNING content'''
+        await ctx.bot.pool.fetch(query, ctx.author.id, numbers)
         await ctx.message.add_reaction('✅')
 
     @todo.command()
-    async def switch(self, ctx, task_1: int, task_2: int):
-        '''Lets user switch their tasks. It is useful when you got more important task.
-        Ex: **todo switch 1 12** — switches places of 1st and 12th tasks.'''
-        todo_list = (await self.todos.find_one({'_id': ctx.author.id}))['todo']
-        await self.todos.update_one(
-            {'_id': ctx.author.id},
-            {'$set': {
-                f'todo.{task_1}': todo_list[task_2],
-                f'todo.{task_2}': todo_list[task_1]}}
-        )
-        await ctx.message.add_reaction('✅')
+    async def info(self, ctx, number: int):
+        """Shows information about specific to-do.
+        Args: number (int): Index of todo you are looking for info about."""
+        query = '''WITH enumerated AS (
+        SELECT todos.content, todos.added_at, todos.jump_url,
+        row_number() OVER (ORDER BY added_at ASC) as count FROM todos WHERE user_id = $1)
+        SELECT * FROM enumerated WHERE enumerated.count = $2'''
+        row = await ctx.bot.pool.fetchrow(query, ctx.author.id, number)
+        fields = [
+            ('Added', f'{time.naturaltime(row["added_at"])} by UTC'),
+            ('Jump URL', f'[click here]({row["jump_url"]})')
+        ]
+        embed = ctx.bot.embed.default(
+            ctx, title=f'Todo #{number}', description=row['content']
+        ).add_field(name='Additional Information', value='\n'.join(f'{n}: **{v}**' for n, v in fields))
+        await ctx.send(embed=embed)
 
-    @todo.command(aliases=['delete', 'rm'])
-    async def remove(self, ctx, *numbers: int):
-        '''Removes specific to-do from the list
-        Ex: **todo remove 7**'''
-        todo_list = (await self.todos.find_one({'_id': ctx.author.id}))['todo']
-        if len(todo_list) <= 1:
-            await ctx.send(f'You have no tasks to delete. To add a task type `{ctx.prefix}todo add <your task here>`')
-        for number in numbers:
-            if number >= len(todo_list):
-                return await ctx.send(f'Could not find todo #{number}')
-            await self.todos.update_one({'_id': ctx.author.id}, {'$unset': {f'todo.{number}': 1}})
-            await self.todos.update_one({'_id': ctx.author.id}, {'$pull': {'todo': None}})
-        await ctx.message.add_reaction('✅')
-
-    @todo.command(aliases=['clear'])
-    async def reset(self, ctx):
-        '''Resets all elements from user's to-do list.'''
-        await self.todos.update_one(
-            {'_id': ctx.author.id},
-            {'$set': {'todo': ['nothing yet.']}}
-        )
+    @todo.command()
+    async def clear(self, ctx):
+        """Clear your to-do list up."""
+        # TODO add confirmation wait_for
+        query = 'DELETE FROM todos WHERE user_id = $1'
+        await ctx.bot.pool.execute(query, ctx.author.id)
         await ctx.message.add_reaction('✅')
 
     @commands.command(aliases=['g'])
@@ -216,9 +185,9 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         Args: question (str): Title of the poll.
         options (str): Maximum is 10. separate each option by quotation marks."""
         if len(options) > 10:
-            raise TooManyOptions('There were too many options to create a poll.')
+            raise Exceptions.TooManyOptions('There were too many options to create a poll.')
         elif len(options) < 2:
-            raise NotEnoughOptions('There were not enough options to create a poll.')
+            raise Exceptions.NotEnoughOptions('There were not enough options to create a poll.')
         elif len(options) == 2 and options[0].lower() == 'yes' and options[1].lower() == 'no':
             reactions = ['<:thumbs_up:746352051717406740>', '<:thumbs_down:746352095510265881>']
         else:
@@ -253,8 +222,11 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def youtube(self, ctx, *, search: str):
         """Youtube-Search command. Lets you to search YouTube videos through Discord.
         Args: search (str): Search topic. The bot will send the first faced result."""
-        cs = ctx.bot.session
-        r = await cs.get('https://youtube.com/results', params={'search_query': search}, headers={'User-Agent': 'Mozilla/5.0'})
+        r = await ctx.bot.session.get(
+            'https://youtube.com/results',
+            params={'search_query': search},
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
         found = re.findall(r'watch\?v=(\S{11})', await r.text())
         await ctx.send(f'https://youtu.be/{found[0]}')
 
@@ -262,8 +234,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def urbandictionary(self, ctx, *, word: str):
         """Urban Dictionary words' definition wrapper.
         Args: word (str): A word you want to know the definition of."""
-        cs = ctx.bot.session
-        r = await cs.get(f'{ctx.bot.config["API"]["ud_api"]}?term={word}')
+        r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["ud_api"]}?term={word}')
         js = await r.json()
         source = js['list'][0]
         embed = ctx.bot.embed.default(ctx, description=f"**{source['definition'].replace('[', '').replace(']', '')}**")
@@ -284,21 +255,21 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         reg = ''.join([i for i in expression if i in '()'])
         try:
             if not parser.match(reg):
-                raise UnclosedBrackets()
+                raise Exceptions.UnclosedBrackets()
             for i in range(len(expression) - 1):
                 if expression[i] == '(' and expression[i + 1] == ')':
-                    raise EmptyBrackets()
+                    raise Exceptions.EmptyBrackets()
             result = parser.parse(lexer.tokenize(expression))
         except Exception as e:
-            if isinstance(e, Overflow):
+            if isinstance(e, Exceptions.Overflow):
                 return await ctx.send('Too big number was given.')
-            if isinstance(e, UndefinedVariable):
+            if isinstance(e, Exceptions.UndefinedVariable):
                 return await ctx.send(e.exc)
-            if isinstance(e, KeywordAlreadyTaken):
+            if isinstance(e, Exceptions.KeywordAlreadyTaken):
                 return await ctx.send('The given variable name is shadowing a reserved keyword argument.')
-            if isinstance(e, UnclosedBrackets):
+            if isinstance(e, Exceptions.UnclosedBrackets):
                 return await ctx.send('Given expression has unclosed brackets.')
-            if isinstance(e, EmptyBrackets):
+            if isinstance(e, Exceptions.EmptyBrackets):
                 return await ctx.send('Given expression has empty brackets.')
             if isinstance(e, decimal.InvalidOperation):
                 return await ctx.send('Invalid expression given.')
@@ -371,8 +342,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def weather(self, ctx, *, city: str.capitalize):
         '''Simply gets weather statistics of a given city.
         Gives: Description, temperature, humidity%, atmospheric pressure (hPa)'''
-        cs = ctx.bot.session
-        r = await cs.get(f'{ctx.bot.config["API"]["weather_api"]}appid={ctx.bot.config["API"]["weather_id"]}&q={city}')
+        r = ctx.bot.session.get(f'{ctx.bot.config["API"]["weather_api"]}appid={ctx.bot.config["API"]["weather_id"]}&q={city}')
         x = await r.json()
         if x['cod'] != '404':
             y = x['main']
