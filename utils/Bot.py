@@ -76,12 +76,7 @@ class Boribay(commands.Bot):
 
     async def __ainit__(self):
         await self.wait_until_ready()
-        self.pool = await asyncpg.create_pool(
-            user=self.config['database']['user'],
-            password=self.config['database']['password'],
-            host=self.config['database']['host'],
-            database=self.config['database']['database']
-        )
+        self.pool = await asyncpg.create_pool(**self.config['database'])
         self.cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
 
     @property

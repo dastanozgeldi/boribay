@@ -21,7 +21,7 @@ class Music(Cog, wavelink.WavelinkMixin):
 
     def __init__(self, bot):
         self.bot = bot
-        self.wavelink = wavelink.Client(bot=bot)
+        self.bot.wavelink = wavelink.Client(bot=bot)
         self.bot.loop.create_task(self.start_nodes())
 
     def __str__(self):
@@ -60,13 +60,17 @@ class Music(Cog, wavelink.WavelinkMixin):
             'region': 'europe'
         }}
         for n in nodes.values():
-            await self.wavelink.initiate_node(**n)
+            await self.bot.wavelink.initiate_node(**n)
+
+        if not self.bot.wavelink.nodes:
+            self.bot.log.warning('Failed to connect to Lavalink, unloading music.')
+            self.bot.unload_extension('cogs.music')
 
     def get_player(self, obj):
         if isinstance(obj, commands.Context):
-            return self.wavelink.get_player(obj.guild.id, cls=Player, context=obj)
+            return self.bot.wavelink.get_player(obj.guild.id, cls=Player, context=obj)
         elif isinstance(obj, discord.Guild):
-            return self.wavelink.get_player(obj.id, cls=Player)
+            return self.bot.wavelink.get_player(obj.id, cls=Player)
 
     @commands.command(aliases=['join'])
     async def connect(self, ctx, *, channel: t.Optional[discord.VoiceChannel]):
@@ -101,7 +105,7 @@ class Music(Cog, wavelink.WavelinkMixin):
             query = query.strip('<>')
             if not re.match(self.bot.regex['URL_REGEX'], query):
                 query = f'ytsearch:{query}'
-            await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+            await player.add_tracks(ctx, await self.bot.wavelink.get_tracks(query))
 
     @commands.command(aliases=['song', 'lyric'])
     async def lyrics(self, ctx, *, song: str):
