@@ -18,16 +18,13 @@ class Moderation(Cog):
 
     def on_or_off(self, ctx, key, checks):
         for check in checks:
-            if ctx.bot.cache[key][ctx.guild.id] == check:
-                return '<:redTick:596576672149667840>'
-        return '<:greenTick:596576670815879169>'
-
-    def get(self, ctx, key):
-        return ctx.bot.cache[key][ctx.guild.id]
+            if ctx.bot.cache[ctx.guild.id][key] == check:
+                return '<:crossmark:814742130190712842>'
+        return '<:tick:814838692459446293>'
 
     async def update(self, ctx, key, value):
         query = f'UPDATE guild_config SET {key} = $1 WHERE guild_id = $2'
-        ctx.bot.cache[key][ctx.guild.id] = value
+        ctx.bot.cache[ctx.guild.id][key] = value
         await ctx.bot.pool.execute(query, value, ctx.guild.id)
 
     @commands.group(invoke_without_command=True, aliases=['gs'])
@@ -36,14 +33,11 @@ class Moderation(Cog):
         Shows settings statistic of the current server:
         Custom color and custom prefix."""
         g = ctx.guild
-        creds = {i: ctx.bot.cache[i][g.id] for i in ctx.bot.cache.keys()}
-        creds['embed_color'] = hex(self.get(ctx, 'embed_color'))
-        creds['welcome_channel'] = g.get_channel(self.get(ctx, 'welcome_channel'))
-        creds['autorole'] = g.get_role(self.get(ctx, 'autorole'))
+        creds = ctx.bot.cache[g.id]
         embed = ctx.bot.embed.default(ctx)
         embed.add_field(
             name='Guild Settings',
-            value='\n'.join([f'{self.on_or_off(ctx, k, [".", 3553598, None, None])} **{k.replace("_", " ").title()}:** {v}' for k, v in creds.items()])
+            value='\n'.join(f'**{self.on_or_off(ctx, k, [".", 3553598, None, None])} {k.replace("_", " ").title()}:** {v}' for k, v in creds.items())
         )
         await ctx.send(embed=embed)
 

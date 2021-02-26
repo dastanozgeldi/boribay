@@ -1,6 +1,6 @@
-from utils.Bot import Bot
+from utils.Bot import Boribay
 
-bot = Bot(description='An awesome Discord Bot created to make people smile.')
+bot = Boribay(description='An awesome Discord Bot created to make people smile.')
 
 for ext in bot.config['bot']['exts']:
     bot.load_extension(ext)

@@ -12,10 +12,7 @@ class Embed(discord.Embed):
 	@classmethod
 	def default(cls, ctx, **kwargs):
 		instance = cls(**kwargs)
-		try:
-			instance.color = ctx.bot.cache['embed_color'][ctx.guild.id]
-		except (AttributeError, KeyError):
-			instance.color = 0x36393e
+		instance.color = ctx.bot.cache[ctx.guild.id].get('embed_color', 0x36393e)
 		return instance
 
 	@classmethod

@@ -154,7 +154,7 @@ class Music(Cog, wavelink.WavelinkMixin):
         await player.set_eq(eq)
 
     @commands.command()
-    async def pause(self, ctx: commands.Context):
+    async def pause(self, ctx):
         """Pause the currently playing song."""
         player = self.get_player(ctx)
         if player.is_paused or not player.is_connected:

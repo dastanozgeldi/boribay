@@ -1,14 +1,15 @@
-from discord import Forbidden, Member
-from utils.Cog import Cog
-from time import perf_counter
-from discord.ext import commands, flags
-from typing import Optional
-from humanize import naturaldate, naturaltime
-import psutil
-import platform
-from datetime import datetime
-from collections import Counter
 import glob
+import platform
+from collections import Counter
+from datetime import datetime
+from time import perf_counter
+from typing import Optional
+
+import psutil
+from discord import Forbidden, Member
+from discord.ext import commands, flags
+from humanize import naturaldate, naturaltime
+from utils.Cog import Cog
 
 
 class Miscellaneous(Cog):
@@ -179,7 +180,9 @@ class Miscellaneous(Cog):
     @commands.command()
     async def prefix(self, ctx):
         """See bot's prefix."""
-        prefix = '.' if not ctx.guild else ctx.bot.cache['prefix'][ctx.guild.id]
+        prefix = '.' if not ctx.guild else ctx.bot.cache[ctx.guild.id].get('prefix', '.')
+        # caching is hard to handle and sometimes I have to put some default values.
+        # this .get above prevents lots of errors with new guilds.
         await ctx.send(embed=ctx.bot.embed.default(ctx, description=f'The prefix is: `{prefix}` or {ctx.bot.user.mention}'))
 
     @commands.command(aliases=['links'])

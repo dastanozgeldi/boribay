@@ -1,6 +1,5 @@
 from difflib import get_close_matches
 from discord.ext import commands, menus
-from jishaku.features.python import PythonFeature
 from utils.Cog import Cog
 from utils.Paginators import MyPages
 
@@ -41,7 +40,7 @@ class HelpPages(menus.Menu):
             embed.add_field(name=name, value=value, inline=False)
         await self.message.edit(embed=embed)
 
-    @menus.button('<:stop:814725892143841280>')
+    @menus.button('<:crossmark:814742130190712842>')
     async def stop(self, payload):
         """Deletes this message."""
         await self.message.delete()
@@ -59,7 +58,7 @@ class GroupHelp(menus.ListPageSource):
 
     async def format_page(self, menu, cmds):
         g = self.group
-        doc = g.__doc__ if isinstance(g, (Cog, PythonFeature)) else g.help
+        doc = g.__doc__ if isinstance(g, Cog) else g.help
         embed = self.ctx.bot.embed.default(
             self.ctx,
             title=f'Help for category: {str(g)}',

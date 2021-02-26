@@ -30,10 +30,11 @@ class Events(Cog, command_attrs={'hidden': True}):
             color=0x2ecc71
         ).set_thumbnail(url=guild.icon_url_as(size=256))
         await self.webhook.send(embed=embed)
+        await self.bot.pool.execute('INSERT INTO guild_config(guild_id) VALUES ($1)', guild.id)
+        await self.bot.cache.refresh()
 
     @Cog.listener()
     async def on_guild_remove(self, guild):
-        await self.bot.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild.id)
         embed = self.bot.embed(
             title=f'Lost a server: {guild}💔',
             description=f'Total members: {guild.member_count}\n'
@@ -41,6 +42,8 @@ class Events(Cog, command_attrs={'hidden': True}):
             color=0xff0000
         ).set_thumbnail(url=guild.icon_url_as(size=256))
         await self.webhook.send(embed=embed)
+        await self.bot.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild.id)
+        await self.bot.cache.refresh()
 
     @Cog.listener()
     async def on_command_completion(self, ctx):
@@ -50,19 +53,15 @@ class Events(Cog, command_attrs={'hidden': True}):
     @Cog.listener()
     async def on_member_join(self, member):
         g = member.guild
-        if wc := self.bot.cache['welcome_channel'][g.id]:
+        if wc := self.bot.cache[g.id].get('welcome_channel', False):
             await g.get_channel(wc).send(file=File(fp=await Manip.welcome(
                 BytesIO(await member.avatar_url.read()),
                 f'Member #{g.member_count}',
                 f'{member} just spawned in the server.',
             ), filename=f'{member}.png'))
 
-        if role_id := self.bot.cache['autorole'][g.id]:
+        if role_id := self.bot.cache[g.id].get('autorole', False):
             await member.add_roles(g.get_role(role_id))
-
-    @Cog.listener()
-    async def on_guild_unavailable(self, guild):
-        await self.bot.get_guild(guild.id).leave()
 
 
 def setup(bot):

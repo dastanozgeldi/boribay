@@ -1,9 +1,9 @@
 from contextlib import ContextDecorator
 from time import perf_counter
-from discord.ext import commands
+from discord.ext.commands import Context as C
 
 
-class Context(commands.Context):
+class Context(C):
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
 		self.timer = Timer(self)

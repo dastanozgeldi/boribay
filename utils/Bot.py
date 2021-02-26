@@ -15,6 +15,7 @@ from discord.ext import commands, ipc
 
 from utils.Context import Context
 from utils.Embed import Embed
+from utils.Cache import Cache
 
 intents = Intents.default()
 intents.members = True
@@ -29,11 +30,11 @@ def get_prefix(bot, message):
     if not message.guild:
         prefix = '.'
     else:
-        prefix = bot.cache['prefix'].get(message.guild.id, '.')
+        prefix = bot.cache[message.guild.id].get('prefix', '.')
     return commands.when_mentioned_or(prefix)(bot, message)
 
 
-class Bot(commands.Bot):
+class Boribay(commands.Bot):
     """A custom Bot class subclassed from commands.Bot"""
 
     def __init__(self, *args, **kwargs):
@@ -51,7 +52,6 @@ class Bot(commands.Bot):
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.embed = Embed
         self.config = toml.load('config.toml')
-        self.cache = {}
         self.log = logging.getLogger(__name__)
         self.log.addHandler(handler)
         self.owner_ids = {682950658671902730, 382183425815216128}
@@ -63,12 +63,8 @@ class Bot(commands.Bot):
         self.command_usage = 0
         self.start_time = datetime.now()
         self.loop = asyncio.get_event_loop()
-        self.pool = self.loop.run_until_complete(asyncpg.create_pool(
-            user=self.config['database']['user'],
-            password=self.config['database']['password'],
-            host=self.config['database']['host'],
-            database=self.config['database']['database']
-        ))
+        self.loop.create_task(self.__ainit__())
+        self.loop.create_task(self.check_changes())
         self.ipc = ipc.Server(
             bot=self,
             host=self.config['ipc']['host'],
@@ -77,7 +73,16 @@ class Bot(commands.Bot):
         )
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
-        self.loop.create_task(self.cache_guilds())
+
+    async def __ainit__(self):
+        await self.wait_until_ready()
+        self.pool = await asyncpg.create_pool(
+            user=self.config['database']['user'],
+            password=self.config['database']['password'],
+            host=self.config['database']['host'],
+            database=self.config['database']['database']
+        )
+        self.cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
 
     @property
     def dosek(self):
@@ -87,20 +92,29 @@ class Bot(commands.Bot):
     def uptime(self) -> timedelta:
         return int((datetime.now() - self.start_time).total_seconds())
 
+    async def check_changes(self):
+        await self.wait_until_ready()
+        guild_config = await self.pool.fetch('SELECT * FROM guild_config')
+        bot_guild_ids = {guild.id for guild in self.guilds}
+        db_guild_ids = {row['guild_id'] for row in guild_config}
+
+        if difference := list(bot_guild_ids - db_guild_ids):
+            # condition above checks if there were new guilds while the bot was sleeping.
+            for guild_id in difference:
+                # if there are, iteratively add them to the database.
+                await self.pool.execute('INSERT INTO guild_config(guild_id) VALUES($1)', guild_id)
+
+        if difference := list(db_guild_ids - bot_guild_ids):
+            # the same condition but subtracting set of guild id's in db with current guild id's
+            for guild_id in difference:
+                # if there are, iteratively remove them from the database.
+                await self.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild_id)
+
     async def db_latency(self):
         start = perf_counter()
         await self.pool.fetchval('SELECT 1;')
         end = perf_counter()
         return end - start
-
-    async def cache_guilds(self):
-        guild_config = await self.pool.fetch('SELECT * FROM guild_config')
-        for key in ['prefix', 'embed_color', 'welcome_channel', 'autorole']:
-            self.cache[key] = {g['guild_id']: g[key] for g in guild_config}
-
-        if difference := list({i.id for i in self.guilds} - {i['guild_id'] for i in guild_config}):
-            for guild_id in difference:
-                await self.pool.execute('INSERT INTO guild_config(guild_id) VALUES($1)', guild_id)
 
     async def close(self):
         await super().close()
