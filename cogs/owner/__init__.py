@@ -7,6 +7,7 @@ from discord.ext import commands, flags
 from jishaku.codeblocks import codeblock_converter
 from utils.Cog import Cog
 from utils.Formats import TabularData
+from utils.Manipulation import Manip
 
 
 class Owner(Cog, command_attrs={'hidden': True}):
@@ -78,7 +79,8 @@ class Owner(Cog, command_attrs={'hidden': True}):
             msg = results
         await ctx.send(msg)
 
-    @flags.add_flag('--mode', choices=['r', 'l', 'u'], default='r')
+    @flags.add_flag('--pull', '-p', action='store_true', help='Whether to pull from GitHub.')
+    @flags.add_flag('--mode', choices=['r', 'l', 'u'], default='r', help='A specific mode [reload, load, unload].')
     @flags.add_flag('ext', nargs="*")
     @su.command(cls=flags.FlagCommand)
     async def ext(self, ctx, **flags):
@@ -88,6 +90,8 @@ class Owner(Cog, command_attrs={'hidden': True}):
             'l': ctx.bot.load_extension,
             'u': ctx.bot.unload_extension,
         }
+        if flags.get('pull'):
+            await Manip.git_pull()
         exts = ctx.bot.config['bot']['exts'] if flags['ext'][0] == '~' else flags['ext']
         for ext in exts:
             modes.get(flags['mode'])(ext)

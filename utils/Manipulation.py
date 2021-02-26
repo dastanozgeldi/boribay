@@ -7,6 +7,7 @@ from wand.image import Image as WI
 from utils.Converters import ImageConverter, ImageURLConverter
 from jishaku.functools import executor_function
 from googletrans import Translator
+from subprocess import run
 
 
 async def make_image_url(ctx, argument: str):
@@ -42,6 +43,11 @@ def polaroid_filter(ctx, image: bytes, *, method: str, args: list = None, kwargs
 
 
 class Manip:
+
+    @staticmethod
+    @executor_function
+    def git_pull():
+        run(['git', 'pull'], capture_output=True)
 
     @staticmethod
     @executor_function

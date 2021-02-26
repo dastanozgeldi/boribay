@@ -13,12 +13,12 @@ class HelpPages(menus.Menu):
     async def send_initial_message(self, ctx, channel):
         return await channel.send(embed=self.embed)
 
-    @menus.button('\U000025c0')
+    @menus.button('<:left:814725888653918229>')
     async def go_back(self, payload):
         """Go back to the main page."""
         await self.message.edit(embed=self.embed)
 
-    @menus.button('<:info:807534146745532446>')
+    @menus.button('<:info:814725889031667722>')
     async def on_info(self, payload):
         """Shows this information page."""
         embed = self.bot.embed.default(self.ctx, title='Reactions Information')
@@ -26,7 +26,7 @@ class HelpPages(menus.Menu):
         embed.add_field(name='What are these reactions for?', value='\n'.join(messages))
         await self.message.edit(embed=embed)
 
-    @menus.button('\U00002753')
+    @menus.button('<:question:814725892215144458>')
     async def on_question(self, payload):
         """Shows how to use the bot."""
         embed = self.bot.embed.default(self.ctx, title='Welcome to the FAQ page.')
@@ -41,7 +41,7 @@ class HelpPages(menus.Menu):
             embed.add_field(name=name, value=value, inline=False)
         await self.message.edit(embed=embed)
 
-    @menus.button('\U0001f5d1')
+    @menus.button('<:stop:814725892143841280>')
     async def stop(self, payload):
         """Deletes this message."""
         await self.message.delete()
