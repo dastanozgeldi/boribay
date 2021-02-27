@@ -70,13 +70,12 @@ class Moderation(Cog):
 
     @settings.command()
     @is_mod()
-    async def autorole(self, ctx, role):
+    async def autorole(self, ctx, role: discord.Role):
         """Sets the autorole for the current server.
         This will handle all joined users and give them the role
         that you have specified."""
         await self.update(ctx, 'autorole', role.id)
-        msg = f'As of now, a role `{role.name}` will be automatically given when a member joins this server.'
-        await ctx.send(msg)
+        await ctx.send(f'As of now, a role `{role.name}` will be automatically given when a member joins this server.')
 
     @commands.group(invoke_without_command=True)
     async def admin(self, ctx):
