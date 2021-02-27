@@ -69,7 +69,6 @@ class Fun(Cog):
         """Typeracer Command. Compete with others!
         Returns: Average WPM of the winner, time spent and the original text."""
         r = await (await ctx.bot.session.get(ctx.bot.config['API']['quote_api'])).json()
-        timeout = flags.pop('timeout')
         content = r['content']
         buffer = await Manip.typeracer('\n'.join(textwrap.wrap(content, 30)))
         embed = ctx.bot.embed.default(
@@ -79,13 +78,13 @@ class Fun(Cog):
         race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
         start = time()
         try:
-            if not (msg := await ctx.bot.wait_for('message', check=lambda m: m.content == content, timeout=timeout)):
+            if not (msg := await ctx.bot.wait_for('message', check=lambda m: m.content == content, timeout=flags.pop('timeout'))):
                 return
             final = round(time() - start, 2)
             await ctx.send(embed=ctx.bot.embed.default(
                 ctx, title=f'{msg.author.display_name} won!',
                 description=f'**Done in**: {final}s\n'
-                f'**Average WPM**: {round(len(content.split()) / 5 / (timeout / 60))} words\n'
+                f'**Average WPM**: {r["length"] / 5 / (final / 60):.0f} words\n'
                 f'**Original text:**```diff\n+ {content}```',
             ))
         except asyncio.TimeoutError:
