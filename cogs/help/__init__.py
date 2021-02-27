@@ -146,7 +146,7 @@ class MyHelpCommand(commands.HelpCommand):
     async def command_not_found(self, string):
         msg = f'Could not find the command `{string}`.'
 
-        if dym := '\n'.join(get_close_matches(string, [i.name for i in self.context.bot.commands])):
+        if dym := '\n'.join(get_close_matches(string, [str(cmd) for cmd in self.context.bot.commands])):
             msg += f' Did you mean...\n{dym}'
 
         return msg
