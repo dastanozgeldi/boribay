@@ -101,9 +101,9 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         if flags.pop('count', False):
             return await dest.send(len(todos))
         await MyPages(
-            TodoPageSource(ctx, todos),
+            TodoPageSource(ctx, todos, number=number),
             clear_reactions_after=True,
-            timeout=60.0
+            timeout=60.0,
         ).start(ctx, channel=dest)
 
     @todo.command(aliases=['append'])

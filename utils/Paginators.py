@@ -33,18 +33,23 @@ class TodoPageSource(menus.ListPageSource):
     async def format_page(self, menu, entries):
         offset = menu.current_page * self.per_page + 1
         embed = self.ctx.bot.embed.default(self.ctx)
+
         if len(entries) < 1:
             embed.description = 'Currently, you have no to-do\'s.\n'
             'To set them use **todo add** command.'
+
         if self.number:
-            embed.description = f'{self.number}: {entries[self.number - 1]}'
+            entry = entries[self.number - 1]
+            embed.description = f'[{self.number}]({entry[1]}): {entry[0]}'
+
         else:
             maximum = self.get_max_pages()
             embed.set_author(
                 name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} todos)',
                 icon_url=self.ctx.author.avatar_url
             )
-            embed.description = '\n'.join(f'[{i}]({v[1]}): {v[0]}' for i, v in enumerate(entries, start=offset))
+            embed.description = '\n'.join(f'[{i}]({v[1]}). {v[0]}' for i, v in enumerate(entries, start=offset))
+
         return embed
 
 
