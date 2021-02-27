@@ -97,10 +97,14 @@ class MyHelpCommand(commands.HelpCommand):
         embed = ctx.bot.embed.default(
             ctx, description=f'[Invite]({links["invite_url"]}) | [Support]({links["support_url"]}) | [Source]({links["github_url"]}) | [Vote]({links["topgg_url"]})'
         ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url_as(size=64))
+
         embed.add_field(name='Modules:', value='\n'.join([m for m in cats]))
+
         news = open('news.md', 'r').readlines()
+
         embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
         embed.set_footer(text=self.get_ending_note())
+
         await HelpPages(embed).start(ctx)
 
     async def send_cog_help(self, cog):
@@ -121,23 +125,30 @@ class MyHelpCommand(commands.HelpCommand):
             title=self.get_command_signature(command),
             description=command.help or 'No help found...'
         ).set_footer(text=self.get_ending_note())
+
         if category := str(command.cog):
             embed.add_field(name='Category', value=category)
+
         if aliases := command.aliases:
             embed.add_field(name='Aliases', value=' | '.join(aliases))
+
         if hasattr(command.callback, '_def_parser'):
             embed.add_field(name='Flags', value='\n'.join(self.get_flags(command)), inline=False)
+
         await self.get_destination().send(embed=embed)
 
     async def send_group_help(self, group):
         if len(subcommands := group.commands) == 0 or len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
             return await self.send_command_help(group)
+
         await MyPages(GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0).start(self.context)
 
     async def command_not_found(self, string):
         msg = f'Could not find the command `{string}`.'
+
         if dym := '\n'.join(get_close_matches(string, [i.name for i in self.context.bot.commands])):
             msg += f' Did you mean...\n{dym}'
+
         return msg
 
     def get_command_signature(self, command):

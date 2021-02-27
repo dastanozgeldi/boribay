@@ -40,7 +40,7 @@ class TodoPageSource(menus.ListPageSource):
 
         if self.number:
             entry = entries[self.number - 1]
-            embed.description = f'[{self.number}]({entry[1]}): {entry[0]}'
+            embed.description = f'[{self.number}]({entry[1]}). {entry[0]}'
 
         else:
             maximum = self.get_max_pages()

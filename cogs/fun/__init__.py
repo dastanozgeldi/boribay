@@ -1,5 +1,4 @@
 import asyncio
-import json
 import random
 import textwrap
 from html import unescape
@@ -67,25 +66,25 @@ class Fun(Cog):
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def typeracer(self, ctx):
         """Typeracer Command. Compete with others!
-        Returns: Average WPM of the winner, time spent to type and the original text."""
-        cs = ctx.bot.session
-        r = await cs.get(ctx.bot.config['API']['quote_api'])
-        to_wrap = random.choice(json.loads(await r.read()))['text']
-        buffer = await Manip.typeracer('\n'.join(textwrap.wrap(to_wrap, 30)))
+        Returns: Average WPM of the winner, time spent and the original text."""
+        r = await (await ctx.bot.session.get(ctx.bot.config['API']['quote_api'])).json()
+        content = r['content']
+        buffer = await Manip.typeracer('\n'.join(textwrap.wrap(content, 30)))
         embed = ctx.bot.embed.default(
             ctx, title='Typeracer', description='see who is fastest at typing.'
         ).set_image(url='attachment://typeracer.png')
+        embed.set_footer(text=f'© {r["author"]}')
         race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
         start = time()
         try:
-            if not (msg := await ctx.bot.wait_for('message', check=lambda m: m.content == to_wrap, timeout=60.0)):
+            if not (msg := await ctx.bot.wait_for('message', check=lambda m: m.content == content, timeout=60.0)):
                 return
             final = round(time() - start, 2)
             await ctx.send(embed=ctx.bot.embed.default(
                 ctx, title=f'{msg.author.display_name} won!',
                 description=f'**Done in**: {final}s\n'
-                f'**Average WPM**: {round(len(to_wrap.split()) * (60.0 / final))} words\n'
-                f'**Original text:**```diff\n+ {to_wrap}```',
+                f'**Average WPM**: {round(len(content.split()) * (60.0 / final))} words\n'
+                f'**Original text:**```diff\n+ {content}```',
             ))
         except asyncio.TimeoutError:
             try:
