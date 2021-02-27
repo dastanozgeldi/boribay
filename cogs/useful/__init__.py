@@ -95,11 +95,9 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def show(self, ctx, number: Optional[int], **flags):
         """To-Do show command, a visual way to manipulate with your list.
         Args: number (Optional): Index of to-do you want to see."""
-        query = 'SELECT content FROM todos WHERE user_id = $1'
-        todos = [todo['content'] for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
+        query = 'SELECT content, jump_url FROM todos WHERE user_id = $1'
+        todos = [(todo['content'], todo['jump_url']) for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
         dest = ctx.author if flags.pop('dm', False) else ctx
-        if number:
-            return await dest.send(embed=ctx.bot.embed.default(ctx, description=f'{number}: {todos[number - 1]}'))
         if flags.pop('count', False):
             return await dest.send(len(todos))
         await MyPages(
@@ -108,7 +106,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
             timeout=60.0
         ).start(ctx, channel=dest)
 
-    @todo.command()
+    @todo.command(aliases=['append'])
     async def add(self, ctx, *, content: str):
         """Add anything you think you have to-do to your list.
         Args: content: Basically a message which will be added to the list."""
@@ -118,7 +116,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         await ctx.bot.pool.execute(query, ctx.author.id, content, datetime.utcnow(), ctx.message.jump_url)
         await ctx.message.add_reaction('✅')
 
-    @todo.command()
+    @todo.command(aliases=['rm', 'delete'])
     async def remove(self, ctx, numbers: commands.Greedy[int]):
         """Remove done to-do's from your list. Multiple numbers may be specified.
         Args: numbers: Number or range of numbers of to-do's you want to delete."""
@@ -128,7 +126,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         await ctx.bot.pool.fetch(query, ctx.author.id, numbers)
         await ctx.message.add_reaction('✅')
 
-    @todo.command()
+    @todo.command(aliases=['stats'])
     async def info(self, ctx, number: int):
         """Shows information about specific to-do.
         Args: number (int): Index of todo you are looking for info about."""
@@ -146,13 +144,15 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         ).add_field(name='Additional Information', value='\n'.join(f'{n}: **{v}**' for n, v in fields))
         await ctx.send(embed=embed)
 
-    @todo.command()
+    @todo.command(aliases=['reset'])
     async def clear(self, ctx):
         """Clear your to-do list up."""
-        # TODO add confirmation wait_for
         query = 'DELETE FROM todos WHERE user_id = $1'
-        await ctx.bot.pool.execute(query, ctx.author.id)
-        await ctx.message.add_reaction('✅')
+        confirmation = await ctx.confirm('Are you sure? All to-do\'s will be dropped.')
+        if confirmation:
+            await ctx.bot.pool.execute(query, ctx.author.id)
+            return await ctx.message.add_reaction('✅')
+        await ctx.send('The `todo clear` session was closed.')
 
     @commands.command(aliases=['g'])
     async def google(self, ctx, *, query: str):
