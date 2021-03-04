@@ -119,7 +119,7 @@ class Miscellaneous(Cog):
                 ('Library', 'Discord.py')
             }, 'General': {
                 ('Currently in', f'{len(me.guilds)} servers'),
-                ('Commands working', f'{len([*me.walk_commands()])}'),
+                ('Commands working', f'{len(me.all_commands)}'),
                 ('Commands usage (last restart)', me.command_usage),
                 ('Commands usage (last year)', await me.pool.fetchval('SELECT command_usage FROM bot_stats'))
             }

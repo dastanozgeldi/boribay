@@ -1,6 +1,7 @@
 import asyncio
-from discord.ext import menus
+import copy
 from discord import HTTPException
+from discord.ext import menus
 
 
 class MyPages(menus.MenuPages):
@@ -21,14 +22,146 @@ class MyPages(menus.MenuPages):
             pass
 
 
+class MusicPageSource(menus.ListPageSource):
+    """Player queue paginator class."""
+
+    def __init__(self, ctx, entries, *, per_page=8):
+        super().__init__(entries, per_page=per_page)
+        self.ctx = ctx
+
+    async def format_page(self, menu, page):
+        embed = self.ctx.bot.embed.default(self.ctx, title='Coming Up...')
+        embed.description = '\n'.join(f'`{index}. {title}`' for index, title in enumerate(page, 1))
+
+        return embed
+
+    def is_paginating(self):
+        # We always want to embed even on 1 page of results...
+        return True
+
+
+class InteractiveController(menus.Menu):
+    """The Players interactive controller menu class."""
+
+    def __init__(self, *, embed, player):
+        super().__init__(timeout=None)
+
+        self.embed = embed
+        self.player = player
+
+    def update_context(self, payload):
+        """Update our context with the user who reacted."""
+        ctx = copy.copy(self.ctx)
+        ctx.author = payload.member
+
+        return ctx
+
+    def reaction_check(self, payload):
+        if payload.event_type == 'REACTION_REMOVE':
+            return False
+
+        if not payload.member:
+            return False
+        if payload.member.bot:
+            return False
+        if payload.message_id != self.message.id:
+            return False
+        if payload.member not in self.bot.get_channel(int(self.player.channel_id)).members:
+            return False
+
+        return payload.emoji in self.buttons
+
+    async def send_initial_message(self, ctx, channel):
+        return await channel.send(embed=self.embed)
+
+    @menus.button(emoji='\u25B6')
+    async def resume_command(self, payload):
+        """Resume button."""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('resume')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+    @menus.button(emoji='\u23F8')
+    async def pause_command(self, payload):
+        """Pause button"""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('pause')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+    @menus.button(emoji='\u23F9')
+    async def stop_command(self, payload):
+        """Stop button."""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('stop')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+    @menus.button(emoji='\u23ED')
+    async def skip_command(self, payload):
+        """Skip button."""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('skip')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+    @menus.button(emoji='\U0001F500')
+    async def shuffle_command(self, payload):
+        """Shuffle button."""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('shuffle')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+    @menus.button(emoji='\u2795')
+    async def volup_command(self, payload):
+        """Volume up button"""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('vol_up')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+    @menus.button(emoji='\u2796')
+    async def voldown_command(self, payload):
+        """Volume down button."""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('vol_down')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+    @menus.button(emoji='\U0001F1F6')
+    async def queue_command(self, payload):
+        """Player queue button."""
+        ctx = self.update_context(payload)
+
+        command = self.bot.get_command('queue')
+        ctx.command = command
+
+        await self.bot.invoke(ctx)
+
+
 class TodoPageSource(menus.ListPageSource):
     """TodoPageSource, a special paginator created for the todo commands parent.
     Takes the list of data, enumerates, then paginates through."""
 
-    def __init__(self, ctx, data, *, number=None):
+    def __init__(self, ctx, data):
         super().__init__(data, per_page=10)
         self.ctx = ctx
-        self.number = number
 
     async def format_page(self, menu, entries):
         offset = menu.current_page * self.per_page + 1
@@ -37,10 +170,6 @@ class TodoPageSource(menus.ListPageSource):
         if len(entries) < 1:
             embed.description = 'Currently, you have no to-do\'s.\n'
             'To set them use **todo add** command.'
-
-        if self.number:
-            entry = entries[self.number - 1]
-            embed.description = f'[{self.number}]({entry[1]}). {entry[0]}'
 
         else:
             maximum = self.get_max_pages()

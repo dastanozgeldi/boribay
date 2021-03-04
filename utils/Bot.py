@@ -65,12 +65,7 @@ class Boribay(commands.Bot):
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self.__ainit__())
         self.loop.create_task(self.check_changes())
-        self.ipc = ipc.Server(
-            bot=self,
-            host=self.config['ipc']['host'],
-            port=self.config['ipc']['port'],
-            secret_key=self.config['ipc']['secret_key']
-        )
+        self.ipc = ipc.Server(self, **self.config['ipc'])
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
 
@@ -78,6 +73,17 @@ class Boribay(commands.Bot):
         await self.wait_until_ready()
         self.pool = await asyncpg.create_pool(**self.config['database'])
         self.cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
+
+    def run(self, *args, **kwargs):
+        """My own run method to make the launcher file smaller."""
+        self.ipc.start()  # running the IPC web-server
+
+        for ext in self.config['bot']['exts']:
+            # loading all extensions before running the bot.
+            self.load_extension(ext)
+            self.log.info(f'-> [MODULE] {ext} loaded.')
+
+        super().run(*args, **kwargs)
 
     @property
     def dosek(self):
@@ -89,7 +95,10 @@ class Boribay(commands.Bot):
 
     async def check_changes(self):
         await self.wait_until_ready()
+
         guild_config = await self.pool.fetch('SELECT * FROM guild_config')
+
+        # preparing the guild id's to compare
         bot_guild_ids = {guild.id for guild in self.guilds}
         db_guild_ids = {row['guild_id'] for row in guild_config}
 
@@ -109,6 +118,8 @@ class Boribay(commands.Bot):
         start = perf_counter()
         await self.pool.fetchval('SELECT 1;')
         end = perf_counter()
+
+        # the time spent to make a useless call, in microseconds.
         return end - start
 
     async def close(self):
@@ -121,8 +132,7 @@ class Boribay(commands.Bot):
         return await super().get_context(message, cls=cls)
 
     async def on_ready(self):
-        self.log.info(f'Logged in as -> {self.user.name}')
-        self.log.info(f'Client ID -> {self.user.id}')
+        self.log.info(f'Logged in as -> {self.user}')
         self.log.info(f'Guild Count -> {len(self.guilds)}')
 
     async def on_ipc_ready(self):
@@ -131,19 +141,27 @@ class Boribay(commands.Bot):
     async def on_message(self, message):
         if not self.is_ready():
             return
+
+        # id below is the news channel from the support server.
         if message.channel.id == 789791676632662017:
             with open('news.md', 'w') as f:
                 msg = message.content.split('\n')
                 f.write(msg[0] + '\n' + '\n'.join(msg[1:]))
+
+        # checking if a message was the clean mention of the bot.
         if re.fullmatch(f'<@(!)?{self.user.id}>', message.content):
-            ctx = await self.get_context(message)
+            ctx = await self.get_context(message)  # getting context by message
             await self.get_command('prefix')(ctx)
+
         await self.process_commands(message)
 
     async def on_message_edit(self, before, after):
+        # making able to process commands on message edit only for owner.
         if before.content != after.content:
             if after.author.id in self.owner_ids:
                 return await self.process_commands(after)
+
+        # on_message_edit gets tracked twice when a message gets edited, god knows why.
         if before.embeds:
             return
 

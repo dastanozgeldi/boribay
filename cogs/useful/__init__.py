@@ -92,18 +92,18 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     @flags.add_flag('--count', action='store_true', help='Sends the count of todos.')
     @flags.add_flag('--dm', action='store_true', help='Figures out whether to DM todo list or send in a current channel.')
     @todo.command(cls=flags.FlagCommand, aliases=['list'])
-    async def show(self, ctx, number: Optional[int], **flags):
+    async def show(self, ctx, **flags):
         """To-Do show command, a visual way to manipulate with your list.
         Args: number (Optional): Index of to-do you want to see."""
         query = 'SELECT content, jump_url FROM todos WHERE user_id = $1'
         todos = [(todo['content'], todo['jump_url']) for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
         dest = ctx.author if flags.pop('dm', False) else ctx
+
         if flags.pop('count', False):
             return await dest.send(len(todos))
+
         await MyPages(
-            TodoPageSource(ctx, todos, number=number),
-            clear_reactions_after=True,
-            timeout=60.0,
+            TodoPageSource(ctx, todos), clear_reactions_after=True, timeout=60.0,
         ).start(ctx, channel=dest)
 
     @todo.command(aliases=['append'])
@@ -130,9 +130,8 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def info(self, ctx, number: int):
         """Shows information about specific to-do.
         Args: number (int): Index of todo you are looking for info about."""
-        query = '''WITH enumerated AS (
-        SELECT todos.content, todos.added_at, todos.jump_url,
-        row_number() OVER (ORDER BY added_at ASC) as count FROM todos WHERE user_id = $1)
+        query = '''WITH enumerated AS (SELECT todos.content, todos.added_at, todos.jump_url, row_number()
+        OVER (ORDER BY added_at ASC) as count FROM todos WHERE user_id = $1)
         SELECT * FROM enumerated WHERE enumerated.count = $2'''
         row = await ctx.bot.pool.fetchrow(query, ctx.author.id, number)
         fields = [
@@ -162,10 +161,10 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         safesearch = False if ctx.channel.is_nsfw() else True
         results = await ctx.bot.cse.search(query, safesearch=safesearch)
         embed_list = []
+
         for i in range(0, 10 if len(results) >= 10 else len(results)):
             embed = ctx.bot.embed.default(
-                ctx,
-                title=results[i].title,
+                ctx, title=results[i].title,
                 description=results[i].description,
                 url=results[i].url
             ).set_thumbnail(url=results[i].image_url)
@@ -174,10 +173,8 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
                 icon_url=ctx.author.avatar_url
             )
             embed_list.append(embed)
-        await MyPages(
-            EmbedPageSource(embed_list),
-            delete_message_after=True
-        ).start(ctx)
+
+        await MyPages(EmbedPageSource(embed_list), delete_message_after=True).start(ctx)
 
     @commands.command()
     async def poll(self, ctx, question, *options):
@@ -253,6 +250,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         lexer = calclex.CalcLexer()
         parser = calcparse.CalcParser()
         reg = ''.join([i for i in expression if i in '()'])
+
         try:
             if not parser.match(reg):
                 raise Exceptions.UnclosedBrackets()
@@ -260,19 +258,26 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
                 if expression[i] == '(' and expression[i + 1] == ')':
                     raise Exceptions.EmptyBrackets()
             result = parser.parse(lexer.tokenize(expression))
+
         except Exception as e:
             if isinstance(e, Exceptions.Overflow):
                 return await ctx.send('Too big number was given.')
+
             if isinstance(e, Exceptions.UndefinedVariable):
                 return await ctx.send(e.exc)
+
             if isinstance(e, Exceptions.KeywordAlreadyTaken):
                 return await ctx.send('The given variable name is shadowing a reserved keyword argument.')
+
             if isinstance(e, Exceptions.UnclosedBrackets):
                 return await ctx.send('Given expression has unclosed brackets.')
+
             if isinstance(e, Exceptions.EmptyBrackets):
                 return await ctx.send('Given expression has empty brackets.')
+
             if isinstance(e, decimal.InvalidOperation):
                 return await ctx.send('Invalid expression given.')
+
         res = '\n'.join([str(i) for i in result])
         embed = ctx.bot.embed.default(ctx)
         embed.add_field(name='Input', value=f'```\n{expression}\n```', inline=False)
@@ -301,6 +306,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         Returns world statistics if no country is mentioned.
         Cases, deaths, recovered cases, active cases, and critical cases'''
         cs = ctx.bot.session
+
         if bool(flags):
             r = await cs.get(f'{ctx.bot.config["API"]["covid_api"]}all')
             js = await r.json()
@@ -334,29 +340,32 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
             ('Critical', str(js['critical'])),
             field
         ]
+
         for name, value in fields:
             embed.add_field(name=name, value=value)
+
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['temp', 'temperature'])
     async def weather(self, ctx, *, city: str.capitalize):
         '''Simply gets weather statistics of a given city.
         Gives: Description, temperature, humidity%, atmospheric pressure (hPa)'''
-        r = ctx.bot.session.get(f'{ctx.bot.config["API"]["weather_api"]}appid={ctx.bot.config["API"]["weather_id"]}&q={city}')
+        r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["weather_api"]}appid={ctx.bot.config["API"]["weather_id"]}&q={city}')
         x = await r.json()
         if x['cod'] != '404':
-            y = x['main']
-            z = x['weather']
             embed = ctx.bot.embed.default(ctx, title=f'Weather in {city}')
             embed.set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
+
             fields = [
-                ('Description', f'**{z[0]["description"]}**', False),
-                ('Temperature', f'**{y["temp"] - 273.15:.0f}°C**', False),
-                ('Humidity', f'**{y["humidity"]}%**', False),
-                ('Atmospheric Pressure', f'**{y["pressure"]}hPa**', False)
+                ('Description', f'**{x["weather"][0]["description"]}**', False),
+                ('Temperature', f'**{x["main"]["temp"] - 273.15:.0f}°C**', False),
+                ('Humidity', f'**{x["main"]["humidity"]}%**', False),
+                ('Atmospheric Pressure', f'**{x["main"]["pressure"]}hPa**', False)
             ]
+
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value, inline=inline)
+
             return await ctx.send(embed=embed)
         await ctx.send(f'City `{city}` not found.')
 
@@ -364,10 +373,12 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def translate(self, ctx, language, *, sentence):
         '''Translates a given text to language you want.
         Shows the translation and pronunciation of a text.'''
-        a = await Manip.translate(language, sentence=sentence)
-        embed = ctx.bot.embed.default(ctx, title=f'Translating from {a.src} to {a.dest}:')
-        embed.add_field(name='Translation:', value=f'```{a.text}```', inline=False)
-        embed.add_field(name='Pronunciation:', value=f'```{a.pronunciation}```')
+        translation = await Manip.translate(language, sentence=sentence)
+        embed = ctx.bot.embed.default(
+            ctx, title=f'Translating from {translation.src} to {translation.dest}:'
+        ).add_field(name='Translation:', value=f'```{translation.text}```', inline=False)
+        embed.add_field(name='Pronunciation:', value=f'```{translation.pronunciation}```')
+
         await ctx.send(embed=embed)
 
 
