@@ -5,8 +5,7 @@ from typing import Optional
 import discord
 from discord.ext import commands, flags
 from jishaku.codeblocks import codeblock_converter
-from utils.Cog import Cog
-from utils.Formats import TabularData
+from utils import Cog, TabularData
 
 
 class Owner(Cog, command_attrs={'hidden': True}):

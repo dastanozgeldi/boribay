@@ -9,13 +9,14 @@ from time import perf_counter
 import aiohttp
 import asyncpg
 import toml
+from async_cse import Search
 from dbl import DBLClient
 from discord import AllowedMentions, Game, Intents, flags
 from discord.ext import commands, ipc
 
-from utils.Context import Context
-from utils.Embed import Embed
-from utils.Cache import Cache
+from .cache import Cache
+from .context import Context
+from .embed import Embed
 
 intents = Intents.default()
 intents.members = True
@@ -66,6 +67,7 @@ class Boribay(commands.Bot):
         self.loop.create_task(self.__ainit__())
         self.loop.create_task(self.check_changes())
         self.ipc = ipc.Server(self, **self.config['ipc'])
+        self.cse = Search(self.config['API']['google_key'])
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
 
@@ -76,7 +78,7 @@ class Boribay(commands.Bot):
 
     def run(self, *args, **kwargs):
         """My own run method to make the launcher file smaller."""
-        self.ipc.start()  # running the IPC web-server
+        self.ipc.start()
 
         for ext in self.config['bot']['exts']:
             # loading all extensions before running the bot.

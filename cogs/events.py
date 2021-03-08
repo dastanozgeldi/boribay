@@ -1,8 +1,8 @@
 from io import BytesIO
+
 from discord import AsyncWebhookAdapter, File, Webhook
 from discord.ext import tasks
-from utils.Cog import Cog
-from utils.Manipulation import Manip
+from utils import Cog, Manip
 
 
 class Events(Cog, command_attrs={'hidden': True}):

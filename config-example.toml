@@ -9,14 +9,12 @@ exts = [
     'cogs.useful',
     'cogs.fun',
     'cogs.images',
-    'cogs.anime',
     'cogs.moderation',
     'cogs.misc',
     'cogs.help',
     'cogs.top'
 ]
 version = 'the bot version'
-description = 'the bot description that i want'
 token = 'my beautiful token here.'
 
 [database]  # these are credits you log in to the asyncpg pool with.
@@ -31,14 +29,4 @@ port = 8765
 secret_key = ''
 
 [API]  # you can insert APIs' URLs here
-apis = [
-    'some-random-api.ml'
-]
-
-[music]  # Lavalink/Wavelink nodes to add the music support.
-host = ''
-port = 2333
-rest_uri = ''
-password = ''
-identifier = ''
-region = ''
+sr_api = 'some-random-api.ml'

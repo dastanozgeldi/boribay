@@ -1,12 +1,11 @@
 from difflib import get_close_matches
 from discord.ext import commands, menus
-from utils.Cog import Cog
-from utils.Paginators import MyPages
+from utils import Cog, MyPages
 
 
 class HelpPages(menus.Menu):
     def __init__(self, embed, **kwargs):
-        super().__init__(timeout=69.0, clear_reactions_after=True, **kwargs)
+        super().__init__(timeout=60.0, clear_reactions_after=True, **kwargs)
         self.embed = embed
 
     async def send_initial_message(self, ctx, channel):
@@ -29,15 +28,19 @@ class HelpPages(menus.Menu):
     async def on_question(self, payload):
         """Shows how to use the bot."""
         embed = self.bot.embed.default(self.ctx, title='Welcome to the FAQ page.')
+
         fields = [
             ('How to use commands?', 'Follow the given signature for the command.'),
             ('What is <argument>?', 'This means the argument is **required**.'),
             ('What about [argument]?', 'This means the argument is **optional**.'),
             ('[argument...]?', 'This means there can be multiple arguments.'),
-            ('What the hell is [--flag FLAG]?', f'This means the optional argument\nExample: **{self.ctx.prefix}todo show --dm True**')
+            ('What the hell is [--flag FLAG]?', 'This means the optional argument\n'
+                                                'Example: **todo show --dm**')
         ]
+
         for name, value in fields:
             embed.add_field(name=name, value=value, inline=False)
+
         await self.message.edit(embed=embed)
 
     @menus.button('<:crossmark:814742130190712842>')
@@ -59,17 +62,25 @@ class GroupHelp(menus.ListPageSource):
     async def format_page(self, menu, cmds):
         g = self.group
         doc = g.__doc__ if isinstance(g, Cog) else g.help
+
         embed = self.ctx.bot.embed.default(
             self.ctx,
             title=f'Help for category: {str(g)}',
             description=f'{doc}\n{self.description}'
         )
+
         for cmd in cmds:
-            signature = f'{self.prefix}{cmd.qualified_name} {cmd.signature}'
-            embed.add_field(name=signature, value=cmd.help.format(prefix=self.prefix), inline=False)
+            embed.add_field(
+                name=f'{self.prefix}{cmd.qualified_name} {cmd.signature}',
+                value=cmd.help.format(prefix=self.prefix),
+                inline=False
+            )
+
         if (maximum := self.get_max_pages()) > 1:
             embed.set_author(name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
+
         embed.set_footer(text=f'{self.prefix}help <cmd> to get help for a specific command.')
+
         return embed
 
 
@@ -89,11 +100,13 @@ class MyHelpCommand(commands.HelpCommand):
         ctx = self.context
         links = ctx.bot.config['links']
         cats = []
+
         for cog, cmds in mapping.items():
             filtered = await self.filter_commands(cmds, sort=True)
             if filtered:
                 if cog:
                     cats.append(str(cog))
+
         embed = ctx.bot.embed.default(
             ctx, description=f'[Invite]({links["invite_url"]}) | [Support]({links["support_url"]}) | [Source]({links["github_url"]}) | [Vote]({links["topgg_url"]})'
         ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url_as(size=64))
@@ -144,12 +157,13 @@ class MyHelpCommand(commands.HelpCommand):
         await MyPages(GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0).start(self.context)
 
     async def command_not_found(self, string):
-        msg = f'Could not find the command `{string}`.'
+        message = f'Could not find the command `{string}`. '
+        commands_list = [str(cmd) for cmd in self.context.bot.walk_commands()]
 
-        if dym := '\n'.join(get_close_matches(string, [str(cmd) for cmd in self.context.bot.commands])):
-            msg += f' Did you mean...\n{dym}'
+        if dym := '\n'.join(get_close_matches(string, commands_list)):
+            message += f'Did you mean...\n{dym}'
 
-        return msg
+        return message
 
     def get_command_signature(self, command):
         return f'{self.clean_prefix}{command.qualified_name} {command.signature}'

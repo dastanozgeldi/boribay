@@ -1,9 +1,9 @@
 from typing import Optional
+
 import prettify_exceptions
 from discord import Forbidden, Message, NotFound
-from discord.ext import commands
-from utils import Exceptions
-from utils.Cog import Cog
+from discord.ext import commands, flags
+from utils import Cog, exceptions
 
 
 class ErrorHandler(Cog, command_attrs={'hidden': True}):
@@ -40,10 +40,19 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
     async def on_command_error(self, ctx, error):
         error = getattr(error, 'original', error)
         embed = ctx.bot.embed.error(title='⚠ Wait...')
+
         if isinstance(error, commands.CommandNotFound):
             return
+
         setattr(ctx, 'original_author_id', getattr(ctx, 'original_author_id', ctx.author.id))
-        invokes = (commands.MissingRole, commands.MissingAnyRole, commands.CommandOnCooldown, commands.MissingPermissions, commands.DisabledCommand)
+        invokes = (
+            commands.MissingRole,
+            commands.MissingAnyRole,
+            commands.CommandOnCooldown,
+            commands.MissingPermissions,
+            commands.DisabledCommand
+        )
+
         if isinstance(error, invokes) and ctx.original_author_id in ctx.bot.owner_ids:
             return await ctx.reinvoke()
 
@@ -51,16 +60,16 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             error,
             (IndexError,
              KeyError,
-             Exceptions.TooManyOptions,
-             Exceptions.NotEnoughOptions,
+             exceptions.TooManyOptions,
+             exceptions.NotEnoughOptions,
              commands.NotOwner,
-             commands.CheckFailure,
-             commands.NoPrivateMessage,
-             commands.NSFWChannelRequired,
-             commands.MaxConcurrencyReached,
              commands.BadArgument,
              commands.RoleNotFound,
+             commands.CheckFailure,
              commands.ExtensionError,
+             commands.NSFWChannelRequired,
+             commands.MaxConcurrencyReached,
+             flags._parser.ArgumentParsingError,
              commands.PartialEmojiConversionFailure)
         ):
             embed.description = str(error)
@@ -90,6 +99,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
         if len(exc) > 1000:
             await ctx.send('Unexpected error occured. Gotta send the traceback to my owner.')
             await self.send_error(ctx, error)
+
         else:
             await self.send(ctx, embed=ctx.bot.embed.error(description=f'Details: ```py\n{exc}\n```'))
             await self.send_error(ctx, exc)

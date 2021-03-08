@@ -1,4 +1,4 @@
-from utils.Bot import Boribay
+from utils import Boribay
 
 bot = Boribay(description='An awesome Discord Bot created to make people smile.')
 

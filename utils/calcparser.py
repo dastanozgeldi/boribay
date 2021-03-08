@@ -1,8 +1,8 @@
 import decimal
 import math
 from sly import Parser
-from .calclex import CalcLexer
-from utils.Exceptions import (
+from .calclexer import CalcLexer
+from .exceptions import (
     CalcError,
     KeywordAlreadyTaken,
     Overflow,

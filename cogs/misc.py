@@ -9,7 +9,7 @@ import psutil
 from discord import Forbidden, Member
 from discord.ext import commands, flags
 from humanize import naturaldate, naturaltime
-from utils.Cog import Cog
+from utils import Cog
 
 
 class Miscellaneous(Cog):
@@ -28,6 +28,7 @@ class Miscellaneous(Cog):
         cs = ctx.bot.session
         data = await (await cs.get(f'https://api.github.com/users/{login}')).json()
         repos = await (await cs.get(data['repos_url'])).json()
+
         fields = [
             ('Following', data['following']),
             ('Followers', data['followers']),
@@ -35,17 +36,20 @@ class Miscellaneous(Cog):
             ('Total Stars', sum(i['stargazers_count'] for i in repos)),
             ('One Repository', f'[here]({repos[0]["html_url"]})')
         ]
+
         embed = ctx.bot.embed.default(
             ctx, title=data['bio'],
             description='\n'.join(f'**{k}:** {v}' for k, v in fields)
-        ).set_author(name=f'{data["login"]} ({data["name"]})', url=data['html_url'], icon_url='https://icons-for-free.com/iconfiles/png/64/part+1+github-1320568339880199515.png')
+        ).set_author(name=f'{data["login"]} ({data["name"]})', url=data['html_url'])
         embed.set_thumbnail(url=data['avatar_url'])
+
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['cs'])
     async def codestats(self, ctx):
         """See the code statictics of the bot."""
         ctr = Counter()
+
         for ctr['files'], f in enumerate(glob.glob('./**/*.py', recursive=True)):
             with open(f, encoding='UTF-8') as fp:
                 for ctr['lines'], line in enumerate(fp, ctr['lines']):
@@ -56,6 +60,7 @@ class Miscellaneous(Cog):
                     ctr['functions'] += line.startswith('def')
                     ctr['coroutines'] += line.startswith('async def')
                     ctr['docstrings'] += line.startswith('"""') + line.startswith("'''")
+
         await ctx.send(embed=ctx.bot.embed.default(ctx, description='\n'.join([f'**{k.capitalize()}:** {v}' for k, v in ctr.items()])))
 
     @commands.command(aliases=['modules', 'exts'])
@@ -67,9 +72,11 @@ class Miscellaneous(Cog):
             if not await ctx.bot.is_owner(ctx.author) and name in ctx.bot.config['bot']['owner_exts']:
                 continue
             exts.append(name)
+
         exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
         length = [len(element) for row in exts for element in row]
         rows = [''.join(e.ljust(max(length) + 2) for e in row) for row in exts]
+
         await ctx.send(embed=ctx.bot.embed.default(
             ctx, title='Currently working modules.',
             description='```%s```' % '\n'.join(rows)
@@ -81,9 +88,11 @@ class Miscellaneous(Cog):
         Returns: uptime: How much time bot is online."""
         h, r = divmod((ctx.bot.uptime), 3600)
         (m, s), (d, h) = divmod(r, 60), divmod(h, 24)
+
         embed = ctx.bot.embed.default(ctx)
         embed.add_field(name='How long I am online?', value=f'{d}d {h}h {m}m {s}s')
-        return await ctx.send(embed=embed)
+
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=['sys'])
     async def system(self, ctx):
@@ -102,8 +111,10 @@ class Miscellaneous(Cog):
                 'RAM Available': f'{memory.available / (1024 ** 3):,.3f} GB'
             }
         }
+
         for key in info:
             embed.add_field(name=f'**{key}**', value='\n'.join([f'> **{k}:** {v}' for k, v in info[key].items()]), inline=False)
+
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['about', 'bi', 'botinfo'])
@@ -112,6 +123,7 @@ class Miscellaneous(Cog):
         me = ctx.bot
         embed = me.embed.default(ctx)
         embed.set_author(name=str(me.user), icon_url=me.user.avatar_url_as(size=64))
+
         fields = {
             'Development': {
                 ('Developer', str(me.dosek)),
@@ -124,8 +136,10 @@ class Miscellaneous(Cog):
                 ('Commands usage (last year)', await me.pool.fetchval('SELECT command_usage FROM bot_stats'))
             }
         }
+
         for key in fields:
             embed.add_field(name=key, value='\n'.join([f'> **{k}:** {v}' for k, v in fields[key]]), inline=False)
+
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['memberinfo', 'ui', 'mi'])
@@ -135,13 +149,15 @@ class Miscellaneous(Cog):
         member = member or ctx.author
         embed = ctx.bot.embed.default(ctx).set_thumbnail(url=member.avatar_url)
         embed.set_author(name=str(member), icon_url=ctx.guild.icon_url_as(size=64))
+
         fields = [
             ('Top role', member.top_role.mention),
             ('Boosted server', bool(member.premium_since)),
             ('Account created', naturaldate(member.created_at)),
             ('Here since', naturaldate(member.joined_at))
         ]
-        embed.description = '\n'.join([f'**{name}:** {value}' for name, value in fields])
+
+        embed.description = '\n'.join(f'**{name}:** {value}' for name, value in fields)
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['guildinfo', 'si', 'gi'])
@@ -149,6 +165,7 @@ class Miscellaneous(Cog):
     async def serverinfo(self, ctx):
         """See some general information about current guild."""
         g = ctx.guild
+
         fields = [
             ('Region', str(g.region).title()),
             ('Created', naturaltime(g.created_at)),
@@ -159,9 +176,11 @@ class Miscellaneous(Cog):
             ('Voice channels', len(g.voice_channels)),
             ('Categories', len(g.categories)),
         ]
+
         embed = ctx.bot.embed.default(
             ctx, description='\n'.join([f'**{n}:** {v}' for n, v in fields])
         ).set_author(name=g.name, icon_url=g.icon_url_as(size=64), url=g.icon_url)
+
         await ctx.send(embed=embed)
 
     @flags.add_flag('--tts', action='store_true', help='Whether to send a tts message.')
@@ -171,10 +190,12 @@ class Miscellaneous(Cog):
         Args: message: A message that will be sent.
         Make sure to put your message in double quotes."""
         tts = flags.pop('tts', False)
+
         try:
             await ctx.message.delete()
         except Forbidden:
             pass
+
         await ctx.send(message, tts=tts)
 
     @commands.command()
@@ -200,11 +221,13 @@ class Miscellaneous(Cog):
         s = perf_counter()
         msg = await ctx.send('Pong!')
         e = perf_counter()
+
         elements = [
             ('<a:loading:787357834232332298> Websocket', f'{ctx.bot.latency * 1000:.2f}'),
             ('<a:typing:807306107508359228> Typing', f'{(e - s) * 1000:.2f}'),
             ('<:pg:795005204289421363> Database', f'{await ctx.bot.db_latency() * 1000:.2f}')
         ]
+
         embed = ctx.bot.embed.default(ctx, description='\n'.join([f'**{n}:** ```{v} ms```' for n, v in elements]))
         await msg.edit(embed=embed)
 

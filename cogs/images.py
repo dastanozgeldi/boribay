@@ -1,15 +1,10 @@
 import random
 from io import BytesIO
 from typing import Optional
+
 import discord
 from discord.ext import commands, flags
-from utils.Cog import Cog
-from utils.Manipulation import (
-    Manip,
-    make_image,
-    make_image_url,
-    polaroid_filter
-)
+from utils import Cog, Manip, make_image, make_image_url, polaroid_filter
 
 
 class Images(Cog):

@@ -1,9 +1,8 @@
 from typing import Optional
+
 import discord
 from discord.ext import commands
-from utils.Cog import Cog
-from utils.Converters import ColorConverter
-from utils.Checks import is_mod
+from utils import Cog, ColorConverter, is_mod
 
 
 class Moderation(Cog):

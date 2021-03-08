@@ -1,6 +1,6 @@
 import decimal
 from sly import Lexer
-from utils.Exceptions import CalcError
+from .exceptions import CalcError
 
 
 class CalcLexer(Lexer):

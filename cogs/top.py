@@ -1,8 +1,7 @@
 from collections import Counter
 
 from discord.ext import commands, flags
-from utils.Checks import has_voted
-from utils.Cog import Cog
+from utils import Cog, has_voted
 
 
 class TopGG(Cog):

@@ -6,10 +6,10 @@ CREATE TABLE guild_config (
     autorole bigint
 )
 
-CREATE TABLE users (
-    guild_id bigint,
-    user_id bigint,
-    cash bigint,
-    xp bigint,
-    lvl bigint
+CREATE TABLE todos (
+    id serial primary key,
+    user_id bigint not null,
+    content text,
+    added_at timestamp without time zone,
+    jump_url text
 )

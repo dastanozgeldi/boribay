@@ -8,9 +8,7 @@ from typing import Optional
 
 import discord
 from discord.ext import commands, flags
-from utils.Cog import Cog
-from utils.Paginators import Trivia
-from utils.Manipulation import Manip
+from utils import Cog, Manip, Trivia
 
 
 class Fun(Cog):
@@ -106,8 +104,10 @@ class Fun(Cog):
         choice = random.choice([*rps_dict.keys()])
         embed = ctx.bot.embed.default(ctx, description='**Choose one 👇**')
         msg = await ctx.send(embed=embed.set_footer(text='10 seconds left⏰'))
+
         for r in rps_dict.keys():
             await msg.add_reaction(r)
+
         try:
             r, u = await ctx.bot.wait_for(
                 'reaction_add', timeout=10,
@@ -115,6 +115,7 @@ class Fun(Cog):
             )
             game = rps_dict.get(str(r.emoji))
             await msg.edit(embed=ctx.bot.embed.default(ctx, description=f'''Result: **{game[choice].upper()}**\nMy choice: **{choice}**\nYour choice: **{str(r.emoji)}**'''))
+
         except asyncio.TimeoutError:
             await msg.delete()
 

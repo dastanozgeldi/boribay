@@ -1,5 +1,5 @@
 from discord import utils
-from utils.Cog import Cog
+from utils import Cog
 
 
 class ReactionRoles(Cog):
