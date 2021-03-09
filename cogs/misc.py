@@ -202,8 +202,6 @@ class Miscellaneous(Cog):
     async def prefix(self, ctx):
         """See bot's prefix."""
         prefix = '.' if not ctx.guild else ctx.bot.cache[ctx.guild.id].get('prefix', '.')
-        # caching is hard to handle and sometimes I have to put some default values.
-        # this .get above prevents lots of errors with new guilds.
         await ctx.send(embed=ctx.bot.embed.default(ctx, description=f'The prefix is: `{prefix}` or {ctx.bot.user.mention}'))
 
     @commands.command(aliases=['links'])
@@ -213,6 +211,7 @@ class Miscellaneous(Cog):
             ctx, description=f'Invite me [here]({ctx.bot.config["links"]["invite_url"]})\n'
             f'Support server [here]({ctx.bot.config["links"]["support_url"]})'
         )
+
         await ctx.send(embed=embed)
 
     @commands.command()

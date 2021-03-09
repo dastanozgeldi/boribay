@@ -123,6 +123,7 @@ class MyHelpCommand(commands.HelpCommand):
     async def send_cog_help(self, cog):
         ctx = self.context
         entries = await self.filter_commands(cog.get_commands(), sort=True)
+
         await MyPages(
             GroupHelp(ctx, cog, entries, self.clean_prefix),
             timeout=30.0,

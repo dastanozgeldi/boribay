@@ -39,7 +39,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
     @Cog.listener()
     async def on_command_error(self, ctx, error):
         error = getattr(error, 'original', error)
-        embed = ctx.bot.embed.error(title='⚠ Wait...')
+        embed = ctx.bot.embed.error(title='⚠ Error!')
 
         if isinstance(error, commands.CommandNotFound):
             return
@@ -58,8 +58,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
 
         elif isinstance(
             error,
-            (IndexError,
-             KeyError,
+            (KeyError,
              exceptions.TooManyOptions,
              exceptions.NotEnoughOptions,
              commands.NotOwner,

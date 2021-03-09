@@ -1,4 +1,3 @@
-import re
 from io import BytesIO
 from typing import Optional
 
@@ -36,12 +35,9 @@ class Owner(Cog, command_attrs={'hidden': True}):
         await ctx.send(f'Deleted {limit} messages.')
 
     @su.command(aliases=['ss'])
-    @commands.is_nsfw()
     async def screenshot(self, ctx, url: str):
         """Screenshot command.
         Args: url (str): a web-site that you want to get a screenshot from."""
-        if not re.search(ctx.bot.regex['URL_REGEX'], url):
-            raise commands.BadArgument('Invalid URL specified. Note that you should include http(s).')
         r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["screenshot_api"]}{url}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
@@ -61,11 +57,15 @@ class Owner(Cog, command_attrs={'hidden': True}):
     async def sql(self, ctx, *, query: codeblock_converter):
         """Does some nice SQL queries."""
         query = query.content
+
         if query.lower().startswith('select'):
             strategy = ctx.bot.pool.fetch
+
         else:
             strategy = ctx.bot.pool.execute
+
         results = await strategy(query)
+
         if isinstance(results, list):
             columns = list(results[0].keys())
             table = TabularData()
@@ -73,8 +73,10 @@ class Owner(Cog, command_attrs={'hidden': True}):
             table.add_rows(list(result.values()) for result in results)
             render = table.render()
             msg = f'```py\n{render}\n```'
+
         else:
             msg = results
+
         await ctx.send(msg)
 
     @flags.add_flag('--mode', choices=['r', 'l', 'u'], default='r', help='A specific mode [reload, load, unload].')
@@ -88,8 +90,10 @@ class Owner(Cog, command_attrs={'hidden': True}):
             'u': ctx.bot.unload_extension,
         }
         exts = ctx.bot.config['bot']['exts'] if flags['ext'][0] == '~' else flags['ext']
+
         for ext in exts:
             modes.get(flags['mode'])(ext)
+
         await ctx.message.add_reaction('✅')
 
 

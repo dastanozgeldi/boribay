@@ -9,7 +9,6 @@ from time import perf_counter
 import aiohttp
 import asyncpg
 import toml
-from async_cse import Search
 from dbl import DBLClient
 from discord import AllowedMentions, Game, Intents, flags
 from discord.ext import commands, ipc
@@ -67,7 +66,6 @@ class Boribay(commands.Bot):
         self.loop.create_task(self.__ainit__())
         self.loop.create_task(self.check_changes())
         self.ipc = ipc.Server(self, **self.config['ipc'])
-        self.cse = Search(self.config['API']['google_key'])
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
 

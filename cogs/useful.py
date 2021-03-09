@@ -9,10 +9,11 @@ from typing import Optional
 
 import aiowiki
 import discord
+from async_cse import NoResults, Search
 from discord.ext import commands, flags
 from humanize import time
 from utils import (CalcLexer, CalcParser, Cog, ColorConverter, EmbedPageSource,
-                   exceptions, Manip, MyPages, TodoPageSource, has_voted)
+                   Manip, MyPages, TodoPageSource, exceptions, has_voted)
 
 
 class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.BucketType.user)}):
@@ -238,10 +239,16 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         """Paginated Google-Search command.
         Args: query (str): Your search request. Results will be displayed,
         otherwise returns an error which means no results found."""
+        ctx.bot.cse = Search(ctx.bot.config['API']['google_key'])
         safesearch = False if ctx.channel.is_nsfw() else True
-        results = await ctx.bot.cse.search(query, safesearch=safesearch)
-        embed_list = []
 
+        try:
+            results = await ctx.bot.cse.search(query, safesearch=safesearch)
+
+        except NoResults:
+            raise commands.BadArgument(f'Your query `{query}` returned no results.')
+
+        embed_list = []
         for i in range(0, 10 if len(results) >= 10 else len(results)):
             embed = ctx.bot.embed.default(
                 ctx, title=results[i].title,
@@ -293,9 +300,13 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     @has_voted()
     async def reddit(self, ctx, subreddit: str):
         """Find a randomized post from subreddit that you want to."""
-        r = await ctx.bot.session.get(f'https://www.reddit.com/r/{subreddit}/hot.json')
-        r = await r.json()
-        data = r['data']['children'][random.randint(0, 10)]['data']
+        try:
+            r = await ctx.bot.session.get(f'https://www.reddit.com/r/{subreddit}/hot.json')
+            r = await r.json()
+            data = r['data']['children'][random.randint(0, 10)]['data']
+
+        except IndexError:
+            raise commands.BadArgument(f'There is no subreddit called **{subreddit}**.')
 
         if not ctx.channel.is_nsfw() and data['over_18'] is True:
             raise commands.NSFWChannelRequired(ctx.channel)
@@ -318,15 +329,24 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         )
         found = re.findall(r'watch\?v=(\S{11})', await r.text())
 
-        await ctx.send(f'https://youtu.be/{found[0]}')
+        try:
+            await ctx.send(f'https://youtu.be/{found[0]}')
+
+        except IndexError:
+            raise commands.BadArgument(f'No videos found for query: {search}')
 
     @commands.command(aliases=['ud', 'urban'])
     async def urbandictionary(self, ctx, *, word: str):
         """Urban Dictionary words' definition wrapper.
         Args: word (str): A word you want to know the definition of."""
-        r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["ud_api"]}?term={word}')
-        js = await r.json()
-        source = js['list'][0]
+        try:
+            r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["ud_api"]}?term={word}')
+            js = await r.json()
+            source = js['list'][0]
+
+        except IndexError:
+            raise commands.BadArgument(f'No definition found for **{word}**')
+
         embed = ctx.bot.embed.default(ctx, description=f"**{source['definition'].replace('[', '').replace(']', '')}**")
         embed.set_author(
             name=word,

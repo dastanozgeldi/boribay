@@ -32,11 +32,13 @@ class TopGG(Cog):
         however you can specify the limitation of the leaderboard."""
         medals = ['🥇', '🥈', '🥉'] + ['✨' for num in range(flags['limit'] - 3)]
         d = Counter([i['username'] for i in await ctx.bot.dblpy.get_bot_upvotes()]).most_common(flags['limit'])
+
         embed = ctx.bot.embed.default(
             ctx, title='Top voters of this month.',
             description='\n'.join(f'{k} **{i[0]}** → {i[1]} votes' for i, k in zip(d, medals)),
             url=ctx.bot.config['links']['topgg_url']
         )
+
         await ctx.send(embed=embed)
 
 

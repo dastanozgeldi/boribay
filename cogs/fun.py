@@ -23,12 +23,15 @@ class Fun(Cog):
     async def question(self, ctx, difficulty: str):
         if difficulty not in ('easy', 'medium', 'hard'):
             raise ValueError('Invalid difficulty specified.')
-        async with ctx.bot.session.get(f"{ctx.bot.config['API']['trivia_api']}&difficulty={difficulty}") as r:
-            js = await r.json()
+
+        r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["trivia_api"]}&difficulty={difficulty}')
+        js = await r.json()
         js = js['results'][0]
+
         js['incorrect_answers'] = [unescape(x) for x in js['incorrect_answers']]
         js['question'] = unescape(js['question'])
         js['correct_answer'] = unescape(js['correct_answer'])
+
         return js
 
     async def answer(self, ctx, q):
@@ -43,6 +46,7 @@ class Fun(Cog):
         **head → 47.5%**, **tail → 47.5%** and **side → 5%**"""
         if (choice := random.choices(population=['head', 'tail', 'side'], weights=[0.475, 0.475, 0.05], k=1)[0]) == 'side':
             return await ctx.send('You\'ve got an amazing luck since the coin was flipped to the side!')
+
         await ctx.send(f'Coin flipped to the `{choice}`')
 
     @commands.command()
@@ -52,12 +56,16 @@ class Fun(Cog):
         Returns: A correct answer."""
         try:
             q = await self.question(ctx, difficulty)
+
         except ValueError:
             raise commands.BadArgument('Invalid difficulty specified.')
+
         if await self.answer(ctx, q):
             msg = f'**{ctx.author}** answered correct.'
+
         else:
             msg = f'**{ctx.author}** was a bit wrong'
+
         await ctx.send(msg + f'\nThe answer was: `{q["correct_answer"]}`.')
 
     @flags.add_flag('--timeout', type=int, default=60.0)
@@ -75,6 +83,7 @@ class Fun(Cog):
         embed.set_footer(text=f'© {r["author"]}')
         race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
         start = time()
+
         try:
             if not (msg := await ctx.bot.wait_for('message', check=lambda m: m.content == content, timeout=flags.pop('timeout'))):
                 return
@@ -85,6 +94,7 @@ class Fun(Cog):
                 f'**Average WPM**: {r["length"] / 5 / (final / 60):.0f} words\n'
                 f'**Original text:**```diff\n+ {content}```',
             ))
+
         except asyncio.TimeoutError:
             try:
                 await race.delete()
@@ -124,10 +134,13 @@ class Fun(Cog):
         """Play the game on a slot machine!"""
         a, b, c = random.choices('🍎🍊🍐🍋🍉🍇🍓🍒', k=3)
         text = f'{a} | {b} | {c}\n{ctx.author.display_name}, '
+
         if (a == b == c):
             await ctx.send(f'{text}All match, we have a big winner! 🎉')
+
         elif (a == b) or (a == c) or (b == c):
             await ctx.send(f'{text}2 match, you won! 🎉')
+
         else:
             await ctx.send(f'{text}No matches, I wish you win next time.')
 
@@ -147,8 +160,7 @@ class Fun(Cog):
         Colors: black • blue • brown • cyan • darkgreen • lime • orange • pink • purple • red • white • yellow.
         Ex: eject blue True Dosek.'''
         name = name or ctx.author.display_name
-        cs = ctx.bot.session
-        r = await cs.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
+        r = await ctx.bot.session.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
         io = BytesIO(await r.read())
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
@@ -163,8 +175,7 @@ class Fun(Cog):
     @commands.command()
     async def uselessfact(self, ctx):
         """Returns an useless fact."""
-        cs = ctx.bot.session
-        r = await cs.get('https://uselessfacts.jsph.pl/random.json?language=en')
+        r = await ctx.bot.session.get('https://uselessfacts.jsph.pl/random.json?language=en')
         js = await r.json()
         await ctx.send(embed=ctx.bot.embed.default(ctx, description=js['text']))
 

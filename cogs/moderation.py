@@ -19,6 +19,7 @@ class Moderation(Cog):
         for check in checks:
             if ctx.bot.cache[ctx.guild.id][key] == check:
                 return '<:crossmark:814742130190712842>'
+
         return '<:tick:814838692459446293>'
 
     async def update(self, ctx, key, value):
@@ -38,6 +39,7 @@ class Moderation(Cog):
             name='Guild Settings',
             value='\n'.join(f'**{self.on_or_off(ctx, k, [".", 3553598, None, None])} {k.replace("_", " ").title()}:** {v}' for k, v in creds.items())
         )
+
         await ctx.send(embed=embed)
 
     @settings.command(aliases=['wc'])
@@ -65,6 +67,7 @@ class Moderation(Cog):
         color = int(str(color).replace('#', ''), 16)
         await self.update(ctx, 'embed_color', color)
         msg = 'As of now, the embed color will look like this.'
+
         await ctx.send(embed=ctx.bot.embed.default(ctx, title=msg))
 
     @settings.command()
@@ -88,9 +91,13 @@ class Moderation(Cog):
         Args: member (discord.Member): a member you want to ban.
         reason (str, optional): Reason why you are banning. Defaults to None."""
         r = reason or 'Reason not specified.'
-        embed = ctx.bot.embed.default(
-            ctx, title=f'{ctx.author.display_name} banned → {member.display_name}', description=r)
         await member.ban(reason=r)
+        embed = ctx.bot.embed.default(
+            ctx,
+            title=f'{member} was banned.',
+            description=r
+        )
+
         await ctx.send(embed=embed)
 
     @admin.command()
@@ -147,7 +154,11 @@ class Moderation(Cog):
         r = reason or 'Reason not specified.'
         await ctx.guild.kick(user=member, reason=r)
         embed = ctx.bot.embed.default(
-            ctx, title=f"{ctx.author.display_name} kicked: {member.display_name}", description=r)
+            ctx,
+            title=f'{member} was kicked.',
+            description=r
+        )
+
         await ctx.send(embed=embed)
 
     @mod.command(aliases=['clear'])
@@ -157,6 +168,7 @@ class Moderation(Cog):
         Args: amount (Optional): amount of messages to clear. Defaults to 2."""
         if amount > 100:
             raise commands.BadArgument('That is too big amount. The maximum is 100')
+
         await ctx.channel.purge(limit=amount)
 
     @mod.command(aliases=['add_category'])
