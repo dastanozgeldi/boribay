@@ -11,9 +11,6 @@ class TopGG(Cog):
     icon = '<:topgg:809359742899978272>'
     name = 'TopGG'
 
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
-
     @commands.command()
     @has_voted()
     async def didivote(self, ctx):

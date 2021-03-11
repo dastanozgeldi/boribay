@@ -1,22 +1,20 @@
-import discord
-import datetime
+from datetime import datetime as dt
+
+from discord import Embed as E
 
 
-class Embed(discord.Embed):
+class Embed(E):
 	def __init__(self, timestamp=None, **kwargs):
 		super(Embed, self).__init__(
-			timestamp=timestamp or datetime.datetime.utcnow(),
+			timestamp=timestamp or dt.utcnow(),
 			**kwargs
 		)
 
 	@classmethod
 	def default(cls, ctx, **kwargs):
+		g = ctx.guild
 		instance = cls(**kwargs)
-
-		if not ctx.guild:
-			instance.color = 0x36393e
-		else:
-			instance.color = ctx.bot.cache[ctx.guild.id].get('embed_color', 0x36393e)
+		instance.color = 0x36393e if not g else ctx.bot.cache[g.id]['embed_color']
 
 		return instance
 

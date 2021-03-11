@@ -6,14 +6,11 @@ from utils import Cog, ColorConverter, is_mod
 
 
 class Moderation(Cog):
-    '''Administration extension. A module that is created to keep
+    """Administration extension. A module that is created to keep
     discipline in the server. Purging messages, muting members, channel create
-    command, all of them are here.'''
+    command, all of them are here."""
     icon = '🛡'
     name = 'Moderation'
-
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
 
     def on_or_off(self, ctx, key, checks):
         for check in checks:

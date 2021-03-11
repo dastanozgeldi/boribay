@@ -2,7 +2,7 @@
 
 Thanks Danny for this awesome piece of code!
 
-The MIT License (MIT)
+The MPL-2.0 License
 
 Copyright (c) 2015 Rapptz"""
 

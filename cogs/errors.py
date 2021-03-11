@@ -1,32 +1,34 @@
-from typing import Optional
-
 import prettify_exceptions
-from discord import Forbidden, Message, NotFound
+from discord import Forbidden, NotFound
 from discord.ext import commands, flags
 from utils import Cog, exceptions
 
 
 class ErrorHandler(Cog, command_attrs={'hidden': True}):
 
-    async def send(self, ctx, exc: str = None, *args, **kwargs) -> Optional[Message]:
+    async def send(self, ctx, exc: str = None, *args, **kwargs):
         try:
             return await ctx.reply(exc, *args, **kwargs)
+
         except Forbidden:
             try:
                 return await ctx.author.send(exc, *args, **kwargs)
             except Forbidden:
                 pass
+
         except NotFound:
             pass
+
         return None
 
     async def send_error(self, ctx, exc):
-        channel = ctx.bot.get_channel(781874343868629073)
+        channel = ctx.bot.get_channel(ctx.bot.config['bot']['errors_channel'])
         embed = ctx.bot.embed.error(description=f'```py\nError:\n{exc}\n```')
-        embed.set_author(name=f'{ctx.author}', icon_url=ctx.author.avatar_url)
+        embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
+
         if ctx.guild:
             command = 'None' if isinstance(ctx.command, type(None)) else ctx.command.qualified_name
-            embed.set_thumbnail(url=ctx.guild.icon_url_as(size=256))
+            embed.set_thumbnail(url=ctx.guild.icon_url)
             embed.add_field(
                 name='Information',
                 value=f'Channel: {ctx.channel.mention}\n'
@@ -34,6 +36,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
                 f'Command: {command}\n'
                 f'Message: {ctx.message.content}'
             )
+
         await channel.send(embed=embed)
 
     @Cog.listener()
@@ -53,24 +56,25 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             commands.DisabledCommand
         )
 
+        defaults = (
+            KeyError,
+            exceptions.TooManyOptions,
+            exceptions.NotEnoughOptions,
+            commands.NotOwner,
+            commands.BadArgument,
+            commands.RoleNotFound,
+            commands.CheckFailure,
+            commands.ExtensionError,
+            commands.NSFWChannelRequired,
+            commands.MaxConcurrencyReached,
+            flags._parser.ArgumentParsingError,
+            commands.PartialEmojiConversionFailure
+        )
+
         if isinstance(error, invokes) and ctx.original_author_id in ctx.bot.owner_ids:
             return await ctx.reinvoke()
 
-        elif isinstance(
-            error,
-            (KeyError,
-             exceptions.TooManyOptions,
-             exceptions.NotEnoughOptions,
-             commands.NotOwner,
-             commands.BadArgument,
-             commands.RoleNotFound,
-             commands.CheckFailure,
-             commands.ExtensionError,
-             commands.NSFWChannelRequired,
-             commands.MaxConcurrencyReached,
-             flags._parser.ArgumentParsingError,
-             commands.PartialEmojiConversionFailure)
-        ):
+        elif isinstance(error, defaults):
             embed.description = str(error)
             return await self.send(ctx, embed=embed)
 
@@ -81,14 +85,6 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             embed.description = f'This command is on cooldown. **`{int(error.retry_after)}` seconds**'
             return await self.send(ctx, embed=embed)
 
-        elif isinstance(error, commands.MissingPermissions):
-            embed.description = f'You are missing permission: `{error.missing_perms[0]}`'
-            return await self.send(ctx, embed=embed)
-
-        elif isinstance(error, commands.BotMissingPermissions):
-            embed.description = f'I am missing permission: `{error.missing_perms[0]}`'
-            return await self.send(ctx, embed=embed)
-
         try:
             prettify_exceptions.DefaultFormatter().theme['_ansi_enabled'] = False
             exc = ''.join(prettify_exceptions.DefaultFormatter().format_exception(type(error), error, error.__traceback__))
@@ -96,7 +92,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             return
 
         if len(exc) > 1000:
-            await ctx.send('Unexpected error occured. Gotta send the traceback to my owner.')
+            await ctx.send('An error occured. Sending the traceback to the logging channel...')
             await self.send_error(ctx, error)
 
         else:

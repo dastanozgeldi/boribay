@@ -3,7 +3,7 @@ are stolen from R. Danny.
 
 Thanks Danny for this awesome piece of code!
 
-The MIT License (MIT)
+The MPL-2.0 License
 
 Copyright (c) 2015 Rapptz"""
 
@@ -25,6 +25,7 @@ async def check_guild_perms(ctx, perms, *, check=all):
 def is_mod():
     async def predicate(ctx):
         return await check_guild_perms(ctx, {'manage_guild': True})
+
     return commands.check(predicate)
 
 
@@ -34,16 +35,22 @@ def beta_command():
             raise commands.CheckFailure(f'Command `{ctx.command}` is currently in beta-testing and cannot be executed now.')
             return False
         return True
+
     return commands.check(predicate)
 
 
 def has_voted():
     async def predicate(ctx):
         check = await ctx.bot.dblpy.get_user_vote(ctx.author.id)
+
         if check:
             return True
+
         else:
-            raise commands.CheckFailure('This message means that you didn\'t vote last 12 hours.\n'
-                                        f'Fix it clicking **[here!]({ctx.bot.config["links"]["topgg_url"]})**')
+            raise commands.CheckFailure(
+                'This message means that you didn\'t vote last 12 hours.\n'
+                f'Fix it clicking **[here!]({ctx.bot.config["links"]["topgg_url"]})**'
+            )
             return False
+
     return commands.check(predicate)

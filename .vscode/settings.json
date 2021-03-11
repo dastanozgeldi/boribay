@@ -5,5 +5,13 @@
         "--ignore=W191, E501, E731",
         "--exclude=utils/calc*.py, utils/__init__.py"
     ],
-    "python.linting.pylintEnabled": false
+    "python.linting.pylintEnabled": false,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/__pycache__": true
+    }
 }

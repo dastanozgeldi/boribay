@@ -1,24 +1,29 @@
+import contextlib
 import re
 import typing
+
 import discord
-import contextlib
 import twemoji_parser
-from PIL import ImageColor
 from discord.ext import commands
+from PIL import ImageColor
 
 
 class TimeConverter(commands.Converter):
     async def convert(self, ctx, argument):
+        time = 0
         time_dict = {'h': 3600, 's': 1, 'm': 60, 'd': 86400}
         matches = re.findall(r'(?:(\d{1,5})(h|s|m|d))+?', argument.lower())
-        time = 0
+
         for v, k in matches:
             try:
                 time += time_dict[k] * float(v)
+
             except KeyError:
                 raise commands.BadArgument(f'{k} is an invalid time-key! h/m/s/d are valid.')
+
             except ValueError:
                 raise commands.BadArgument(f'{v} is not a number!')
+
         return time
 
 
@@ -58,15 +63,19 @@ class ImageURLConverter(commands.Converter):
         except (TypeError, commands.MemberNotFound):
             try:
                 url = await twemoji_parser.emoji_to_url(arg, include_check=True)
+
                 if re.match(ctx.bot.regex['URL_REGEX'], url):
                     return url
+
                 if re.match(ctx.bot.regex['URL_REGEX'], arg):
                     return arg
+
                 elif re.match(ctx.bot.regex['EMOJI_REGEX'], arg):
                     econv = commands.PartialEmojiConverter()
                     e = await econv.convert(ctx, arg)
                     image = str(e.url)
                     return image
+
             except TypeError:
                 return None
 
@@ -85,22 +94,25 @@ class ImageConverter(commands.Converter):
         except (TypeError, commands.MemberNotFound):
             try:
                 url = await twemoji_parser.emoji_to_url(arg, include_check=True)
+                cs = ctx.bot.session
+
                 if re.match(ctx.bot.regex['URL_REGEX'], url):
-                    cs = ctx.bot.session
                     r = await cs.get(url)
                     image = await r.read()
                     return image
+
                 if re.match(ctx.bot.regex['URL_REGEX'], arg):
-                    cs = ctx.bot.session
                     r = await cs.get(arg)
                     image = await r.read()
                     return image
+
                 elif re.match(ctx.bot.regex['EMOJI_REGEX'], arg):
                     econv = commands.PartialEmojiConverter()
                     e = await econv.convert(ctx, arg)
                     asset = e.url
                     image = await asset.read()
                     return image
+
             except TypeError:
                 return None
 

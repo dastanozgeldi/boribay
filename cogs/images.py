@@ -8,25 +8,26 @@ from utils import Cog, Manip, make_image, make_image_url, polaroid_filter
 
 
 class Images(Cog):
-    """My own implementation of images."""
+    """Images extension. A module that is created to work with images.
+    Has features like: filters, text-images and legendary memes."""
     icon = '🖼'
     name = 'Images'
 
     def __init__(self, bot):
         self.bot = bot
-        self.cache = {}
-
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
 
     async def dagpi_image(self, url, fn=None):
-        cs = self.bot.session
-        r = await cs.get(f'https://beta.dagpi.xyz/image/{url}', headers={'Authorization': self.bot.config['API']['dagpi_token']})
+        r = await self.bot.session.get(
+            f'https://beta.dagpi.xyz/image/{url}',
+            headers={'Authorization': self.bot.config['API']['dagpi_token']}
+        )
         return discord.File(BytesIO(await r.read()), fn or 'dagpi.png')
 
     async def alex_image(self, url, fn=None):
-        cs = self.bot.session
-        r = await cs.get(f'https://api.alexflipnote.dev/{url}', headers={'Authorization': self.bot.config['API']['alex_token']})
+        r = await self.bot.session.get(
+            f'https://api.alexflipnote.dev/{url}',
+            headers={'Authorization': self.bot.config['API']['alex_token']}
+        )
         return discord.File(BytesIO(await r.read()), fn or 'alex.png')
 
     @commands.command()
@@ -37,17 +38,17 @@ class Images(Cog):
 
     @commands.command()
     async def grayscale(self, ctx, image: Optional[str]):
-        """Adds a greyscale filter to an image."""
+        """Adds a grayscale filter to an image."""
         image = await make_image(ctx, image)
         await ctx.send(file=polaroid_filter(ctx, image, method='grayscale'))
 
     @commands.command()
     async def monochrome(self, ctx, r: Optional[int], g: Optional[int], b: Optional[int], image: Optional[str]):
         """Adds a monochrome filter to an image.
-        Takes absolutely random colors if any of r, g, b not specified.
-        So be careful!"""
+        Takes absolutely random colors if any of r, g, b not specified."""
         if not all((r, g, b)):
             r, g, b = random.choices(range(0, 255), k=3)
+
         image = await make_image(ctx, image)
         file = polaroid_filter(
             ctx, image,
@@ -76,10 +77,12 @@ class Images(Cog):
         """Returns either author or member avatar if specified.
         Ex: avatar Dosek."""
         member = member or ctx.author
+
         if flags.pop('circle', False):
             image = await member.avatar_url.read()
             buffer = await Manip.circlize(BytesIO(image))
             return await ctx.send(file=discord.File(buffer, f'{member}.png'))
+
         await ctx.send(str(member.avatar_url))
 
     @commands.command()
@@ -246,35 +249,34 @@ class Images(Cog):
 
     @commands.command()
     async def challenge(self, ctx, *, text):
-        '''Minecraft 'Challenge Complete!' image maker.
+        """Minecraft 'Challenge Complete!' image maker.
         Challenge icon is random one of 45.
-        Ex: challenge finished all to-do's.'''
+        Ex: challenge finished all to-do's."""
         await ctx.send(file=await self.alex_image(f'challenge?text={text.replace(" ", "%20")}&icon={random.randint(1, 45)}'))
 
     @commands.command(name='ascii')
     async def ascii_command(self, ctx, image: Optional[str]):
-        '''Makes ASCII version of an user avatar.
-        Ex: ascii Dosek'''
+        """Makes ASCII version of an user avatar."""
         image = await make_image_url(ctx, image)
         await ctx.send(file=await self.dagpi_image(f'ascii/?url={image}', 'ascii.png'))
 
     @commands.command(name='discord')
     async def _discord(self, ctx, member: discord.Member, *, text: str):
-        '''Discord message maker.
-        Returns an image with text and user avatar you specified.
-        Ex: discord Dosek this command is cool ngl.'''
+        """Discord message maker.
+        Returns an image with text and user avatar you specified."""
         member = member or ctx.author
         await ctx.send(file=await self.dagpi_image(f'discord/?url={member.avatar_url}&username={member.display_name}&text={text}'))
 
     @commands.command()
     async def caption(self, ctx, arg: Optional[str]):
-        '''Caption for an image.
+        """Caption for an image.
         This command describes a given image being just a piece of code.
-        Can handle either image, member or even URL.
-        Ex: **caption Dosek**'''
+        Can handle either image, member or even URL."""
         image = await make_image_url(ctx, arg)
-        cs = ctx.bot.session
-        r = await cs.post(ctx.bot.config['API']['caption_api'], json={'Content': image, 'Type': 'CaptionRequest'})
+        r = await ctx.bot.session.post(
+            ctx.bot.config['API']['caption_api'],
+            json={'Content': image, 'Type': 'CaptionRequest'}
+        )
         embed = ctx.bot.embed.default(ctx, title=await r.text())
         await ctx.send(embed=embed.set_image(url=image))
 

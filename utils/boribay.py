@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from time import perf_counter
 
@@ -75,7 +75,7 @@ class Boribay(commands.Bot):
         self.cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
 
     def run(self, *args, **kwargs):
-        """My own run method to make the launcher file smaller."""
+        """A custom run method to make the launcher file smaller."""
         self.ipc.start()
 
         for ext in self.config['bot']['exts']:
@@ -90,7 +90,7 @@ class Boribay(commands.Bot):
         return self.get_user(682950658671902730)
 
     @property
-    def uptime(self) -> timedelta:
+    def uptime(self):
         return int((datetime.now() - self.start_time).total_seconds())
 
     async def check_changes(self):
@@ -102,16 +102,12 @@ class Boribay(commands.Bot):
         bot_guild_ids = {guild.id for guild in self.guilds}
         db_guild_ids = {row['guild_id'] for row in guild_config}
 
-        if difference := list(bot_guild_ids - db_guild_ids):
-            # condition above checks if there were new guilds while the bot was sleeping.
+        if difference := list(bot_guild_ids - db_guild_ids):  # check for new guilds.
             for guild_id in difference:
-                # if there are, iteratively add them to the database.
                 await self.pool.execute('INSERT INTO guild_config(guild_id) VALUES($1)', guild_id)
 
-        if difference := list(db_guild_ids - bot_guild_ids):
-            # the same condition but subtracting set of guild id's in db with current guild id's
+        if difference := list(db_guild_ids - bot_guild_ids):  # check for old guilds.
             for guild_id in difference:
-                # if there are, iteratively remove them from the database.
                 await self.pool.execute('DELETE FROM guild_config WHERE guild_id = $1', guild_id)
 
     async def db_latency(self):
@@ -119,8 +115,7 @@ class Boribay(commands.Bot):
         await self.pool.fetchval('SELECT 1;')
         end = perf_counter()
 
-        # the time spent to make a useless call, in microseconds.
-        return end - start
+        return end - start  # time spent to make a useless call, in microseconds.
 
     async def close(self):
         await super().close()
@@ -143,7 +138,7 @@ class Boribay(commands.Bot):
             return
 
         # id below is the news channel from the support server.
-        if message.channel.id == 789791676632662017:
+        if message.channel.id == self.config['bot']['news_channel']:
             with open('news.md', 'w') as f:
                 msg = message.content.split('\n')
                 f.write(msg[0] + '\n' + '\n'.join(msg[1:]))

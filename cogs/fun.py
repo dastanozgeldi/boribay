@@ -12,13 +12,9 @@ from utils import Cog, Manip, Trivia
 
 
 class Fun(Cog):
-    '''Fun extension. Hope the name makes sense and commands correspond
-    their parent.'''
+    """Fun extension. Hope the name makes sense and commands correspond their parent."""
     icon = '🎉'
     name = 'Fun'
-
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
 
     async def question(self, ctx, difficulty: str):
         if difficulty not in ('easy', 'medium', 'hard'):

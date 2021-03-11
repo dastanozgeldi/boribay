@@ -14,9 +14,6 @@ class Owner(Cog, command_attrs={'hidden': True}):
     icon = '👑'
     name = 'Owner'
 
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
-
     async def cog_check(self, ctx):
         return await ctx.bot.is_owner(ctx.author)
 

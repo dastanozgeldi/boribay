@@ -13,9 +13,11 @@ class Cache(defaultdict):
 
     async def cache_db(self):
         records = await self.db.fetch(self.query)
+
         for record in records:
             d = dict(record)
             self[d.pop(self.key)] = d
+
         return self
 
     async def refresh(self):

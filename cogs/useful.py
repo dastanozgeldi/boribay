@@ -17,14 +17,11 @@ from utils import (CalcLexer, CalcParser, Cog, ColorConverter, EmbedPageSource,
 
 
 class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.BucketType.user)}):
-    '''Useful commands extension. Simply made to help people in some kind of
+    """Useful commands extension. Simply made to help people in some kind of
     specific situations, such as solving math expression, finding lyrics
-    of the song and so on.'''
+    of the song and so on."""
     icon = '<:pickaxe:807534625785380904>'
     name = 'Useful'
-
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
 
     @commands.command()
     @has_voted()
@@ -186,8 +183,6 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def add(self, ctx, *, content: str):
         """Add anything you think you have to-do to your list.
         Args: content: Basically a message which will be added to the list."""
-        '''To-do add command. The message you send will be added to your to-do list.
-        Ex: **todo add art project.**'''
         query = 'INSERT INTO todos(user_id, content, added_at, jump_url) VALUES($1, $2, $3, $4)'
         await ctx.bot.pool.execute(query, ctx.author.id, content, datetime.utcnow(), ctx.message.jump_url)
         await ctx.message.add_reaction('✅')
@@ -420,9 +415,9 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     @flags.add_flag('--country', type=str, help='Search through countries.')
     @flags.command(aliases=['ncov', 'coronavirus'])
     async def covid(self, ctx, **flags):
-        '''Coronavirus command.
+        """Coronavirus command.
         Returns world statistics if no country is mentioned.
-        Cases, deaths, recovered cases, active cases, and critical cases'''
+        Cases, deaths, recovered cases, active cases, and critical cases"""
         cs = ctx.bot.session
 
         if bool(flags):
@@ -466,8 +461,8 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
 
     @commands.command(aliases=['temp', 'temperature'])
     async def weather(self, ctx, *, city: str.capitalize):
-        '''Simply gets weather statistics of a given city.
-        Gives: Description, temperature, humidity%, atmospheric pressure (hPa)'''
+        """Simply gets weather statistics of a given city.
+        Gives: Description, temperature, humidity%, atmospheric pressure (hPa)"""
         r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["weather_api"]}appid={ctx.bot.config["API"]["weather_id"]}&q={city}')
         x = await r.json()
 
@@ -491,8 +486,8 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
 
     @commands.command()
     async def translate(self, ctx, language, *, sentence, **flags):
-        '''Translates a given text to language you want.
-        Shows the translation and pronunciation of a text.'''
+        """Translates a given text to language you want.
+        Shows the translation and pronunciation of a text."""
         translation = await Manip.translate(language, sentence=sentence)
         embed = ctx.bot.embed.default(
             ctx, title=f'Translating from {translation.src} to {translation.dest}:'

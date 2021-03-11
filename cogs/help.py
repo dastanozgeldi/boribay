@@ -181,9 +181,6 @@ class Help(Cog):
         bot.help_command = MyHelpCommand()
         bot.help_command.cog = self
 
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
-
     def cog_unload(self):
         self.bot.help_command = self._original_help_command
 

@@ -18,9 +18,6 @@ class Miscellaneous(Cog):
     icon = '💫'
     name = 'Miscellaneous'
 
-    def __str__(self):
-        return '{0.icon} {0.name}'.format(self)
-
     @commands.command()
     async def github(self, ctx, login: str = 'Dositan'):
         """See some GitHub account information about user.
@@ -178,7 +175,7 @@ class Miscellaneous(Cog):
         ]
 
         embed = ctx.bot.embed.default(
-            ctx, description='\n'.join([f'**{n}:** {v}' for n, v in fields])
+            ctx, description='\n'.join(f'**{n}:** {v}' for n, v in fields)
         ).set_author(name=g.name, icon_url=g.icon_url_as(size=64), url=g.icon_url)
 
         await ctx.send(embed=embed)

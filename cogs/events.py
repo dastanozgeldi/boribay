@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from discord import AsyncWebhookAdapter, File, Webhook
+from discord import AsyncWebhookAdapter, File, Webhook, utils
 from discord.ext import tasks
 from utils import Cog, Manip
 
@@ -9,6 +9,10 @@ class Events(Cog, command_attrs={'hidden': True}):
     def __init__(self, bot):
         self.bot = bot
         self.update_stats.start()
+        self.reactions = {
+            'ping': 'Pingable',
+            'blobaww': 'Tester'
+        }
         self.webhook = Webhook.from_url(
             self.bot.config['links']['log_url'],
             adapter=AsyncWebhookAdapter(self.bot.session)
@@ -56,6 +60,7 @@ class Events(Cog, command_attrs={'hidden': True}):
     @Cog.listener()
     async def on_member_join(self, member):
         g = member.guild
+
         if wc := self.bot.cache[g.id].get('welcome_channel', False):
             await g.get_channel(wc).send(file=File(fp=await Manip.welcome(
                 BytesIO(await member.avatar_url.read()),
@@ -65,6 +70,29 @@ class Events(Cog, command_attrs={'hidden': True}):
 
         if role_id := self.bot.cache[g.id].get('autorole', False):
             await member.add_roles(g.get_role(role_id))
+
+    @Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.message_id == 807660589559971940:
+            guild = utils.find(lambda g: g.id == payload.guild_id, self.bot.guilds)
+
+            for emoji_name, role_name in self.reactions.items():
+                if payload.emoji.name == emoji_name:
+                    role = utils.get(guild.roles, name=role_name)
+
+            await payload.member.add_roles(role)
+
+    @Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        if payload.message_id == 807660589559971940:
+            guild = utils.find(lambda g: g.id == payload.guild_id, self.bot.guilds)
+
+            for emoji_name, role_name in self.reactions.items():
+                if payload.emoji.name == emoji_name:
+                    role = utils.get(guild.roles, name=role_name)
+
+            member = utils.find(lambda m: m.id == payload.user_id, guild.members)
+            await member.remove_roles(role)
 
 
 def setup(bot):

@@ -27,8 +27,8 @@ async def make_image_url(ctx, argument: str):
 async def make_image(ctx, argument: str):
     converter = ImageConverter()
     image = await converter.convert(ctx, argument)
-    if not image:
 
+    if not image:
         if ctx.message.attachments:
             layout = ctx.message.attachments[0]
         else:

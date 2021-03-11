@@ -41,20 +41,10 @@ class EmptyBrackets(Exception):
 
 
 class TooManyOptions(commands.CommandError):
-    """Raised when there were too many options on a poll."""
+    """Raised when there were more than 10 options on a poll."""
     pass
 
 
 class NotEnoughOptions(commands.CommandError):
-    """Raised when either there was only 1 options or no options."""
-    pass
-
-
-class NoChannelProvided(commands.CommandError):
-    """Error raised when no suitable voice channel was supplied."""
-    pass
-
-
-class IncorrectChannelError(commands.CommandError):
-    """Error raised when commands are issued outside of the players session channel."""
+    """Raised when the options count is < 2."""
     pass
