@@ -275,7 +275,8 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         else:
             reactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
 
-        embed = ctx.bot.embed.default(ctx, title=question.replace('\n', ''), description='\n'.join([f'{reactions[x]} {option}' for x, option in enumerate(options)]))
+        description = '\n'.join(f'{reactions[x]} {option}' for x, option in enumerate(options))
+        embed = ctx.bot.embed.default(ctx, title=question.replace('\n', ''), description=description)
 
         if ctx.message.attachments:
             embed.set_image(url=ctx.message.attachments[0].url)
@@ -397,8 +398,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
 
     @commands.command(aliases=['colour'])
     async def color(self, ctx, *, color: ColorConverter):
-        """Color command.
-        Example: **color green**
+        """Color command. Get color in HEX & RGB.
         Args: color (ColorConverter): Color that you specify.
         It can be either RGB, HEX, or even a human-friendly word."""
         rgb = color.to_rgb()

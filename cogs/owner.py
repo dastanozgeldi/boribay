@@ -8,9 +8,9 @@ from utils import Cog, TabularData
 
 
 class Owner(Cog, command_attrs={'hidden': True}):
-    '''Nothing really to see here. But, if you are that interested,
+    """Nothing really to see here. But, if you are that interested,
     those are commands that help me to manage the bot while it's online
-    without restarting it. The favorite module of the Owner btw.'''
+    without restarting it. The favorite module of the Owner btw."""
     icon = '👑'
     name = 'Owner'
 
@@ -25,6 +25,7 @@ class Owner(Cog, command_attrs={'hidden': True}):
     async def nick(self, ctx, *, nick: str):
         """Nickname changing command. Just a quick tool for the owner nothing more."""
         await ctx.me.edit(nick=nick)
+        await ctx.message.add_reaction('✅')
 
     @su.command()
     async def clear(self, ctx, limit: int = 5):
@@ -44,10 +45,12 @@ class Owner(Cog, command_attrs={'hidden': True}):
         """Leave command. Takes current guild if id was not given."""
         guild_id = guild_id or ctx.guild.id
         await ctx.bot.get_guild(guild_id).leave()
+        await ctx.message.add_reaction('✅')
 
     @su.command(aliases=['logout', 'close'])
     async def shutdown(self, ctx):
         """A shutdown command is just an alternative for CTRL-C in the terminal."""
+        await ctx.message.add_reaction('👌')
         await ctx.bot.close()
 
     @su.command()

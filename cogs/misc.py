@@ -1,7 +1,7 @@
-import glob
 import platform
 from collections import Counter
 from datetime import datetime
+from glob import glob
 from time import perf_counter
 from typing import Optional
 
@@ -9,14 +9,43 @@ import psutil
 from discord import Forbidden, Member
 from discord.ext import commands, flags
 from humanize import naturaldate, naturaltime
-from utils import Cog
+from utils import Cog, has_voted
 
 
 class Miscellaneous(Cog):
-    '''Misc commands extension. Here owner inserts commands that aren't
-    related to other categories, such as hello, ping etc.'''
+    """Misc commands extension. Here owner inserts commands that aren't
+    related to other categories, such as ping etc."""
     icon = '💫'
     name = 'Miscellaneous'
+
+    @commands.command()
+    @has_voted()
+    async def didivote(self, ctx):
+        """Check did you vote last 12 hours."""
+        await ctx.send('You\'ve already voted, thanks!')
+
+    @commands.command()
+    async def vote(self, ctx):
+        """Vote for the bot on Top.GG!"""
+        dbl_url = ctx.bot.config['links']['topgg_url']
+        await ctx.send(f'Alright the link is right here, thanks for the vote! {dbl_url}')
+
+    @flags.add_flag('--limit', type=int, default=5, help='Set the limit of users you want to see.')
+    @flags.command(aliases=['lb'])
+    async def leaderboard(self, ctx, **flags):
+        """Leaderboard of top voters for Boribay. Defaults to 5 users,
+        however you can specify the limitation of the leaderboard."""
+        upvotes = await ctx.bot.dblpy.get_bot_upvotes()
+        medals = ['🥇', '🥈', '🥉'] + ['✨' for num in range(flags['limit'] - 3)]
+        d = Counter([voter['username'] for voter in upvotes]).most_common(flags['limit'])
+
+        embed = ctx.bot.embed.default(
+            ctx, title='Top voters of this month.',
+            description='\n'.join(f'{k} **{i[0]}** → {i[1]} votes' for i, k in zip(d, medals)),
+            url=ctx.bot.config['links']['topgg_url']
+        )
+
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def github(self, ctx, login: str = 'Dositan'):
@@ -47,7 +76,7 @@ class Miscellaneous(Cog):
         """See the code statictics of the bot."""
         ctr = Counter()
 
-        for ctr['files'], f in enumerate(glob.glob('./**/*.py', recursive=True)):
+        for ctr['files'], f in enumerate(glob('./**/*.py', recursive=True)):
             with open(f, encoding='UTF-8') as fp:
                 for ctr['lines'], line in enumerate(fp, ctr['lines']):
                     line = line.lstrip()
@@ -66,8 +95,10 @@ class Miscellaneous(Cog):
         exts = []
         for ext in ctx.bot.cogs.values():
             name = ext.qualified_name
+
             if not await ctx.bot.is_owner(ctx.author) and name in ctx.bot.config['bot']['owner_exts']:
                 continue
+
             exts.append(name)
 
         exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]

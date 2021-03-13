@@ -195,9 +195,7 @@ class Images(Cog):
     @commands.command()
     async def theory(self, ctx, *, text: str):
         """Literally no idea how to describe this command.
-        Just try it and see.
-        Example: **theory its better using your own commands than someone's API.**
-        Args: text (str): text to pass on the board."""
+        Args: text (str): the text to pass on the board."""
         if len(text) > 144:
             raise commands.BadArgument('The text was too long to render.')
 
@@ -228,23 +226,22 @@ class Images(Cog):
 
     @commands.command(aliases=['ph'])
     async def pornhub(self, ctx, text_1: str, text_2: Optional[str] = 'Hub'):
-        '''Pornhub logo maker.
-        No matter how long is text, API returns image perfectly (hope so).
-        Ex: pornhub Bori bay.'''
+        """Pornhub logo maker.
+        No matter how long is text, API returns image perfectly (hope so)."""
         await ctx.send(file=await self.alex_image(f'pornhub?text={text_1.replace(" ", "%20")}&text2={text_2.replace(" ", "%20")}'))
 
     @commands.command(aliases=['dym'])
     async def didyoumean(self, ctx, search: str, did_you_mean: str):
-        '''Google search 'Did you mean' meme.
+        """Google search 'Did you mean' meme.
         Arguments are required and raises an exception if one of them is misssing.
-        Ex: didyoumean recursion recursion.'''
+        Ex: didyoumean recursion recursion."""
         await ctx.send(file=await self.alex_image(f'didyoumean?top={search}&bottom={did_you_mean}'))
 
     @commands.command()
     async def achieve(self, ctx, *, text: str):
-        '''Minecraft 'Achievement Get!' image maker.
+        """Minecraft 'Achievement Get!' image maker.
         Challenge icon is random one of 44.
-        Ex: challenge slept more than 6 hours.'''
+        Ex: challenge slept more than 6 hours."""
         await ctx.send(file=await self.alex_image(f'achievement?text={text.replace(" ", "%20")}&icon={random.randint(1, 44)}'))
 
     @commands.command()
@@ -282,9 +279,9 @@ class Images(Cog):
 
     @commands.command()
     async def qr(self, ctx, url: Optional[str]):
-        '''Makes QR-code of a given URL.
+        """Makes QR-code of a given URL.
         A great way to make your friends get rickrolled!
-        P.S: this command accepts only URLs.'''
+        P.S: this command accepts only URLs."""
         url = await make_image_url(ctx, url)
         r = await ctx.bot.session.get(ctx.bot.config['API']['qr_api'] + url)
         io = BytesIO(await r.read())

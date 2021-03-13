@@ -43,6 +43,25 @@ class HelpPages(menus.Menu):
 
         await self.message.edit(embed=embed)
 
+    @menus.button('🤔', position=menus.Last(4))
+    async def example(self, payload):
+        """See some examples of usage."""
+        embed = self.bot.embed.default(self.ctx, title='Usage Examples.')
+
+        fields = [
+            ('Required argument', 'anime kaguya sama'),
+            ('Optional argument', 'ascii __or__ ascii 😀'),
+            ('Multiple arguments', 'todo remove 12 5 7 3'),
+            ('Using flags', 'avatar --circle'),
+            ('Using flags #2', 'covid --country Kazakhstan'),
+            ('Combining', 'avatar Dosek --circle')
+        ]
+
+        for name, value in fields:
+            embed.add_field(name=name, value=value)
+
+        await self.message.edit(embed=embed)
+
     @menus.button('<:crossmark:814742130190712842>')
     async def stop(self, payload):
         """Deletes this message."""
@@ -50,7 +69,7 @@ class HelpPages(menus.Menu):
 
 
 class GroupHelp(menus.ListPageSource):
-    '''Sends help for group-commands.'''
+    """Sends help for group-commands."""
 
     def __init__(self, ctx, group, cmds, prefix):
         super().__init__(entries=cmds, per_page=3)

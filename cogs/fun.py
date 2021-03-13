@@ -48,8 +48,8 @@ class Fun(Cog):
     @commands.command()
     async def trivia(self, ctx, difficulty: str.lower = 'medium'):
         """Trivia game! Has 3 difficulties: `easy`, `medium` and `hard`.
-        Args: difficulty (optional): Questions difficulty in the game. Defaults to "easy".
-        Returns: A correct answer."""
+        Args: difficulty (optional): Questions difficulty in the game.
+        Defaults to "easy". Returns: A correct answer."""
         try:
             q = await self.question(ctx, difficulty)
 
@@ -64,28 +64,54 @@ class Fun(Cog):
 
         await ctx.send(msg + f'\nThe answer was: `{q["correct_answer"]}`.')
 
-    @flags.add_flag('--timeout', type=int, default=60.0)
+    @flags.add_flag(
+        '--timeout', type=float, default=60.0,
+        help='Set your own timeout! Defaults to 60 seconds.'
+    )
     @flags.command(aliases=['tr', 'typerace'])
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def typeracer(self, ctx, **flags):
         """Typeracer Command. Compete with others!
+        If you don't like the given quote, react with a wastebasket to close the game.
         Returns: Average WPM of the winner, time spent and the original text."""
+        timeout = flags.pop('timeout')
+        if not 10.0 < timeout < 120.0:
+            raise commands.BadArgument('Timeout limit has been reached. Specify between 10 and 120.')
+
         r = await (await ctx.bot.session.get(ctx.bot.config['API']['quote_api'])).json()
         content = r['content']
         buffer = await Manip.typeracer('\n'.join(textwrap.wrap(content, 30)))
+
         embed = ctx.bot.embed.default(
             ctx, title='Typeracer', description='see who is fastest at typing.'
         ).set_image(url='attachment://typeracer.png')
         embed.set_footer(text=f'© {r["author"]}')
+
         race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
+        await race.add_reaction('🗑')
         start = time()
 
         try:
-            if not (msg := await ctx.bot.wait_for('message', check=lambda m: m.content == content, timeout=flags.pop('timeout'))):
-                return
+            done, pending = await asyncio.wait([
+                ctx.bot.wait_for(
+                    'raw_reaction_add',
+                    check=lambda p: str(p.emoji) == '🗑' and p.user_id == ctx.author.id and p.message_id == race.id
+                ),
+                ctx.bot.wait_for(
+                    'message',
+                    check=lambda m: m.content == content,
+                    timeout=timeout
+                )
+            ], return_when=asyncio.FIRST_COMPLETED)
+
+            stuff = done.pop().result()
+
+            if isinstance(stuff, discord.RawReactionActionEvent):
+                return await race.delete()
+
             final = round(time() - start, 2)
             await ctx.send(embed=ctx.bot.embed.default(
-                ctx, title=f'{msg.author.display_name} won!',
+                ctx, title=f'{stuff.author} won!',
                 description=f'**Done in**: {final}s\n'
                 f'**Average WPM**: {r["length"] / 5 / (final / 60):.0f} words\n'
                 f'**Original text:**```diff\n+ {content}```',
@@ -120,7 +146,12 @@ class Fun(Cog):
                 check=lambda re, us: us == ctx.author and str(re) in rps_dict.keys() and re.message.id == msg.id
             )
             game = rps_dict.get(str(r.emoji))
-            await msg.edit(embed=ctx.bot.embed.default(ctx, description=f'''Result: **{game[choice].upper()}**\nMy choice: **{choice}**\nYour choice: **{str(r.emoji)}**'''))
+            embed = ctx.bot.embed.default(
+                ctx, description=f'Result: **{game[choice].upper()}**\n'
+                f'My choice: **{choice}**\n'
+                f'Your choice: **{r.emoji}**'
+            )
+            await msg.edit(embed=embed)
 
         except asyncio.TimeoutError:
             await msg.delete()
@@ -131,7 +162,7 @@ class Fun(Cog):
         a, b, c = random.choices('🍎🍊🍐🍋🍉🍇🍓🍒', k=3)
         text = f'{a} | {b} | {c}\n{ctx.author.display_name}, '
 
-        if (a == b == c):
+        if a == b == c:
             await ctx.send(f'{text}All match, we have a big winner! 🎉')
 
         elif (a == b) or (a == c) or (b == c):
@@ -152,9 +183,9 @@ class Fun(Cog):
 
     @commands.command()
     async def eject(self, ctx, color: str.lower, is_impostor: bool, *, name: Optional[str]):
-        '''Among Us ejected meme maker.
+        """Among Us ejected meme maker.
         Colors: black • blue • brown • cyan • darkgreen • lime • orange • pink • purple • red • white • yellow.
-        Ex: eject blue True Dosek.'''
+        Ex: eject blue True Dosek."""
         name = name or ctx.author.display_name
         r = await ctx.bot.session.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
         io = BytesIO(await r.read())
@@ -164,9 +195,8 @@ class Fun(Cog):
     async def peepee(self, ctx, member: Optional[discord.Member]):
         """Basically, returns your PP size."""
         member = member or ctx.author
-        random.seed(member.id)
         sz = 100 if member.id in ctx.bot.owner_ids else random.randint(1, 10)
-        await ctx.send(f'{member.display_name}\'s pp size is:\n3{"=" * sz}D')
+        await ctx.send(f'{member}\'s pp size is:\n3{"=" * sz}D')
 
     @commands.command()
     async def uselessfact(self, ctx):

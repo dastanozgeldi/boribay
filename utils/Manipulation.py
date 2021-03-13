@@ -12,8 +12,8 @@ from utils import ImageConverter, ImageURLConverter
 
 
 async def make_image_url(ctx, argument: str):
-    c = ImageURLConverter()
-    image = await c.convert(ctx, argument)
+    converter = ImageURLConverter()
+    image = await converter.convert(ctx, argument)
 
     if not image:
         if ctx.message.attachments:
