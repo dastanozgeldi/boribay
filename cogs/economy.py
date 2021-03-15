@@ -17,7 +17,7 @@ class Economics(Cog):
     name = 'Economics'
 
     async def cog_check(self, ctx):
-        return await is_logged().predicate(ctx)
+        return await commands.guild_only().predicate(ctx)
 
     async def double(self, ctx, amount: int, reducer: discord.Member, adder: discord.Member):
         reducer_query = 'UPDATE users SET wallet = wallet - $1 WHERE user_id = $2'
@@ -60,6 +60,7 @@ class Economics(Cog):
         await ctx.send('My economics system uses **batyrs**💂‍♂️. 1 batyr, 5 batyrs...')
 
     @commands.command(aliases=['bal'])
+    @is_logged()
     async def balance(self, ctx, member: Optional[discord.Member]):
         """Check your balance. Specify a member to see their balance card."""
         member = member or ctx.author
@@ -104,6 +105,7 @@ class Economics(Cog):
 
     @commands.command()
     @commands.cooldown(1, 86400.0, commands.BucketType.user)
+    @is_logged()
     async def daily(self, ctx):
         """Get your daily award!"""
         amount = random.randint(50, 200)
@@ -112,6 +114,7 @@ class Economics(Cog):
         await ctx.send(f'Gave you {amount} for good behavior!')
 
     @commands.command(aliases=['dep'])
+    @is_logged()
     async def deposit(self, ctx, amount: int = None):
         """Deposit your money into BoriBank!
         By not specifying the amount of money you deposit them all."""
@@ -128,6 +131,7 @@ class Economics(Cog):
         await ctx.send(f'Successfully transfered **{amount} batyrs** into your bank!')
 
     @commands.command(aliases=['wd'])
+    @is_logged()
     async def withdraw(self, ctx, amount: int = None):
         """Deposit your money into BoriBank!"""
         data = await ctx.bot.pool.fetchrow('SELECT * FROM users WHERE user_id = $1', ctx.author.id)
@@ -143,6 +147,7 @@ class Economics(Cog):
         await ctx.send(f'Successfully withdrew **{amount} batyrs** to your wallet!')
 
     @commands.command()
+    @is_logged()
     async def pay(self, ctx, amount: int, member: discord.Member):
         """Pay someone whoever they would be."""
         wallet = await ctx.bot.pool.fetchval('SELECT wallet FROM users WHERE user_id = $1', ctx.author.id)
@@ -154,6 +159,7 @@ class Economics(Cog):
 
     @commands.command(aliases=['rob'])
     @commands.cooldown(1, 60.0, commands.BucketType.user)
+    @is_logged()
     async def attack(self, ctx, member: discord.Member):
         """Rob someone whoever they would be.
         The chance you can get caught is equal to 50%, be careful!"""
@@ -175,6 +181,7 @@ class Economics(Cog):
         await ctx.send(f'Stole **{amount}** 💂‍♂️ from **{member}**')
 
     @commands.command(aliases=['slots'])
+    @is_logged()
     async def slot(self, ctx, bet: int):
         """Play the game on a slot machine!"""
         wallet = await ctx.bot.pool.fetchval('SELECT wallet FROM users WHERE user_id = $1', ctx.author.id)
@@ -205,6 +212,7 @@ class Economics(Cog):
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.user)
+    @is_logged()
     async def work(self, ctx):
         """Work to get clean money without robbing or whatever else."""
         amount = random.randint(0, 100)
@@ -213,6 +221,7 @@ class Economics(Cog):
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.user)
+    @is_logged()
     async def trivia(self, ctx, difficulty: str.lower = 'medium'):
         """Trivia game! Has 3 difficulties: `easy`, `medium` and `hard`.
         Args: difficulty (optional): Questions difficulty in the game.
@@ -233,6 +242,7 @@ class Economics(Cog):
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.user)
+    @is_logged()
     async def coinflip(self, ctx):
         """A very simple coinflip game! Chances are:
         **head → 49.5%**, **tail → 49.5%** and **side → 1%**"""
