@@ -54,7 +54,7 @@ class Boribay(commands.Bot):
         self.config = toml.load('config.toml')
         self.log = logging.getLogger(__name__)
         self.log.addHandler(handler)
-        self.owner_ids = {682950658671902730, 382183425815216128}
+        self.owner_ids = {682950658671902730}
         self.regex = {
             'RGB_REGEX': r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?',
             'EMOJI_REGEX': r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>',

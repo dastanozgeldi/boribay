@@ -29,6 +29,16 @@ def is_mod():
     return commands.check(predicate)
 
 
+def is_logged():
+    async def predicate(ctx):
+        if not ctx.guild:
+            raise commands.NoPrivateMessage('Economics are available only in guilds.')
+
+        return bool(await ctx.bot.pool.fetch('SELECT * FROM users WHERE user_id = $1', ctx.author.id))
+
+    return commands.check(predicate)
+
+
 def beta_command():
     async def predicate(ctx):
         if ctx.author.id not in ctx.bot.owner_ids:

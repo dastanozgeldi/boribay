@@ -34,8 +34,8 @@ class HelpPages(menus.Menu):
             ('What is <argument>?', 'This means the argument is **required**.'),
             ('What about [argument]?', 'This means the argument is **optional**.'),
             ('[argument...]?', 'This means there can be multiple arguments.'),
-            ('What the hell is [--flag FLAG]?', 'This means the optional argument\n'
-                                                'Example: **todo show --dm**')
+            ('What the hell is [--flag FLAG]?', 'This means the optional argument\nExample: **todo show --dm**'),
+            ('Why I cannot use economics system?', 'It seems like you did not log in yet.\nType **login** to get started!')
         ]
 
         for name, value in fields:
@@ -153,8 +153,10 @@ class MyHelpCommand(commands.HelpCommand):
         return [f'**--{a.dest}** {a.help}' for a in command.callback._def_parser._actions if lambda x: '_OPTIONAL' not in a.dest]
 
     async def send_command_help(self, command):
-        embed = self.context.bot.embed.default(
-            self.context,
+        ctx = self.context
+
+        embed = ctx.bot.embed.default(
+            ctx,
             title=self.get_command_signature(command),
             description=command.help or 'No help found...'
         ).set_footer(text=self.get_ending_note())

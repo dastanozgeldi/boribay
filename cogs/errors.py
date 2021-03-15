@@ -82,7 +82,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             return await ctx.send_help(ctx.command)
 
         elif isinstance(error, commands.CommandOnCooldown):
-            embed.description = f'This command is on cooldown. **`{int(error.retry_after)}` seconds**'
+            embed.description = f'This command is on cooldown. Retry after **{int(error.retry_after)} seconds**'
             return await self.send(ctx, embed=embed)
 
         try:

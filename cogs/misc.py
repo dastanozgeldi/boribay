@@ -18,6 +18,28 @@ class Miscellaneous(Cog):
     icon = '💫'
     name = 'Miscellaneous'
 
+    async def top_lb(self, ctx, limit: int):
+        """The Global Leaderboard for TopGG."""
+        upvotes = await ctx.bot.dblpy.get_bot_upvotes()
+        medals = ['🥇', '🥈', '🥉'] + ['✨' for num in range(limit - 3)]
+        d = Counter([voter['username'] for voter in upvotes]).most_common(limit)
+
+        embed = ctx.bot.embed.default(
+            ctx, title='Top voters of this month.',
+            description='\n'.join(f'{k} **{i[0]}** → {i[1]} votes' for i, k in zip(d, medals)),
+            url=ctx.bot.config['links']['topgg_url']
+        )
+
+        await ctx.send(embed=embed)
+
+    async def eco_lb(self, ctx, limit: int):
+        """The Global Leaderboard for Economics."""
+        me = ctx.bot
+        data = (await me.pool.fetch('SELECT * FROM users ORDER by wallet + bank DESC'))[:limit]
+        description = '\n'.join(f'**{me.get_user(row["user_id"]) or row["user_id"]}** - {row["wallet"] + row["bank"]} 💂‍♂️' for row in data)
+        embed = me.embed.default(ctx, title='The Global Leaderboard', description=description)
+        await ctx.send(embed=embed)
+
     @commands.command()
     @has_voted()
     async def didivote(self, ctx):
@@ -30,22 +52,26 @@ class Miscellaneous(Cog):
         dbl_url = ctx.bot.config['links']['topgg_url']
         await ctx.send(f'Alright the link is right here, thanks for the vote! {dbl_url}')
 
-    @flags.add_flag('--limit', type=int, default=5, help='Set the limit of users you want to see.')
+    @flags.add_flag(
+        '--limit', type=int, default=5,
+        help='Set the limit of users you want to see.'
+    )
+    @flags.add_flag(
+        '--of', choices=['dbl', 'eco'], default='dbl',
+        help='A specific topic [dbl for TopGG, eco for economics].'
+    )
     @flags.command(aliases=['lb'])
     async def leaderboard(self, ctx, **flags):
         """Leaderboard of top voters for Boribay. Defaults to 5 users,
         however you can specify the limitation of the leaderboard."""
-        upvotes = await ctx.bot.dblpy.get_bot_upvotes()
-        medals = ['🥇', '🥈', '🥉'] + ['✨' for num in range(flags['limit'] - 3)]
-        d = Counter([voter['username'] for voter in upvotes]).most_common(flags['limit'])
+        mode = flags.pop('of')
+        if (limit := flags.pop('limit')) > 10:
+            raise commands.BadArgument('I cannot get why do you need more than 10 people.')
 
-        embed = ctx.bot.embed.default(
-            ctx, title='Top voters of this month.',
-            description='\n'.join(f'{k} **{i[0]}** → {i[1]} votes' for i, k in zip(d, medals)),
-            url=ctx.bot.config['links']['topgg_url']
-        )
+        if mode == 'eco':
+            return await self.eco_lb(ctx, limit)
 
-        await ctx.send(embed=embed)
+        await self.top_lb(ctx, limit)
 
     @commands.command()
     async def github(self, ctx, login: str = 'Dositan'):

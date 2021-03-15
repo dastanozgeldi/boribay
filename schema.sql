@@ -1,4 +1,4 @@
-CREATE TABLE guild_config (
+CREATE TABLE IF NOT EXISTS guild_config (
     guild_id bigint NOT NULL,
     prefix character varying(10) NOT NULL DEFAULT '.',
     welcome_channel bigint,
@@ -6,10 +6,19 @@ CREATE TABLE guild_config (
     autorole bigint
 )
 
-CREATE TABLE todos (
+CREATE TABLE IF NOT EXISTS todos (
     id serial primary key,
     user_id bigint not null,
     content text,
     added_at timestamp without time zone,
     jump_url text
+)
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id bigint NOT NULL,
+    wallet integer DEFAULT 0,
+    bank integer DEFAULT 0,
+    xp integer DEFAULT 0,
+    lvl integer DEFAULT 1,
+    blacklisted boolean DEFAULT false
 )

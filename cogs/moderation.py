@@ -29,12 +29,13 @@ class Moderation(Cog):
         """The settings parent command.
         Shows settings statistic of the current server:
         Custom color and custom prefix."""
-        g = ctx.guild
-        creds = ctx.bot.cache[g.id]
+        creds = ctx.bot.cache[ctx.guild.id]
         embed = ctx.bot.embed.default(ctx)
+        defaults = ['.', 3553598, None, None]
+
         embed.add_field(
             name='Guild Settings',
-            value='\n'.join(f'**{self.on_or_off(ctx, k, [".", 3553598, None, None])} {k.replace("_", " ").title()}:** {v}' for k, v in creds.items())
+            value='\n'.join(f'**{self.on_or_off(ctx, k, defaults)} {k.replace("_", " ").title()}:** {v}' for k, v in creds.items())
         )
 
         await ctx.send(embed=embed)
@@ -121,9 +122,9 @@ class Moderation(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def deletechannel(self, ctx, channel: discord.TextChannel, *, reason: Optional[str]):
         """Deletes a specified channel.
-        Args: channel (Optional[discord.TextChannel]): channel ID,
-        deletes current channel if argument is not specified.
-        reason (optional): Reason why you are deleting a channel. Defaults to None."""
+        Args: channel (Optional[discord.TextChannel]): A channel you want to delete,
+        deletes current channel if argument was not specified.
+        reason (optional): Reason why you are deleting a channel."""
         channel = channel or ctx.channel
         await channel.delete(reason=reason)
         await ctx.message.add_reaction('✅')

@@ -50,7 +50,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
             raise commands.BadArgument(f'Too big length was given ({length}) while the limit is 50 characters.')
 
         else:
-            asset = random.choices(open('cogs/useful/chars.txt', 'r').read(), k=length)
+            asset = random.choices(open('data/chars.txt', 'r').read(), k=length)
             await ctx.author.send(''.join(char for char in asset))
             await ctx.message.add_reaction('✅')
 

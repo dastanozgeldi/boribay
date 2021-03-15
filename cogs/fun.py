@@ -1,68 +1,19 @@
 import asyncio
 import random
 import textwrap
-from html import unescape
 from io import BytesIO
 from time import time
 from typing import Optional
 
 import discord
 from discord.ext import commands, flags
-from utils import Cog, Manip, Trivia
+from utils import Cog, Manip
 
 
 class Fun(Cog):
     """Fun extension. Hope the name makes sense and commands correspond their parent."""
     icon = '🎉'
     name = 'Fun'
-
-    async def question(self, ctx, difficulty: str):
-        if difficulty not in ('easy', 'medium', 'hard'):
-            raise ValueError('Invalid difficulty specified.')
-
-        r = await ctx.bot.session.get(f'{ctx.bot.config["API"]["trivia_api"]}&difficulty={difficulty}')
-        js = await r.json()
-        js = js['results'][0]
-
-        js['incorrect_answers'] = [unescape(x) for x in js['incorrect_answers']]
-        js['question'] = unescape(js['question'])
-        js['correct_answer'] = unescape(js['correct_answer'])
-
-        return js
-
-    async def answer(self, ctx, q):
-        """Takes a question parameter."""
-        entr = q['incorrect_answers'] + [q['correct_answer']]
-        ans = await Trivia(title=q['question'], entries=random.sample(entr, len(entr))).pagination(ctx)
-        return ans == q['correct_answer']
-
-    @commands.command()
-    async def coinflip(self, ctx):
-        """A very simple coinflip game! Chances are:
-        **head → 47.5%**, **tail → 47.5%** and **side → 5%**"""
-        if (choice := random.choices(population=['head', 'tail', 'side'], weights=[0.475, 0.475, 0.05], k=1)[0]) == 'side':
-            return await ctx.send('You\'ve got an amazing luck since the coin was flipped to the side!')
-
-        await ctx.send(f'Coin flipped to the `{choice}`')
-
-    @commands.command()
-    async def trivia(self, ctx, difficulty: str.lower = 'medium'):
-        """Trivia game! Has 3 difficulties: `easy`, `medium` and `hard`.
-        Args: difficulty (optional): Questions difficulty in the game.
-        Defaults to "easy". Returns: A correct answer."""
-        try:
-            q = await self.question(ctx, difficulty)
-
-        except ValueError:
-            raise commands.BadArgument('Invalid difficulty specified.')
-
-        if await self.answer(ctx, q):
-            msg = f'**{ctx.author}** answered correct.'
-
-        else:
-            msg = f'**{ctx.author}** was a bit wrong'
-
-        await ctx.send(msg + f'\nThe answer was: `{q["correct_answer"]}`.')
 
     @flags.add_flag(
         '--timeout', type=float, default=60.0,
@@ -155,21 +106,6 @@ class Fun(Cog):
 
         except asyncio.TimeoutError:
             await msg.delete()
-
-    @commands.command(aliases=['slots'])
-    async def slot(self, ctx):
-        """Play the game on a slot machine!"""
-        a, b, c = random.choices('🍎🍊🍐🍋🍉🍇🍓🍒', k=3)
-        text = f'{a} | {b} | {c}\n{ctx.author.display_name}, '
-
-        if a == b == c:
-            await ctx.send(f'{text}All match, we have a big winner! 🎉')
-
-        elif (a == b) or (a == c) or (b == c):
-            await ctx.send(f'{text}2 match, you won! 🎉')
-
-        else:
-            await ctx.send(f'{text}No matches, I wish you win next time.')
 
     @commands.command(name='random')
     async def _random(self, ctx):
