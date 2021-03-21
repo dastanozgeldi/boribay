@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 import prettify_exceptions
 from discord import Forbidden, NotFound
 from discord.ext import commands, flags
@@ -11,10 +13,8 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             return await ctx.reply(exc, *args, **kwargs)
 
         except Forbidden:
-            try:
+            with suppress(Forbidden):
                 return await ctx.author.send(exc, *args, **kwargs)
-            except Forbidden:
-                pass
 
         except NotFound:
             pass
@@ -27,7 +27,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
 
         if ctx.guild:
-            command = 'None' if isinstance(ctx.command, type(None)) else ctx.command.qualified_name
+            command = 'None' if isinstance(ctx.command, type(None)) else str(ctx.command)
             embed.set_thumbnail(url=ctx.guild.icon_url)
             embed.add_field(
                 name='Information',
@@ -58,6 +58,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
 
         defaults = (
             KeyError,
+            AssertionError,
             exceptions.TooManyOptions,
             exceptions.NotEnoughOptions,
             commands.NotOwner,

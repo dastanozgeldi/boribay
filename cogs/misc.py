@@ -1,5 +1,6 @@
 import platform
 from collections import Counter
+from contextlib import suppress
 from datetime import datetime
 from glob import glob
 from time import perf_counter
@@ -72,30 +73,6 @@ class Miscellaneous(Cog):
             return await self.eco_lb(ctx, limit)
 
         await self.top_lb(ctx, limit)
-
-    @commands.command()
-    async def github(self, ctx, login: str = 'Dositan'):
-        """See some GitHub account information about user.
-        Args: profile (optional): Account you want to get the data of."""
-        cs = ctx.bot.session
-        data = await (await cs.get(f'https://api.github.com/users/{login}')).json()
-        repos = await (await cs.get(data['repos_url'])).json()
-
-        fields = [
-            ('Following', data['following']),
-            ('Followers', data['followers']),
-            ('Total Repos', data['public_repos']),
-            ('Total Stars', sum(i['stargazers_count'] for i in repos)),
-            ('One Repository', f'[here]({repos[0]["html_url"]})')
-        ]
-
-        embed = ctx.bot.embed.default(
-            ctx, title=data['bio'],
-            description='\n'.join(f'**{k}:** {v}' for k, v in fields)
-        ).set_author(name=f'{data["login"]} ({data["name"]})', url=data['html_url'])
-        embed.set_thumbnail(url=data['avatar_url'])
-
-        await ctx.send(embed=embed)
 
     @commands.command(aliases=['cs'])
     async def codestats(self, ctx):
@@ -175,8 +152,9 @@ class Miscellaneous(Cog):
     async def info(self, ctx):
         """See some kind of information about me (such as command usage, links etc.)"""
         me = ctx.bot
+        version = ctx.bot.config['bot']['version']
         embed = me.embed.default(ctx)
-        embed.set_author(name=str(me.user), icon_url=me.user.avatar_url_as(size=64))
+        embed.set_author(name=f'{me.user} - v{version}', icon_url=me.user.avatar_url)
 
         fields = {
             'Development': {
@@ -202,7 +180,7 @@ class Miscellaneous(Cog):
         """See some general information about mentioned user."""
         member = member or ctx.author
         embed = ctx.bot.embed.default(ctx).set_thumbnail(url=member.avatar_url)
-        embed.set_author(name=str(member), icon_url=ctx.guild.icon_url_as(size=64))
+        embed.set_author(name=str(member), icon_url=ctx.guild.icon_url)
 
         fields = [
             ('Top role', member.top_role.mention),
@@ -233,7 +211,7 @@ class Miscellaneous(Cog):
 
         embed = ctx.bot.embed.default(
             ctx, description='\n'.join(f'**{n}:** {v}' for n, v in fields)
-        ).set_author(name=g.name, icon_url=g.icon_url_as(size=64), url=g.icon_url)
+        ).set_author(name=str(g), icon_url=g.icon_url)
 
         await ctx.send(embed=embed)
 
@@ -245,10 +223,8 @@ class Miscellaneous(Cog):
         Make sure to put your message in double quotes."""
         tts = flags.pop('tts', False)
 
-        try:
+        with suppress(Forbidden):
             await ctx.message.delete()
-        except Forbidden:
-            pass
 
         await ctx.send(message, tts=tts)
 

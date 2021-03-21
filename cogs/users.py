@@ -1,27 +1,27 @@
 # TODO implement shopping stuff: buy, exchange etc.
 # TODO some fascinating features, challenges and assignments on work command.
-
+import copy
 import random
 from html import unescape
 from typing import Optional
 
 import discord
 from discord.ext import commands
-from utils import Cog, Trivia, is_logged
+from utils import Cog, Trivia
 
 
 class Economics(Cog):
-    """The Economics extension which is currently in beta-testing.
-    Type **login** to log into economic system."""
+    """The Economics extension which is currently in beta-testing."""
     icon = '💵'
     name = 'Economics'
+    bad_words = open('./data/badwords.txt', 'r').read()
 
     async def cog_check(self, ctx):
         return await commands.guild_only().predicate(ctx)
 
-    async def double(self, ctx, amount: int, reducer: discord.Member, adder: discord.Member):
-        reducer_query = 'UPDATE users SET wallet = wallet - $1 WHERE user_id = $2'
-        adder_query = 'UPDATE users SET wallet = wallet + $1 WHERE user_id = $2'
+    async def double(self, ctx, choice: str, amount: int, reducer: discord.Member, adder: discord.Member):
+        reducer_query = f'UPDATE users SET {choice} = {choice} - $1 WHERE user_id = $2'
+        adder_query = f'UPDATE users SET {choice} = {choice} + $1 WHERE user_id = $2'
 
         await ctx.bot.pool.execute(reducer_query, amount, reducer.id)
         await ctx.bot.pool.execute(adder_query, amount, adder.id)
@@ -48,148 +48,143 @@ class Economics(Cog):
         return ans == q['correct_answer']
 
     @commands.command()
-    async def login(self, ctx):
-        """Log into the database."""
-        query = 'INSERT INTO users(user_id) VALUES($1)'
-        await ctx.bot.pool.execute(query, ctx.author.id)
-        await ctx.send('Successfully logged you into Economics!')
-
-    @commands.command()
     async def currency(self, ctx):
         """A brief information about my currency."""
-        await ctx.send('My economics system uses **batyrs**💂‍♂️. 1 batyr, 5 batyrs...')
+        await ctx.send('My economics system uses **batyrs** <:batyr:822488889020121118>')
 
-    @commands.command(aliases=['bal'])
-    @is_logged()
-    async def balance(self, ctx, member: Optional[discord.Member]):
-        """Check your balance. Specify a member to see their balance card."""
+    @commands.command()
+    async def profile(self, ctx, member: Optional[discord.Member]):
+        """Check your profile. Specify a member to see their profile card.
+        You can set your bio to be shown here by doing {p}bio <whatever you want>"""
         member = member or ctx.author
-        query = 'SELECT wallet, bank FROM users WHERE user_id = $1'
-        data = await ctx.bot.pool.fetchrow(query, member.id)
 
-        try:
-            embed = ctx.bot.embed.default(
-                ctx, title=f'{member}\'s balance card',
-                description='\n'.join(f'• **{k.title()}:** {v} 💂‍♂️' for k, v in data.items())
-            )
-            embed.set_thumbnail(url=member.avatar_url)
+        if not (data := ctx.bot.user_cache[member.id]):
+            raise commands.BadArgument(f'{member} has no profile card.')
 
-        except AttributeError:
-            raise commands.BadArgument(f'{member} has not logged in yet.')
+        data = copy.copy(data)
+
+        embed = ctx.bot.embed.default(
+            ctx, title=f'{member}\'s profile card',
+            description=data.pop('bio')
+        ).set_thumbnail(url=member.avatar_url)
+
+        embed.add_field(
+            name='📊 Statistics',
+            value='\n'.join(f'• **{k.title()}:** {v}' for k, v in data.items())
+        )
 
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def addbalance(self, ctx, amount: int, member: Optional[discord.Member]):
-        """Increase someone's balance for being well behaved."""
-        if not 10 <= amount <= 100_000:
-            raise commands.BadArgument('Balance adding limit has reached. Specify between 10 and 100 000')
-
-        member = member or ctx.author
-        query = 'UPDATE users SET bank = bank + $1 WHERE user_id = $2'
-        await ctx.bot.pool.execute(query, amount, member.id)
-        await ctx.send(f'Successfully added **{amount} batyrs** to **{member}**!')
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def removebalance(self, ctx, amount: int, member: Optional[discord.Member]):
-        """Decrease someone's balance for being bad behaved."""
-        if not 10 <= amount <= 100_000:
-            raise commands.BadArgument('Balance removing limit has reached. Specify between 10 and 100 000')
-
-        member = member or ctx.author
-        query = 'UPDATE users SET bank = bank - $1 WHERE user_id = $2'
-        await ctx.bot.pool.execute(query, amount, member.id)
-        await ctx.send(f'Successfully removed **{amount} batyrs** from **{member}**!')
-
-    @commands.command()
     @commands.cooldown(1, 86400.0, commands.BucketType.user)
-    @is_logged()
     async def daily(self, ctx):
         """Get your daily award!"""
         amount = random.randint(50, 200)
         query = 'UPDATE users SET wallet = wallet + $1 WHERE user_id = $2'
         await ctx.bot.pool.execute(query, amount, ctx.author.id)
-        await ctx.send(f'Gave you {amount} for good behavior!')
+        await ctx.send(f'Gave you {amount} <:batyr:822488889020121118> for good behavior!')
+        await ctx.bot.user_cache.refresh()
 
     @commands.command(aliases=['dep'])
-    @is_logged()
     async def deposit(self, ctx, amount: int = None):
         """Deposit your money into BoriBank!
         By not specifying the amount of money you deposit them all."""
-        data = await ctx.bot.pool.fetchrow('SELECT * FROM users WHERE user_id = $1', ctx.author.id)
+        data = ctx.bot.user_cache[ctx.author.id]
         wallet = data.get('wallet')
         amount = amount or wallet
 
-        if amount > wallet or amount == 0:
+        if amount > wallet or wallet == 0:
             raise commands.BadArgument('Transfering amount cannot be higher than your wallet balance')
 
         query = 'UPDATE users SET bank = bank + $1, wallet = wallet - $1 WHERE user_id = $2'
 
         await ctx.bot.pool.execute(query, amount, ctx.author.id)
-        await ctx.send(f'Successfully transfered **{amount} batyrs** into your bank!')
+        await ctx.send(f'Successfully transfered **{amount}** <:batyr:822488889020121118> into your bank!')
+        await ctx.bot.user_cache.refresh()
 
     @commands.command(aliases=['wd'])
-    @is_logged()
     async def withdraw(self, ctx, amount: int = None):
-        """Deposit your money into BoriBank!"""
-        data = await ctx.bot.pool.fetchrow('SELECT * FROM users WHERE user_id = $1', ctx.author.id)
+        """Withdraw your money from BoriBank!
+        By not specifying the amount of money you withdraw them all."""
+        data = ctx.bot.user_cache[ctx.author.id]
         bank = data.get('bank')
         amount = amount or bank
 
-        if amount > bank:
+        if amount > bank or bank == 0:
             raise commands.BadArgument('Withdrawing amount cannot be higher than your bank balance')
 
         query = 'UPDATE users SET bank = bank - $1, wallet = wallet + $1 WHERE user_id = $2'
 
         await ctx.bot.pool.execute(query, amount, ctx.author.id)
-        await ctx.send(f'Successfully withdrew **{amount} batyrs** to your wallet!')
+        await ctx.send(f'Successfully withdrew **{amount} <:batyr:822488889020121118>** to your wallet!')
+        await ctx.bot.user_cache.refresh()
 
     @commands.command()
-    @is_logged()
     async def pay(self, ctx, amount: int, member: discord.Member):
         """Pay someone whoever they would be."""
-        wallet = await ctx.bot.pool.fetchval('SELECT wallet FROM users WHERE user_id = $1', ctx.author.id)
+        wallet = ctx.bot.user_cache[ctx.author.id]['wallet']
         if wallet < 100:
-            raise commands.BadArgument('You have nothing to pay (less than 100 batyrs)')
+            raise commands.BadArgument('You have nothing to pay (less than 100 <:batyr:822488889020121118>)')
 
-        await self.double(ctx, amount, ctx.author, member)
-        await ctx.send(f'Paid **{amount}** 💂‍♂️ to **{member}**')
+        await self.double(ctx, 'wallet', amount, ctx.author, member)
+        await ctx.send(f'Paid **{amount}** <:batyr:822488889020121118> to **{member}**')
+        await ctx.bot.user_cache.refresh()
+
+    @commands.command(name='bio')
+    async def user_bio(self, ctx, *, information: str):
+        """Set your bio that will be displayed on your profile! Requires to pay 1000 <:batyr:822488889020121118>"""
+        author = ctx.author.id
+        bank = ctx.bot.user_cache[author]['bank']
+
+        if bank < 1000:
+            raise commands.BadArgument('Setting/Changing bio requires at least 1000 <:batyr:822488889020121118>')
+
+        for bad_word in self.bad_words:
+            if bad_word in information:
+                raise commands.BadArgument('Swearing words are not allowed to be set.')
+
+        method = ctx.bot.pool.execute
+        await method('UPDATE users SET bio = $1 WHERE user_id = $2', information, author)
+        await method('UPDATE users SET bank = bank - 1000 WHERE user_id = $1', author)
+
+        await ctx.send('✅ Set your bio successfully!')
+        await ctx.bot.user_cache.refresh()
 
     @commands.command(aliases=['rob'])
-    @commands.cooldown(1, 60.0, commands.BucketType.user)
-    @is_logged()
+    @commands.cooldown(1, 10.0, commands.BucketType.user)
     async def attack(self, ctx, member: discord.Member):
         """Rob someone whoever they would be.
         The chance you can get caught is equal to 50%, be careful!"""
-        query = 'SELECT wallet FROM users WHERE user_id = $1'
-        author_wallet = await ctx.bot.pool.fetchval(query, ctx.author.id)
-        member_wallet = await ctx.bot.pool.fetchval(query, member.id)
+        if ctx.author == member:
+            raise commands.BadArgument('A suicide attempt found!')
+
+        member_wallet = ctx.bot.user_cache[member.id]['wallet']
 
         if member_wallet < 100:
-            raise commands.BadArgument(f'{member} had nothing to steal (less than 100 batyrs)')
+            raise commands.BadArgument(f'{member} had nothing to steal (less than 100 <:batyr:822488889020121118>)')
 
         choice = random.choices(population=['success', 'caught'], weights=[.5, .5], k=1)[0]
 
         if choice == 'caught':
-            await self.double(ctx, author_wallet, ctx.author, member)
-            return await ctx.reply(f'You were caught by police and all your money will go to **{member}**!')
+            author_bank = ctx.bot.user_cache[ctx.author.id]['bank']
+            await self.double(ctx, 'bank', author_bank * .1, ctx.author, member)
+            return await ctx.reply(f'You were caught by police and 10% of your bank will be transfered to {member}!')
 
         amount = random.randint(100, member_wallet)
-        await self.double(ctx, amount, member, ctx.author)
-        await ctx.send(f'Stole **{amount}** 💂‍♂️ from **{member}**')
+        await self.double(ctx, 'wallet', amount, member, ctx.author)
+        await ctx.send(f'Stole **{amount}** <:batyr:822488889020121118> from **{member}**')
+        await ctx.bot.user_cache.refresh()
 
     @commands.command(aliases=['slots'])
-    @is_logged()
+    @commands.cooldown(1, 10.0, commands.BucketType.user)
     async def slot(self, ctx, bet: int):
         """Play the game on a slot machine!"""
-        wallet = await ctx.bot.pool.fetchval('SELECT wallet FROM users WHERE user_id = $1', ctx.author.id)
+        wallet = ctx.bot.user_cache[ctx.author.id]['wallet']
         if bet > wallet:
             raise commands.BadArgument('Bet amount cannot be higher than your wallet balance.')
 
-        if not 50 <= bet <= 250:
-            raise commands.BadArgument('Bet limit has reached (should be between 50 and 250)')
+        if bet < 50:
+            raise commands.BadArgument('Bet amount is too small, bets start from 50 <:batyr:822488889020121118>')
 
         await ctx.bot.pool.execute('UPDATE users SET wallet = wallet - $1 WHERE user_id = $2', bet, ctx.author.id)
 
@@ -199,58 +194,62 @@ class Economics(Cog):
 
         if a == b == c:
             won = 1000 * distinction
-            await ctx.send(f'{text}All match, we have a big winner! 🎉 {won} batyrs!')
+            await ctx.send(f'{text}All match, we have a big winner! 🎉 {won} <:batyr:822488889020121118>!')
 
         elif (a == b) or (a == c) or (b == c):
             won = 100 * distinction
-            await ctx.send(f'{text}2 match, you won! 🎉 {won} batyrs!')
+            await ctx.send(f'{text}2 match, you won! 🎉 {won} <:batyr:822488889020121118>!')
 
         else:
+            await ctx.bot.user_cache.refresh()
             return await ctx.send(f'{text}No matches, I wish you win next time. No batyrs.')
 
         await ctx.bot.pool.execute('UPDATE users SET wallet = wallet + $1 WHERE user_id = $2', won, ctx.author.id)
+        await ctx.bot.user_cache.refresh()
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.user)
-    @is_logged()
     async def work(self, ctx):
         """Work to get clean money without robbing or whatever else."""
-        amount = random.randint(0, 100)
+        amount = random.randint(0, 100)  # getting random money amount.
+
         await ctx.bot.pool.execute('UPDATE users SET wallet = wallet + $1 WHERE user_id = $2', amount, ctx.author.id)
-        await ctx.send(f'You were working a lot and got **{"scammed" if amount == 0 else amount}** 💂‍♂️')
+        await ctx.send(f'You were working a lot and got **{"scammed" if amount == 0 else amount}** <:batyr:822488889020121118>')
+        await ctx.bot.user_cache.refresh()
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.user)
-    @is_logged()
     async def trivia(self, ctx, difficulty: str.lower = 'medium'):
         """Trivia game! Has 3 difficulties: `easy`, `medium` and `hard`.
         Args: difficulty (optional): Questions difficulty in the game.
         Defaults to "easy". Returns: A correct answer."""
         try:
-            q = await self.question(ctx, difficulty)
+            question = await self.question(ctx, difficulty)
+
         except ValueError:
             raise commands.BadArgument('Invalid difficulty specified.')
 
-        if await self.answer(ctx, q):
-            msg = f'**{ctx.author}** answered correct and received **50** 💂‍♂️ as a reward.'
+        if await self.answer(ctx, question):
+            msg = f'**{ctx.author}** answered correct and received **50** <:batyr:822488889020121118> as a reward.'
             await ctx.bot.pool.execute('UPDATE users SET wallet = wallet + 50 WHERE user_id = $1', ctx.author.id)
 
         else:
             msg = f'**{ctx.author}** was a bit wrong'
 
-        await ctx.send(msg + f'\nThe answer was: `{q["correct_answer"]}`.')
+        await ctx.send(msg + f'\nThe answer was: `{question["correct_answer"]}`.')
+        await ctx.bot.user_cache.refresh()
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.user)
-    @is_logged()
     async def coinflip(self, ctx):
         """A very simple coinflip game! Chances are:
         **head → 49.5%**, **tail → 49.5%** and **side → 1%**"""
         if (choice := random.choices(population=['head', 'tail', 'side'], weights=[0.495, 0.495, 0.01], k=1)[0]) == 'side':
             await ctx.bot.pool.execute('UPDATE users SET wallet = wallet + 10000 WHERE user_id = $1', ctx.author.id)
-            return await ctx.send('You\'ve got an amazing luck since the coin was flipped to the side!')
+            return await ctx.send('Coin was flipped **to the side**! +10000')
 
         await ctx.send(f'Coin flipped to the `{choice}`, no reward.')
+        await ctx.bot.user_cache.refresh()
 
 
 def setup(bot):

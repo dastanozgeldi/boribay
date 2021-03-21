@@ -9,9 +9,10 @@ from time import perf_counter
 import aiohttp
 import asyncpg
 import toml
+from async_cse import Search
 from dbl import DBLClient
 from discord import AllowedMentions, Game, Intents, flags
-from discord.ext import commands, ipc
+from discord.ext import commands
 
 from .cache import Cache
 from .context import Context
@@ -65,19 +66,18 @@ class Boribay(commands.Bot):
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self.__ainit__())
         self.loop.create_task(self.check_changes())
-        self.ipc = ipc.Server(self, **self.config['ipc'])
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config['bot']['dbl_token'])
+        self.cse = Search(self.config['API']['google_key'])
 
     async def __ainit__(self):
         await self.wait_until_ready()
         self.pool = await asyncpg.create_pool(**self.config['database'])
         self.cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
+        self.user_cache = await Cache('SELECT * FROM users', 'user_id', self.pool)
 
     def run(self, *args, **kwargs):
         """A custom run method to make the launcher file smaller."""
-        self.ipc.start()
-
         for ext in self.config['bot']['exts']:
             # loading all extensions before running the bot.
             self.load_extension(ext)
@@ -129,9 +129,6 @@ class Boribay(commands.Bot):
     async def on_ready(self):
         self.log.info(f'Logged in as -> {self.user}')
         self.log.info(f'Guild Count -> {len(self.guilds)}')
-
-    async def on_ipc_ready(self):
-        self.log.info('IPC Server ready.')
 
     async def on_message(self, message):
         if not self.is_ready():

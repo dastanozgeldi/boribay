@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from discord.ext import commands, flags
+from discord.ext import commands
 from utils import Cog, Manip, make_image, make_image_url, polaroid_filter
 
 
@@ -71,19 +71,20 @@ class Images(Cog):
         image = await make_image(ctx, image)
         await ctx.send(file=polaroid_filter(ctx, image, method='brighten', kwargs={'treshold': 69}))
 
-    @flags.add_flag('--circle', action='store_true', help='Whether to circlize an avatar.')
-    @flags.command()
-    async def avatar(self, ctx, member: Optional[discord.Member], **flags):
+    @commands.command()
+    async def avatar(self, ctx, member: Optional[discord.Member]):
         """Returns either author or member avatar if specified.
-        Ex: avatar Dosek."""
+        You can get the circlized one putting --circle at the end.
+        Ex: {p}avatar Dosek."""
         member = member or ctx.author
-
-        if flags.pop('circle', False):
-            image = await member.avatar_url.read()
-            buffer = await Manip.circlize(BytesIO(image))
-            return await ctx.send(file=discord.File(buffer, f'{member}.png'))
-
         await ctx.send(str(member.avatar_url))
+
+    @commands.command()
+    async def pixelate(self, ctx, image: Optional[str]):
+        """Pixelate an image."""
+        image = await make_image(ctx, image)
+        buffer = await Manip.pixelate(BytesIO(image))
+        await ctx.send(file=discord.File(buffer, 'pixelated.png'))
 
     @commands.command()
     async def wanted(self, ctx, image: Optional[str]):
@@ -109,6 +110,14 @@ class Images(Cog):
 
         await ctx.send(file=discord.File(buffer, 'newbie.png'))
 
+    @commands.command()
+    async def jail(self, ctx, image: Optional[str]):
+        """Put anyone into jail.
+        Args: image (optional): Image that you want to see in jail."""
+        image = await make_image(ctx, image)
+        buffer = await Manip.jail(BytesIO(image))
+        await ctx.send(file=discord.File(buffer, 'jail.png'))
+
     @commands.command(name='f')
     async def press_f(self, ctx, image: Optional[str]):
         """'Press F to pay respect' meme maker. F your mate using this command.
@@ -125,6 +134,14 @@ class Images(Cog):
         author = await ctx.author.avatar_url_as(size=128).read()
         buffer = await Manip.fiveguysonegirl(BytesIO(author), BytesIO(await make_image(ctx, member)))
         await ctx.send(file=discord.File(buffer, '5g1g.png'))
+
+    @commands.command(aliases=['ko'])
+    async def fight(self, ctx, member: str):
+        """Fight with someone you would like to knockout!"""
+        winner = await ctx.author.avatar_url_as(size=64).read()
+        knocked_out = await make_image(ctx, member)
+        buffer = await Manip.fight(BytesIO(winner), BytesIO(knocked_out))
+        await ctx.send(file=discord.File(buffer, 'fight.png'))
 
     @commands.command()
     async def swirl(self, ctx, degrees: Optional[int], image: Optional[str]):
@@ -151,6 +168,13 @@ class Images(Cog):
         image = await make_image(ctx, image)
         buffer = await Manip.wide(BytesIO(image))
         await ctx.send(file=discord.File(buffer, 'wider.png'))
+
+    @commands.command()
+    async def circlize(self, ctx, image: Optional[str]):
+        """Circlize an image."""
+        image = await make_image(ctx, image)
+        buffer = await Manip.circlize(BytesIO(image))
+        await ctx.send(file=discord.File(buffer, 'circle.png'))
 
     @commands.command(aliases=['gay', 'gayize'])
     async def rainbow(self, ctx, image: Optional[str]):
@@ -225,7 +249,7 @@ class Images(Cog):
         await ctx.send(file=await self.dagpi_image(f'captcha/?url={image}&text={text}', 'captcha.png'))
 
     @commands.command(aliases=['ph'])
-    async def pornhub(self, ctx, text_1: str, text_2: Optional[str] = 'Hub'):
+    async def pornhub(self, ctx, text_1: str, text_2: str = 'Hub'):
         """Pornhub logo maker.
         No matter how long is text, API returns image perfectly (hope so)."""
         await ctx.send(file=await self.alex_image(f'pornhub?text={text_1.replace(" ", "%20")}&text2={text_2.replace(" ", "%20")}'))
@@ -234,21 +258,21 @@ class Images(Cog):
     async def didyoumean(self, ctx, search: str, did_you_mean: str):
         """Google search 'Did you mean' meme.
         Arguments are required and raises an exception if one of them is misssing.
-        Ex: didyoumean recursion recursion."""
+        Ex: {p}didyoumean recursion recursion."""
         await ctx.send(file=await self.alex_image(f'didyoumean?top={search}&bottom={did_you_mean}'))
 
     @commands.command()
     async def achieve(self, ctx, *, text: str):
         """Minecraft 'Achievement Get!' image maker.
         Challenge icon is random one of 44.
-        Ex: challenge slept more than 6 hours."""
+        Ex: {p}challenge slept more than 6 hours."""
         await ctx.send(file=await self.alex_image(f'achievement?text={text.replace(" ", "%20")}&icon={random.randint(1, 44)}'))
 
     @commands.command()
     async def challenge(self, ctx, *, text):
         """Minecraft 'Challenge Complete!' image maker.
         Challenge icon is random one of 45.
-        Ex: challenge finished all to-do's."""
+        Ex: {p}challenge finished all to-do's."""
         await ctx.send(file=await self.alex_image(f'challenge?text={text.replace(" ", "%20")}&icon={random.randint(1, 45)}'))
 
     @commands.command(name='ascii')
@@ -256,13 +280,6 @@ class Images(Cog):
         """Makes ASCII version of an user avatar."""
         image = await make_image_url(ctx, image)
         await ctx.send(file=await self.dagpi_image(f'ascii/?url={image}', 'ascii.png'))
-
-    @commands.command(name='discord')
-    async def _discord(self, ctx, member: discord.Member, *, text: str):
-        """Discord message maker.
-        Returns an image with text and user avatar you specified."""
-        member = member or ctx.author
-        await ctx.send(file=await self.dagpi_image(f'discord/?url={member.avatar_url}&username={member.display_name}&text={text}'))
 
     @commands.command()
     async def caption(self, ctx, arg: Optional[str]):
@@ -280,8 +297,7 @@ class Images(Cog):
     @commands.command()
     async def qr(self, ctx, url: Optional[str]):
         """Makes QR-code of a given URL.
-        A great way to make your friends get rickrolled!
-        P.S: this command accepts only URLs."""
+        A great way to make your friends get rickrolled!"""
         url = await make_image_url(ctx, url)
         r = await ctx.bot.session.get(ctx.bot.config['API']['qr_api'] + url)
         io = BytesIO(await r.read())

@@ -59,6 +59,18 @@ class Manip:
 
     @staticmethod
     @executor_function
+    def pixelate(image: BytesIO):
+        with Image.open(image) as im:
+            small = im.resize((32, 32), resample=Image.BILINEAR)
+            result = small.resize(im.size, Image.NEAREST)
+            buffer = BytesIO()
+            result.save(buffer, 'png')
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
     def wide(image: BytesIO):
         with WI(file=image) as im:
             w, h = im.size
@@ -145,6 +157,21 @@ class Manip:
         return buffer
 
     @staticmethod
+    @executor_function  # 395, 206 - knocked out; 236, 50 - winner
+    def fight(winner: BytesIO, knocked_out: BytesIO):
+        winner = Image.open(winner).resize((40, 40))
+        knocked_out = Image.open(knocked_out).resize((60, 60))
+
+        with Image.open('./data/layouts/fight.jpg') as img:
+            img.paste(winner, (236, 50))
+            img.paste(knocked_out.rotate(-90), (395, 206))
+            buffer = BytesIO()
+            img.save(buffer, 'png')
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
     @executor_function
     def clyde(txt: str):
         font = ImageFont.truetype('./data/fonts/whitneybook.otf', 18)
@@ -207,12 +234,23 @@ class Manip:
 
     @staticmethod
     @executor_function
+    def jail(image: BytesIO):
+        layout = WI(filename='./data/layouts/jailbars.png')
+
+        with WI(file=image) as img:
+            w, h = img.size
+            layout.resize(w, h)
+            img.watermark(layout, 0.3)
+            buffer = BytesIO()
+            img.save(file=buffer)
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor_function
     def press_f(image: BytesIO):
-        im = Image.open('./data/layouts/f.jpg')
-        b = BytesIO()
-        im.save(b, 'png')
-        b.seek(0)
-        layout = WI(file=b)
+        layout = WI(filename='./data/layouts/f.png')
 
         with WI(file=image) as img:
             img.resize(52, 87)
@@ -227,11 +265,7 @@ class Manip:
     @staticmethod
     @executor_function
     def rainbow(image: BytesIO):
-        mask = Image.open('./data/layouts/rainbow.png')
-        b = BytesIO()
-        mask.save(b, 'png')
-        b.seek(0)
-        layout = WI(file=b)
+        layout = WI(filename='./data/layouts/rainbow.png')
 
         with WI(file=image) as img:
             w, h = img.size
@@ -246,11 +280,7 @@ class Manip:
     @staticmethod
     @executor_function
     def communist(image: BytesIO):
-        mask = Image.open('./data/layouts/communist-flag.jpg')
-        b = BytesIO()
-        mask.save(b, 'png')
-        b.seek(0)
-        layout = WI(file=b)
+        layout = WI(filename='./data/layouts/communist-flag.jpg')
 
         with WI(file=image) as img:
             w, h = img.size

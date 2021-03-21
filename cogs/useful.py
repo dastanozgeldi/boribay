@@ -2,6 +2,7 @@ import decimal
 import random
 import re
 import zipfile
+from contextlib import suppress
 from datetime import datetime
 from io import BytesIO
 from textwrap import wrap
@@ -9,7 +10,7 @@ from typing import Optional
 
 import aiowiki
 import discord
-from async_cse import NoResults, Search
+from async_cse import NoResults
 from discord.ext import commands, flags
 from humanize import time
 from utils import (CalcLexer, CalcParser, Cog, ColorConverter, EmbedPageSource,
@@ -58,10 +59,10 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def wikipedia(self, ctx, language: str, *, topic: str):
         """Wikipedia Search Command.
         Args: topic: The Wikipedia topic you want to search for."""
-        ctx.bot.wikipedia = aiowiki.Wiki.wikipedia(language, session=ctx.bot.session)
+        self.wikipedia = aiowiki.Wiki.wikipedia(language, session=ctx.bot.session)
 
         try:
-            page = (await ctx.bot.wikipedia.opensearch(topic))[0]
+            page = (await self.wikipedia.opensearch(topic))[0]
             text = await page.summary()
 
         except (aiowiki.exceptions.PageNotFound, IndexError):
@@ -107,14 +108,17 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
             ('Age Rate', attributes['ageRatingGuide']),
             ('Genres', rl)
         ]
-
+        title = attributes['titles']['en_jp']
         embed = ctx.bot.embed.default(
             ctx,
-            title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
+            title=f"{title} ({attributes['titles']['ja_jp']})",
+            description='[**Watch now!**](https://4anime.to/{})'.format('-'.join(w.lower() for w in title.split())),
             url=f"https://kitsu.io/anime/{js['data'][0]['id']}"
         ).set_thumbnail(url=attributes['posterImage']['small'])
-        embed.add_field(name='Statistics', value='\n'.join([f'**{name}:** {value}' for name, value in fields]))
+
+        embed.add_field(name='Statistics', value='\n'.join(f'**{name}:** {value}' for name, value in fields))
         embed.add_field(name='Description', value=attributes['description'][:300] + '...')
+
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -168,7 +172,7 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
     async def show(self, ctx, **flags):
         """To-Do show command, a visual way to manipulate with your list.
         Args: number (Optional): Index of to-do you want to see."""
-        query = 'SELECT content, jump_url FROM todos WHERE user_id = $1'
+        query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
         todos = [(todo['content'], todo['jump_url']) for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
         dest = ctx.author if flags.pop('dm', False) else ctx
 
@@ -234,7 +238,6 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         """Paginated Google-Search command.
         Args: query (str): Your search request. Results will be displayed,
         otherwise returns an error which means no results found."""
-        ctx.bot.cse = Search(ctx.bot.config['API']['google_key'])
         safesearch = False if ctx.channel.is_nsfw() else True
 
         try:
@@ -286,11 +289,8 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         for emoji in reactions[:len(options)]:
             await message.add_reaction(emoji)
 
-        try:
+        with suppress(discord.Forbidden):
             await ctx.message.delete()
-
-        except discord.Forbidden:
-            pass
 
     @commands.command(aliases=['r'])
     @has_voted()

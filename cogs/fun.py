@@ -1,6 +1,7 @@
 import asyncio
 import random
 import textwrap
+from contextlib import suppress
 from io import BytesIO
 from time import time
 from typing import Optional
@@ -69,10 +70,8 @@ class Fun(Cog):
             ))
 
         except asyncio.TimeoutError:
-            try:
+            with suppress(discord.NotFound):
                 await race.delete()
-            except discord.errors.NotFound:
-                pass
 
     @commands.command(aliases=['rps'])
     async def rockpaperscissors(self, ctx):
@@ -107,21 +106,11 @@ class Fun(Cog):
         except asyncio.TimeoutError:
             await msg.delete()
 
-    @commands.command(name='random')
-    async def _random(self, ctx):
-        """Executes a random command that the bot has.
-        Perfect feature when you want to use Boribay but don't even know
-        what to call."""
-        denied = ['random', 'jishaku', 'su']
-        command = random.choice([cmd.name for cmd in ctx.bot.commands if len(cmd.signature.split()) == 0 and cmd.name not in denied])
-        await ctx.send(f'Invoking command {command}...')
-        await ctx.bot.get_command(command)(ctx)
-
     @commands.command()
     async def eject(self, ctx, color: str.lower, is_impostor: bool, *, name: Optional[str]):
         """Among Us ejected meme maker.
         Colors: black • blue • brown • cyan • darkgreen • lime • orange • pink • purple • red • white • yellow.
-        Ex: eject blue True Dosek."""
+        Ex: {p}eject blue True Dosek."""
         name = name or ctx.author.display_name
         r = await ctx.bot.session.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
         io = BytesIO(await r.read())

@@ -1,4 +1,5 @@
-from typing import Optional
+import copy
+from typing import Optional, Union
 
 import discord
 from discord.ext import commands
@@ -12,7 +13,9 @@ class Moderation(Cog):
     icon = '🛡'
     name = 'Moderation'
 
-    def on_or_off(self, ctx, key, checks):
+    def on_or_off(self, ctx, key):
+        checks = ['.', None, 0x36393f, None, None]
+
         for check in checks:
             if ctx.bot.cache[ctx.guild.id][key] == check:
                 return '<:crossmark:814742130190712842>'
@@ -20,41 +23,60 @@ class Moderation(Cog):
         return '<:tick:814838692459446293>'
 
     async def update(self, ctx, key, value):
+        me = ctx.bot
+        guild = ctx.guild.id
         query = f'UPDATE guild_config SET {key} = $1 WHERE guild_id = $2'
-        ctx.bot.cache[ctx.guild.id][key] = value
-        await ctx.bot.pool.execute(query, value, ctx.guild.id)
+
+        await me.pool.execute(query, value, guild)
+        me.cache[guild][key] = value
+
+    def humanize(self, guild: discord.Guild, config):
+        data = copy.copy(config[guild.id])
+
+        for k, v in data.items():
+            if k == 'autorole':
+                data[k] = guild.get_role(v)
+
+            elif k == 'embed_color':
+                data[k] = hex(v)
+
+            elif k in ('welcome_channel', 'automeme'):
+                data[k] = guild.get_channel(v)
+
+        return data
 
     @commands.group(invoke_without_command=True, aliases=['gs'])
     async def settings(self, ctx):
         """The settings parent command.
-        Shows settings statistic of the current server:
-        Custom color and custom prefix."""
-        creds = ctx.bot.cache[ctx.guild.id]
-        embed = ctx.bot.embed.default(ctx)
-        defaults = ['.', 3553598, None, None]
+        Shows the settings of the current server."""
+        g = ctx.guild
 
-        embed.add_field(
-            name='Guild Settings',
-            value='\n'.join(f'**{self.on_or_off(ctx, k, defaults)} {k.replace("_", " ").title()}:** {v}' for k, v in creds.items())
-        )
+        creds = self.humanize(g, ctx.bot.cache)
+        embed = ctx.bot.embed.default(
+            ctx, description='\n'.join(f'**{self.on_or_off(ctx, k)} {k.replace("_", " ").title()}:** {v}' for k, v in creds.items())
+        ).set_author(name=f'Settings of {g}', icon_url=g.icon_url)
 
         await ctx.send(embed=embed)
 
     @settings.command(aliases=['wc'])
     @is_mod()
-    async def welcomechannel(self, ctx, channel: discord.TextChannel):
-        """Set Welcome channel command.
-        Args: channel: Channel where the bot should log messages to."""
+    async def welcomechannel(self, ctx, channel: Union[discord.TextChannel, str.lower]):
+        """Set the welcome channel command.
+        To disable this feature just put `disable` after the command."""
+        if isinstance(channel, str) and channel == 'disable':
+            await self.update(ctx, 'welcome_channel', None)
+            return await ctx.send('✅ Disabled welcome-channel.')
+
         await self.update(ctx, 'welcome_channel', channel.id)
-        await ctx.send(f'Set {channel.mention} as a welcoming channel.')
+        await ctx.send(f'✅ Set {channel} as a welcoming channel.')
 
     @settings.command()
     @is_mod()
-    async def prefix(self, ctx, prefix: str):
-        """Set Prefix command
+    async def prefix(self, ctx, new: str):
+        """Set Prefix command.
         Args: prefix (str): a new prefix that you want to set."""
-        await self.update(ctx, 'prefix', prefix)
-        await ctx.send(f'Prefix has been changed to: `{prefix}`')
+        await self.update(ctx, 'prefix', new)
+        await ctx.send(f'Prefix has been changed to: `{new}`')
 
     @settings.command(aliases=['colour'])
     @is_mod()
@@ -64,23 +86,60 @@ class Moderation(Cog):
         use `settings color #36393e`"""
         color = int(str(color).replace('#', ''), 16)
         await self.update(ctx, 'embed_color', color)
-        msg = 'As of now, the embed color will look like this.'
 
-        await ctx.send(embed=ctx.bot.embed.default(ctx, title=msg))
+        embed = ctx.bot.embed.default(ctx, title='As of now, the embed color will look like this.')
+        await ctx.send(embed=embed)
 
     @settings.command()
     @is_mod()
-    async def autorole(self, ctx, role: discord.Role):
+    async def autorole(self, ctx, role: Union[discord.Role, str.lower]):
         """Sets the autorole for the current server.
-        This will handle all joined users and give them the role
-        that you have specified."""
+        To disable this feature just put `disable` after the command."""
+        if isinstance(role, str) and role == 'disable':
+            await self.update(ctx, 'autorole', None)
+            return await ctx.send('✅ Disabled autorole.')
+
         await self.update(ctx, 'autorole', role.id)
-        await ctx.send(f'As of now, a role `{role.name}` will be automatically given when a member joins this server.')
+        await ctx.send(f'✅ Set `{role}` as an autorole.')
+
+    @settings.command()
+    @is_mod()
+    async def automeme(self, ctx, channel: Union[discord.TextChannel, str.lower]):
+        """Sets the automeme stuff for the current server."""
+        if isinstance(channel, str) and channel == 'disable':
+            await self.update(ctx, 'automeme', None)
+            return await ctx.send('✅ Disabled automemes.')
+
+        await self.update(ctx, 'automeme', channel.id)
+        await ctx.send(f'✅ Set {channel} as automemes channel.')
 
     @commands.group(invoke_without_command=True)
     async def admin(self, ctx):
-        """Administrator-only commands."""
+        """Administrator-only commands, you must have the administrator permission."""
         await ctx.send_help('admin')
+
+    @admin.command()
+    @commands.has_permissions(administrator=True)
+    async def addbalance(self, ctx, amount: int, member: Optional[discord.Member]):
+        """Increase someone's balance for being well behaved."""
+        if not 10 <= amount <= 100_000:
+            raise commands.BadArgument('Balance adding limit has reached. Specify between 10 and 100 000')
+
+        member = member or ctx.author
+        query = 'UPDATE users SET bank = bank + $1 WHERE user_id = $2'
+        await ctx.bot.pool.execute(query, amount, member.id)
+        await ctx.send(f'Successfully added **{amount} batyrs** to **{member}**!')
+        await ctx.bot.user_cache.refresh()
+
+    @admin.command()
+    @commands.has_permissions(administrator=True)
+    async def removebalance(self, ctx, amount: int, member: Optional[discord.Member]):
+        """Decrease someone's balance for being bad behaved."""
+        member = member or ctx.author
+        query = 'UPDATE users SET bank = bank - $1 WHERE user_id = $2'
+        await ctx.bot.pool.execute(query, amount, member.id)
+        await ctx.send(f'Successfully removed **{amount} batyrs** from **{member}**!')
+        await ctx.bot.user_cache.refresh()
 
     @admin.command()
     @commands.has_guild_permissions(administrator=True)
@@ -131,7 +190,7 @@ class Moderation(Cog):
 
     @commands.group(invoke_without_command=True)
     async def mod(self, ctx):
-        """Commands that moderators can execute."""
+        """Commands for moderators. Manage guild permission required."""
         await ctx.send_help('mod')
 
     @mod.command()

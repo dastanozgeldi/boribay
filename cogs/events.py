@@ -54,8 +54,15 @@ class Events(Cog, command_attrs={'hidden': True}):
 
     @Cog.listener()
     async def on_command_completion(self, ctx):
-        self.bot.command_usage += 1
-        await self.bot.pool.execute('UPDATE bot_stats SET command_usage = command_usage + 1')
+        me = self.bot
+        author = ctx.author.id
+
+        if not await me.pool.fetch('SELECT * FROM users WHERE user_id = $1', author):
+            await me.pool.execute('INSERT INTO users(user_id) VALUES($1)', author)
+            await me.user_cache.refresh()
+
+        me.command_usage += 1
+        await me.pool.execute('UPDATE bot_stats SET command_usage = command_usage + 1')
 
     @Cog.listener()
     async def on_member_join(self, member):

@@ -34,8 +34,7 @@ class HelpPages(menus.Menu):
             ('What is <argument>?', 'This means the argument is **required**.'),
             ('What about [argument]?', 'This means the argument is **optional**.'),
             ('[argument...]?', 'This means there can be multiple arguments.'),
-            ('What the hell is [--flag FLAG]?', 'This means the optional argument\nExample: **todo show --dm**'),
-            ('Why I cannot use economics system?', 'It seems like you did not log in yet.\nType **login** to get started!')
+            ('What the hell is [--flag FLAG]?', 'This means the optional flag\nExample: **todo show --dm**')
         ]
 
         for name, value in fields:
@@ -45,20 +44,18 @@ class HelpPages(menus.Menu):
 
     @menus.button('🤔', position=menus.Last(4))
     async def example(self, payload):
-        """See some examples of usage."""
+        """Shows some examples of usage."""
         embed = self.bot.embed.default(self.ctx, title='Usage Examples.')
 
         fields = [
-            ('Required argument', 'anime kaguya sama'),
-            ('Optional argument', 'ascii __or__ ascii 😀'),
-            ('Multiple arguments', 'todo remove 12 5 7 3'),
-            ('Using flags', 'avatar --circle'),
-            ('Using flags #2', 'covid --country Kazakhstan'),
-            ('Combining', 'avatar Dosek --circle')
+            ('Required argument', '{p}anime kaguya sama'),
+            ('Optional argument', '**{p}ascii 😀** or just **{p}ascii**'),
+            ('Multiple arguments', '{p}todo remove 12 5 7 3'),
+            ('Using flags', '{p}covid --country Kazakhstan'),
         ]
 
         for name, value in fields:
-            embed.add_field(name=name, value=value)
+            embed.add_field(name=name, value=value.format(p=self.ctx.prefix), inline=False)
 
         await self.message.edit(embed=embed)
 
@@ -90,15 +87,15 @@ class GroupHelp(menus.ListPageSource):
 
         for cmd in cmds:
             embed.add_field(
-                name=f'{self.prefix}{cmd.qualified_name} {cmd.signature}',
-                value=cmd.help.format(prefix=self.prefix),
+                name=f'{self.prefix}{cmd} {cmd.signature}',
+                value=cmd.help.split('\n')[0],
                 inline=False
             )
 
         if (maximum := self.get_max_pages()) > 1:
             embed.set_author(name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
 
-        embed.set_footer(text=f'{self.prefix}help <cmd> to get help for a specific command.')
+        embed.set_footer(text=f'{self.prefix}help <cmd> to get detailed help for a command.')
 
         return embed
 
@@ -121,19 +118,17 @@ class MyHelpCommand(commands.HelpCommand):
         cats = []
 
         for cog, cmds in mapping.items():
-            filtered = await self.filter_commands(cmds, sort=True)
-            if filtered:
+            if await self.filter_commands(cmds, sort=True):
                 if cog:
                     cats.append(str(cog))
 
         embed = ctx.bot.embed.default(
             ctx, description=f'[Invite]({links["invite_url"]}) | [Support]({links["support_url"]}) | [Source]({links["github_url"]}) | [Vote]({links["topgg_url"]})'
-        ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url_as(size=64))
+        ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
 
-        embed.add_field(name='Modules:', value='\n'.join([m for m in cats]))
+        embed.add_field(name='Modules:', value='\n'.join(m for m in cats))
 
         news = open('news.md', 'r').readlines()
-
         embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
         embed.set_footer(text=self.get_ending_note())
 
@@ -156,9 +151,8 @@ class MyHelpCommand(commands.HelpCommand):
         ctx = self.context
 
         embed = ctx.bot.embed.default(
-            ctx,
-            title=self.get_command_signature(command),
-            description=command.help or 'No help found...'
+            ctx, title=self.get_command_signature(command),
+            description=command.help.format(p=self.clean_prefix)
         ).set_footer(text=self.get_ending_note())
 
         if category := str(command.cog):
@@ -188,7 +182,7 @@ class MyHelpCommand(commands.HelpCommand):
         return message
 
     def get_command_signature(self, command):
-        return f'{self.clean_prefix}{command.qualified_name} {command.signature}'
+        return f'{self.clean_prefix}{command} {command.signature}'
 
 
 class Help(Cog):

@@ -12,9 +12,9 @@ exts = [
     'cogs.moderation',
     'cogs.misc',
     'cogs.help',
-    'cogs.top'
+    'cogs.users'
 ]
-version = 'the bot version'
+version = '1.1.2'
 token = 'my beautiful token here.'
 
 [database]  # these are credits you log in to the asyncpg pool with.
@@ -22,11 +22,6 @@ user = ''
 password = ''
 host = ''
 database = ''
-
-[ipc]  # ipc server credits.
-host = ''
-port = 8765
-secret_key = ''
 
 [API]  # you can insert APIs' URLs here
 sr_api = 'some-random-api.ml'

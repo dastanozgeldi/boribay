@@ -41,6 +41,14 @@ class Owner(Cog, command_attrs={'hidden': True}):
         await ctx.send(file=discord.File(fp=io, filename='screenshot.png'))
 
     @su.command()
+    async def blacklist(self, ctx, user: discord.Member, mode: bool = True):
+        """Blacklists a user that makes user no longer able to use the bot."""
+        query = f'UPDATE users SET blacklisted = {mode} WHERE user_id = $1'
+        await ctx.bot.pool.execute(query, user.id)
+        await ctx.bot.user_cache.refresh()
+        await ctx.message.add_reaction('✅')
+
+    @su.command()
     async def leave(self, ctx, guild_id: Optional[int]):
         """Leave command. Takes current guild if id was not given."""
         guild_id = guild_id or ctx.guild.id
