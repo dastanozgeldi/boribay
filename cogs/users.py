@@ -14,7 +14,7 @@ class Economics(Cog):
     """The Economics extension which is currently in beta-testing."""
     icon = '💵'
     name = 'Economics'
-    bad_words = open('./data/badwords.txt', 'r').read()
+    bad_words = open('./data/badwords.txt', 'r').readlines()[1:]
 
     async def cog_check(self, ctx):
         return await commands.guild_only().predicate(ctx)
@@ -52,7 +52,7 @@ class Economics(Cog):
         """A brief information about my currency."""
         await ctx.send('My economics system uses **batyrs** <:batyr:822488889020121118>')
 
-    @commands.command()
+    @commands.command(aliases=['card'])
     async def profile(self, ctx, member: Optional[discord.Member]):
         """Check your profile. Specify a member to see their profile card.
         You can set your bio to be shown here by doing {p}bio <whatever you want>"""
@@ -65,7 +65,7 @@ class Economics(Cog):
 
         embed = ctx.bot.embed.default(
             ctx, title=f'{member}\'s profile card',
-            description=data.pop('bio')
+            description=data.pop('bio', None)
         ).set_thumbnail(url=member.avatar_url)
 
         embed.add_field(

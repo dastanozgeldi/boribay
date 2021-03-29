@@ -9,6 +9,10 @@ class Context(C):
         super().__init__(**kwargs)
         self.timer = Timer(self)
 
+    @property
+    def db(self):
+        return self.bot.pool
+
     async def confirm(self, message):
         msg = await self.send(message)
         emojis = {'✅': True, '❌': False}

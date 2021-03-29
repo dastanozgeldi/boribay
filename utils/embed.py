@@ -13,10 +13,8 @@ class Embed(E):
 	@classmethod
 	def default(cls, ctx, **kwargs):
 		g = ctx.guild
-		instance = cls(**kwargs)
-		instance.color = 0x36393f if not g else ctx.bot.cache[g.id]['embed_color']
-
-		return instance
+		color = 0x36393f if not g else ctx.bot.guild_cache[g.id]['embed_color']
+		return cls(color=color, **kwargs)
 
 	@classmethod
 	def error(cls, color=0xff0000, **kwargs):

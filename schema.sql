@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS guild_config (
     prefix character varying(10) NOT NULL DEFAULT '.',
     welcome_channel bigint,
     embed_color integer DEFAULT 3553598,
-    autorole bigint
+    autorole bigint,
+    automeme bigint
 )
 
 CREATE TABLE IF NOT EXISTS todos (
@@ -18,7 +19,5 @@ CREATE TABLE IF NOT EXISTS users (
     user_id bigint NOT NULL,
     wallet integer DEFAULT 0,
     bank integer DEFAULT 0,
-    xp integer DEFAULT 0,
-    lvl integer DEFAULT 1,
     blacklisted boolean DEFAULT false
 )

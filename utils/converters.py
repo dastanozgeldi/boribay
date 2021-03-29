@@ -1,4 +1,5 @@
 import contextlib
+import copy
 import re
 import typing
 
@@ -6,6 +7,23 @@ import discord
 import twemoji_parser
 from discord.ext import commands
 from PIL import ImageColor
+
+
+class SettingsConverter(commands.Converter):
+    async def convert(self, guild: discord.Guild, settings: dict):
+        data = copy.copy(settings[guild.id])
+
+        for k, v in data.items():
+            if k == 'autorole':
+                data[k] = guild.get_role(v)
+
+            elif k == 'embed_color':
+                data[k] = hex(v)
+
+            elif k in ('welcome_channel', 'automeme', 'logging_channel'):
+                data[k] = guild.get_channel(v)
+
+        return data
 
 
 class TimeConverter(commands.Converter):

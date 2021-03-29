@@ -231,7 +231,7 @@ class Miscellaneous(Cog):
     @commands.command()
     async def prefix(self, ctx):
         """See bot's prefix."""
-        prefix = '.' if not ctx.guild else ctx.bot.cache[ctx.guild.id].get('prefix', '.')
+        prefix = '.' if not ctx.guild else ctx.bot.guild_cache[ctx.guild.id].get('prefix', '.')
         await ctx.send(embed=ctx.bot.embed.default(ctx, description=f'The prefix is: `{prefix}` or {ctx.bot.user.mention}'))
 
     @commands.command(aliases=['links'])

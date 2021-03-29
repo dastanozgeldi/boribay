@@ -112,7 +112,6 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         embed = ctx.bot.embed.default(
             ctx,
             title=f"{title} ({attributes['titles']['ja_jp']})",
-            description='[**Watch now!**](https://4anime.to/{})'.format('-'.join(w.lower() for w in title.split())),
             url=f"https://kitsu.io/anime/{js['data'][0]['id']}"
         ).set_thumbnail(url=attributes['posterImage']['small'])
 
@@ -278,8 +277,12 @@ class Useful(Cog, command_attrs={'cooldown': commands.Cooldown(1, 5, commands.Bu
         else:
             reactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
 
-        description = '\n'.join(f'{reactions[x]} {option}' for x, option in enumerate(options))
-        embed = ctx.bot.embed.default(ctx, title=question.replace('\n', ''), description=description)
+        description = '**%s**' % question.replace("\n", '')
+        embed = ctx.bot.embed.default(ctx, description=description)
+        embed.add_field(
+            name='📊 Options',
+            value='\n'.join(f'{reactions[x]} {option}' for x, option in enumerate(options))
+        )
 
         if ctx.message.attachments:
             embed.set_image(url=ctx.message.attachments[0].url)

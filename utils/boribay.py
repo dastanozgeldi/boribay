@@ -31,7 +31,7 @@ def get_prefix(bot, message):
     if not message.guild:
         prefix = '.'
     else:
-        prefix = bot.cache[message.guild.id].get('prefix', '.')
+        prefix = bot.guild_cache[message.guild.id].get('prefix', '.')
     return commands.when_mentioned_or(prefix)(bot, message)
 
 
@@ -73,7 +73,8 @@ class Boribay(commands.Bot):
     async def __ainit__(self):
         await self.wait_until_ready()
         self.pool = await asyncpg.create_pool(**self.config['database'])
-        self.cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
+        self.cache = dict(await self.pool.fetchrow('SELECT * FROM bot_stats'))
+        self.guild_cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
         self.user_cache = await Cache('SELECT * FROM users', 'user_id', self.pool)
 
     def run(self, *args, **kwargs):
