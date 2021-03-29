@@ -4,8 +4,9 @@ CREATE TABLE IF NOT EXISTS guild_config (
     welcome_channel bigint,
     embed_color integer DEFAULT 3553598,
     autorole bigint,
-    automeme bigint
-)
+    automeme bigint,
+    audit_logger bigint
+);
 
 CREATE TABLE IF NOT EXISTS todos (
     id serial primary key,
@@ -13,11 +14,11 @@ CREATE TABLE IF NOT EXISTS todos (
     content text,
     added_at timestamp without time zone,
     jump_url text
-)
+);
 
 CREATE TABLE IF NOT EXISTS users (
     user_id bigint NOT NULL,
     wallet integer DEFAULT 0,
     bank integer DEFAULT 0,
     blacklisted boolean DEFAULT false
-)
+);

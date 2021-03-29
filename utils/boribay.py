@@ -71,7 +71,6 @@ class Boribay(commands.Bot):
         self.cse = Search(self.config['API']['google_key'])
 
     async def __ainit__(self):
-        await self.wait_until_ready()
         self.pool = await asyncpg.create_pool(**self.config['database'])
         self.cache = dict(await self.pool.fetchrow('SELECT * FROM bot_stats'))
         self.guild_cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
