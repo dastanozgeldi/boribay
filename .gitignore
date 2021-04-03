@@ -1,5 +1,5 @@
 # Folders
-data/logs/
+logs/
 __pycache__/
 
 # Files

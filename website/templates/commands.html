@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block content %}
+<body>
+    <div class="command">
+        {% for cmd, help in commands.items() %}
+            <p>{{ cmd }} - {{ help }}</p>
+        {% endfor %}
+    </div>
+</body>
+{% endblock content %}

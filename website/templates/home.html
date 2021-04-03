@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block content %}
+<body>
+    <div class="banner">
+        <div class="content">
+            <h1>Use Boribay on your server!</h1>
+            <p>A multi-purpose bot that has lots of categories and features.</p>
+            <a href="{{ stats['invite'] }}" class="main_button">INVITE NOW</a>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 50px; margin-bottom: 30px;">
+        <h2 style="font-size: 40px; border-bottom: solid #6522ca; display: inline-block;">STATISTICS</h2>
+    </div>
+
+    <div class="inner-width" style="margin-bottom: 80px;">
+        <div class="column">
+            <icon class="fas fa-server"></icon>
+            </br>{{ stats['guild_count'] }}</br> servers
+        </div>
+
+        <div class="column">
+            <icon class="fas fa-rocket"></icon>
+            </br>{{ stats['command_count'] }}</br> commands
+        </div>
+
+        <div class="column">
+            <icon class="far fa-chart-line"></icon>
+            </br>{{ stats['command_usage'] }}</br> usage
+        </div>
+    </div>
+</body>
+{% endblock content %}
