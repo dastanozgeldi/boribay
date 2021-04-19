@@ -20,10 +20,30 @@ class SettingsConverter(commands.Converter):
             elif k == 'embed_color':
                 data[k] = hex(v)
 
-            elif k in ('welcome_channel', 'automeme', 'logging_channel'):
+            elif k in ('welcome_channel', 'automeme', 'audit_logger'):
                 data[k] = guild.get_channel(v)
 
         return data
+
+
+class ValueConverter(commands.Converter):
+    async def convert(self, ctx, setting: str, value: str):
+        g = ctx.guild
+
+        try:
+            if setting == 'autorole':
+                value = g.get_role(value)
+
+            elif setting == 'embedcolor':
+                value = await ColorConverter().convert(ctx, value)
+
+            elif setting in ('welcomechannel', 'automeme', 'logging'):
+                value = g.get_channel(value)
+
+            return value
+
+        except ValueError:
+            raise commands.BadArgument(f'Unable to convert {value} into {setting} value.')
 
 
 class TimeConverter(commands.Converter):

@@ -1,13 +1,12 @@
-"""TabularData is stolen from R. Danny.
-
-Thanks Danny for this awesome piece of code!
-
-The MPL-2.0 License
-
-Copyright (c) 2015 Rapptz"""
-
-
 class TabularData:
+    """TabularData is stolen from R. Danny.
+
+    https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/utils/formats.py
+
+    The MPL-2.0 License
+
+    Copyright (c) 2015 Rapptz"""
+
     def __init__(self):
         self._widths = []
         self._columns = []

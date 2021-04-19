@@ -5,10 +5,7 @@ from discord import Embed as E
 
 class Embed(E):
 	def __init__(self, timestamp=None, **kwargs):
-		super(Embed, self).__init__(
-			timestamp=timestamp or dt.utcnow(),
-			**kwargs
-		)
+		super(Embed, self).__init__(timestamp=timestamp or dt.utcnow(), **kwargs)
 
 	@classmethod
 	def default(cls, ctx, **kwargs):

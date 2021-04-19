@@ -4,7 +4,7 @@ from io import BytesIO
 from discord import File
 from googletrans import Translator
 from jishaku.functools import executor_function
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont
 from polaroid import Image as PI
 from wand.image import Image as WI
 
@@ -39,7 +39,7 @@ async def make_image(ctx, argument: str):
     return image
 
 
-def polaroid_filter(ctx, image: bytes, *, method: str, args: list = None, kwargs: dict = None):
+def polaroid_filter(image: bytes, *, method: str, args: list = None, kwargs: dict = None):
     args = args or []
     kwargs = kwargs or {}
     img = PI(image)
@@ -47,6 +47,10 @@ def polaroid_filter(ctx, image: bytes, *, method: str, args: list = None, kwargs
     filt(*args, **kwargs)
 
     return File(BytesIO(img.save_bytes()), f'{method}.png')
+
+
+BASE_PATH = './boribay/data/layouts'
+FONT_PATH = './boribay/data/fonts'
 
 
 class Manip:
@@ -71,34 +75,8 @@ class Manip:
 
     @staticmethod
     @executor_function
-    def wide(image: BytesIO):
-        with WI(file=image) as im:
-            w, h = im.size
-            im.resize(w * 2, int(h / 2))
-            buffer = BytesIO()
-            im.save(file=buffer)
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
-    def circlize(image: BytesIO):
-        mask = Image.open('./boribay/data/layouts/circle-mask.png').convert('L')
-
-        with Image.open(image) as im:
-            output = ImageOps.fit(im, mask.size, centering=(0.5, 0.5))
-            output.putalpha(mask)
-            buffer = BytesIO()
-            output.save(buffer, 'png')
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
     def welcome(member: BytesIO, top_text, bottom_text):
-        font = ImageFont.truetype('./boribay/data/fonts/arial_bold.ttf', size=20)
+        font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=20)
         join_w, member_w = font.getsize(bottom_text)[0], font.getsize(top_text)[0]
 
         with Image.new('RGB', (600, 400)) as card:
@@ -117,7 +95,7 @@ class Manip:
     def whyareyougae(author: BytesIO, member: BytesIO):
         author = Image.open(author)
 
-        with Image.open('./boribay/data/layouts/wayg.jpg') as img:
+        with Image.open(f'{BASE_PATH}/wayg.jpg') as img:
             img.paste(author, (507, 103))
             img.paste(Image.open(member).resize((128, 128)), (77, 120))
             buffer = BytesIO()
@@ -131,7 +109,7 @@ class Manip:
     def fiveguysonegirl(author: BytesIO, member: BytesIO):
         author = Image.open(author)
 
-        with Image.open('./boribay/data/layouts/5g1g.png') as img:
+        with Image.open(f'{BASE_PATH}/5g1g.png') as img:
             img.paste(Image.open(member).resize((128, 128)), (500, 275))
 
             for i in [(31, 120), (243, 53), (438, 85), (637, 90), (815, 20)]:
@@ -148,7 +126,7 @@ class Manip:
     def wanted(image: BytesIO):
         image = Image.open(image).resize((189, 205))
 
-        with Image.open('./boribay/data/layouts/wanted.png') as img:
+        with Image.open(f'{BASE_PATH}/wanted.png') as img:
             img.paste(image, (73, 185))
             buffer = BytesIO()
             img.save(buffer, 'png')
@@ -162,7 +140,7 @@ class Manip:
         winner = Image.open(winner).resize((40, 40))
         knocked_out = Image.open(knocked_out).resize((60, 60))
 
-        with Image.open('./boribay/data/layouts/fight.jpg') as img:
+        with Image.open(f'{BASE_PATH}/fight.jpg') as img:
             img.paste(winner, (236, 50))
             img.paste(knocked_out.rotate(-90), (395, 206))
             buffer = BytesIO()
@@ -174,9 +152,9 @@ class Manip:
     @staticmethod
     @executor_function
     def clyde(txt: str):
-        font = ImageFont.truetype('./boribay/data/fonts/whitneybook.otf', 18)
+        font = ImageFont.truetype(f'{FONT_PATH}/whitneybook.otf', 18)
 
-        with Image.open('./boribay/data/layouts/clyde.png') as img:
+        with Image.open(f'{BASE_PATH}/clyde.png') as img:
             draw = ImageDraw.Draw(img)
             draw.text((72, 33), txt, (255, 255, 255), font=font)
             buffer = BytesIO()
@@ -188,7 +166,7 @@ class Manip:
     @staticmethod
     @executor_function
     def typeracer(txt: str):
-        font = ImageFont.truetype('./boribay/data/fonts/monoid.ttf', size=30)
+        font = ImageFont.truetype(f'{FONT_PATH}/monoid.ttf', size=30)
         w, h = font.getsize_multiline(txt)
 
         with Image.new('RGB', (w + 10, h + 10)) as base:
@@ -202,27 +180,12 @@ class Manip:
 
     @staticmethod
     @executor_function
-    def theory(txt: str):
-        wrapped = textwrap.wrap(txt, 24)
-        font = ImageFont.truetype('./boribay/data/fonts/arial_bold.ttf', 30)
-
-        with Image.open('./boribay/data/layouts/lisa.jpg') as img:
-            draw = ImageDraw.Draw(img)
-            draw.text((161, 72), '\n'.join(wrapped), (0, 0, 0), font=font)
-            buffer = BytesIO()
-            img.save(buffer, 'png')
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
     def drake(no: str, yes: str):
         no_wrapped = textwrap.wrap(text=no, width=13)
         yes_wrapped = textwrap.wrap(text=yes, width=13)
-        font = ImageFont.truetype('./boribay/data/fonts/arial_bold.ttf', size=28)
+        font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=28)
 
-        with Image.open('./boribay/data/layouts/drake.jpg') as img:
+        with Image.open(f'{BASE_PATH}/drake.jpg') as img:
             draw = ImageDraw.Draw(img)
             draw.text((270, 10), '\n'.join(no_wrapped), (0, 0, 0), font=font)
             draw.text((270, 267), '\n'.join(yes_wrapped), (0, 0, 0), font=font)
@@ -235,7 +198,7 @@ class Manip:
     @staticmethod
     @executor_function
     def jail(image: BytesIO):
-        layout = WI(filename='./boribay/data/layouts/jailbars.png')
+        layout = WI(filename=f'{BASE_PATH}/jailbars.png')
 
         with WI(file=image) as img:
             w, h = img.size
@@ -250,7 +213,7 @@ class Manip:
     @staticmethod
     @executor_function
     def press_f(image: BytesIO):
-        layout = WI(filename='./boribay/data/layouts/f.png')
+        layout = WI(filename=f'{BASE_PATH}/f.png')
 
         with WI(file=image) as img:
             img.resize(52, 87)
@@ -265,7 +228,7 @@ class Manip:
     @staticmethod
     @executor_function
     def rainbow(image: BytesIO):
-        layout = WI(filename='./boribay/data/layouts/rainbow.png')
+        layout = WI(filename=f'{BASE_PATH}/rainbow.png')
 
         with WI(file=image) as img:
             w, h = img.size
@@ -280,7 +243,7 @@ class Manip:
     @staticmethod
     @executor_function
     def communist(image: BytesIO):
-        layout = WI(filename='./boribay/data/layouts/communist-flag.jpg')
+        layout = WI(filename=f'{BASE_PATH}/communist-flag.jpg')
 
         with WI(file=image) as img:
             w, h = img.size

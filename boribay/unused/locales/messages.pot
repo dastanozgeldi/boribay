@@ -1,0 +1,36 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-04-16 15:44+0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../cogs/fun.py:86
+msgid "Coin was flipped **to the side**!"
+msgstr ""
+
+#: ../cogs/fun.py:88
+msgid "Coin flipped to the `{}`, no reward."
+msgstr ""
+
+#: ../cogs/fun.py:102
+msgid "Timeout limit has been reached. Specify between 10 and 120."
+msgstr ""
+
+#: ../cogs/fun.py:195
+msgid ""
+"{}'s pp size is:\n"
+"3{}D"
+msgstr ""

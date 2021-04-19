@@ -1,8 +1,7 @@
-import asyncio
 from contextlib import suppress
 
 from discord import HTTPException
-from discord.ext import commands, menus
+from discord.ext import menus
 
 
 class MyPages(menus.MenuPages):
@@ -71,60 +70,3 @@ class EmbedPageSource(menus.ListPageSource):
         maximum = self.get_max_pages()
         embed.set_author(name=f'Page {menu.current_page + 1} / {maximum}')
         return embed
-
-
-class Trivia:
-    def __init__(self, entries, title, timeout=30.0):
-        self.entries = entries
-        self.title = title
-        self.timeout = timeout
-
-    async def pagination(self, ctx, loc=None, user=None):
-        e = ctx.bot.embed.default(ctx, title=self.title, description='')
-
-        self.emojis = []
-        for i, c in enumerate(self.entries):
-            if i < 9:
-                self.emojis.append(f'{i + 1}\u20E3')
-
-            else:
-                self.emojis.append('\U0001F51F')
-
-            e.description = f'{e.description}{self.emojis[i]} {c}\n'
-
-        self.controller = e
-        return await self.reactions(ctx, user, loc)
-
-    async def reactions(self, ctx, user, loc):
-        dest = loc or ctx
-        mes = await dest.send(embed=self.controller)
-
-        for emoji in self.emojis:
-            await mes.add_reaction(emoji)
-
-        user = loc if loc else user
-
-        def check(r, u):
-            if str(r) not in self.emojis or u.id == ctx.bot.user.id or r.message.id != mes.id:
-                return False
-
-            if not user:
-                if u.id != ctx.author.id:
-                    return False
-
-            else:
-                if u.id != user.id:
-                    return False
-
-            return True
-
-        try:
-            r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=self.timeout)
-
-        except asyncio.TimeoutError:
-            await self.stop(mes)
-            raise commands.BadArgument('No answer was given.')
-
-    async def stop(self, msg):
-        with suppress(HTTPException):
-            await msg.delete()

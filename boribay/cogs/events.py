@@ -6,11 +6,11 @@ from discord import AsyncWebhookAdapter, AuditLogAction, File, Webhook, utils
 from discord.ext import tasks
 
 
-class Events(Cog, command_attrs={'hidden': True}):
+class Events(Cog):
     """The Global events cog that handles every specified event below."""
+
     def __init__(self, bot: Boribay):
         self.bot = bot
-        # self.update_stats.start()
         self.reactions = {
             'ping': 'Pingable',
             'blobaww': 'Tester'
@@ -19,6 +19,10 @@ class Events(Cog, command_attrs={'hidden': True}):
             self.bot.config.links.log_url,
             adapter=AsyncWebhookAdapter(self.bot.session)
         )
+
+        if not self.bot.config.main.beta:
+            self.update_stats.start()
+            print('Updating TopGG data.')
 
     @tasks.loop(minutes=30.0)
     async def update_stats(self):
@@ -35,7 +39,7 @@ class Events(Cog, command_attrs={'hidden': True}):
 
     @Cog.listener()
     async def on_ipc_ready(self):
-        print('IPC is ready.')
+        self.bot.log.info('IPC is ready.')
 
     @Cog.listener()
     async def on_ipc_error(self, endpoint, error):

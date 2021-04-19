@@ -22,5 +22,5 @@ class IpcRoutes(Cog):
         return {str(x): x.help.split('\n')[0] for x in self.bot.commands}
 
 
-def setup(bot):
+def setup(bot: Boribay):
     bot.add_cog(IpcRoutes(bot))

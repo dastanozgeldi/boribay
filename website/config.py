@@ -1,15 +1,16 @@
 from toml import load
 from types import SimpleNamespace
 
-__all__ = ('Config')
+__all__ = ('config',)
 
 t = load('website/config.toml')
 config = SimpleNamespace(**t)
 
 
-class Config:
+'''class Config:
     SECRET_KEY = config.secret_key
     # DISCORD_CLIENT_ID = config.client_id
     # DISCORD_CLIENT_SECRET = config.client_secret
-    # DISCORD_REDIRECT_URI = 
+    # DISCORD_REDIRECT_URI =
     # TODO add PostgreSQL database credentials.
+'''

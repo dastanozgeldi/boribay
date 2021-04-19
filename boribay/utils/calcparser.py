@@ -1,13 +1,10 @@
-# The parsing stuff we use in the .calc command.
-
 import decimal
 import math
 from functools import lru_cache
 
+from boribay.utils.exceptions import (CalcError, KeywordAlreadyTaken, Overflow,
+                                      UndefinedVariable)
 from sly import Lexer, Parser
-
-from .exceptions import (CalcError, KeywordAlreadyTaken, Overflow,
-                         UndefinedVariable)
 
 
 class CalcLexer(Lexer):

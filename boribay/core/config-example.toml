@@ -14,8 +14,8 @@ exts = [  # I had to hardcode extensions, sorry for that...
     'boribay.cogs.moderation',
     'boribay.cogs.misc',
     'boribay.cogs.help',
-    'boribay.cogs.users',
-    'boribay.cogs.config'
+    'boribay.cogs.economy',
+    'boribay.cogs.settings'
 ]
 beta = false
 news_channel = 'Replace with a channel ID where you would type announcements about the bot updates.'
@@ -31,7 +31,7 @@ password = 'youshallnotpass!!'
 host = 'localhost'
 database = 'Boribay'  # More likely to create a database with that name.
 
-[ipc]  # IPC server credentials.
+[IPC]  # IPC server credentials.
 host = 'localhost'
 port = 8765
 secret_key = 'Put your secret key here.'
@@ -48,7 +48,6 @@ topgg_url = 'https://top.gg/bot/735397931355471893#/'
 anime = 'https://kitsu.io/api/edge'
 ud = 'http://api.urbandictionary.com/v0/define'
 qr = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='
-trivia = 'https://opentdb.com/api.php?amount=1'
 screenshot = 'https://image.thum.io/get/width/1920/crop/675/maxAge/1/noanimate/'
 quote = 'https://api.quotable.io/random'
 caption = 'https://captionbot.azurewebsites.net/api/messages'

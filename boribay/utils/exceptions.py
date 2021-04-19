@@ -1,11 +1,6 @@
 from discord.ext import commands
 
 
-class NoReactionsPassed(commands.CommandInvokeError):
-    """Specific exception for the trivia command."""
-    pass
-
-
 class CalcError(Exception):
     """Raised when parsing the task was unsuccessful."""
 

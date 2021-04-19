@@ -1,6 +1,7 @@
-from contextlib import ContextDecorator
+import asyncio
+from contextlib import ContextDecorator, suppress
 from time import perf_counter
-
+import discord
 from discord.ext.commands import Context as C
 
 
@@ -14,7 +15,22 @@ class Context(C):
     def db(self):
         return self.bot.pool
 
-    async def confirm(self, message):
+    # idea https://github.com/jay3332/ShrimpMaster/blob/master/core/bot.py#L320-L331
+    async def getch(self, method: str, object_id: int, obj: str = 'bot'):
+        if not object_id:
+            return None
+
+        obj = getattr(self, obj)
+
+        try:
+            _result = getattr(obj, 'get_' + method)(object_id) or await getattr(obj, 'fetch_' + method)(object_id)
+
+        except (discord.Forbidden, discord.HTTPException, discord.NotFound):
+            return None
+
+        return _result
+
+    async def confirm(self, message: discord.Message, timeout: float):
         msg = await self.send(message)
         emojis = {'✅': True, '❌': False}
 
@@ -24,10 +40,12 @@ class Context(C):
         payload = await self.bot.wait_for(
             'raw_reaction_add',
             check=lambda p: str(p.emoji) in emojis.keys() and p.user_id == self.author.id and p.message_id == msg.id,
+            timeout=timeout
         )
 
-        if emojis[str(payload.emoji)] is True:
-            return True
+        with suppress(asyncio.TimeoutError):
+            if emojis[str(payload.emoji)] is True:
+                return True
 
 
 class Timer(ContextDecorator):

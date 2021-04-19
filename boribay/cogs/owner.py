@@ -148,7 +148,8 @@ class Owner(Cog):
         """Does some nice SQL queries."""
         query = query.content
 
-        if query.lower().startswith('select'):
+        ql = query.lower()
+        if ql.startswith('select') or ql.startswith('with'):
             strategy = ctx.bot.pool.fetch
 
         else:

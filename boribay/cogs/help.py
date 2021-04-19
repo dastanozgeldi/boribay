@@ -1,14 +1,19 @@
 from difflib import get_close_matches
-from discord.ext import commands, menus
+
+import discord
+from boribay.core import Boribay, Context
 from boribay.utils import Cog, MyPages
+from discord.ext import commands, menus
 
 
 class HelpPages(menus.Menu):
+    """The main help menu of the bot."""
+
     def __init__(self, embed, **kwargs):
         super().__init__(timeout=60.0, clear_reactions_after=True, **kwargs)
         self.embed = embed
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, ctx: Context, channel: discord.TextChannel):
         return await channel.send(embed=self.embed)
 
     @menus.button('<:left:814725888653918229>')
@@ -68,7 +73,7 @@ class HelpPages(menus.Menu):
 class GroupHelp(menus.ListPageSource):
     """Sends help for group-commands."""
 
-    def __init__(self, ctx, group, cmds, prefix):
+    def __init__(self, ctx: Context, group: commands.Group, cmds, prefix: str):
         super().__init__(entries=cmds, per_page=3)
         self.ctx = ctx
         self.group = group
@@ -79,18 +84,18 @@ class GroupHelp(menus.ListPageSource):
         g = self.group
         doc = g.__doc__ if isinstance(g, Cog) else g.help
 
+        group_help = doc.split('\n')[0] or 'Help not found.'
+
         embed = self.ctx.bot.embed.default(
             self.ctx,
-            title=f'Help for category: {str(g)}',
-            description=f'{doc}\n{self.description}'
+            title=f'Help for category: {g}',
+            description=f'{group_help}\n{self.description}'
         )
 
         for cmd in cmds:
-            embed.add_field(
-                name=f'{self.prefix}{cmd} {cmd.signature}',
-                value=cmd.help.format(p=self.ctx.prefix),
-                inline=False
-            )
+            cmd_help = cmd.help.format(p=self.prefix) or 'Help not found.'
+            embed.add_field(name=f'{self.prefix}{cmd} {cmd.signature}',
+                            value=cmd_help, inline=False)
 
         if (maximum := self.get_max_pages()) > 1:
             embed.set_author(name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
@@ -104,7 +109,6 @@ class MyHelpCommand(commands.HelpCommand):
         super().__init__(command_attrs={
             'hidden': True,
             'aliases': ['h'],
-            'cooldown': commands.Cooldown(1, 5.0, commands.BucketType.user),
             'help': 'Shows help about modules, command groups or commands.'
         })
 
@@ -117,15 +121,15 @@ class MyHelpCommand(commands.HelpCommand):
         cats = []
 
         for cog, cmds in mapping.items():
-            if await self.filter_commands(cmds, sort=True):
-                if cog:
+            if cog:
+                if await self.filter_commands(cmds, sort=True):
                     cats.append(str(cog))
 
         embed = ctx.bot.embed.default(
             ctx, description=f'[Invite]({links.invite_url}) | [Support]({links.support_url}) | [Source]({links.github_url}) | [Vote]({links.topgg_url})'
         ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
 
-        embed.add_field(name='Modules:', value='\n'.join(m for m in cats))
+        embed.add_field(name='Modules:', value='\n'.join(cats))
 
         news = open('./boribay/core/news.md', 'r').readlines()
         embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
@@ -133,25 +137,23 @@ class MyHelpCommand(commands.HelpCommand):
 
         await HelpPages(embed).start(ctx)
 
-    async def send_cog_help(self, cog):
+    async def send_cog_help(self, cog: Cog):
         ctx = self.context
         entries = await self.filter_commands(cog.get_commands(), sort=True)
 
-        await MyPages(
-            GroupHelp(ctx, cog, entries, self.clean_prefix),
-            timeout=30.0,
-            clear_reactions_after=True
-        ).start(ctx)
+        await MyPages(GroupHelp(ctx, cog, entries, self.clean_prefix),
+                      timeout=30.0, clear_reactions_after=True).start(ctx)
 
-    def get_flags(self, command):
+    def get_flags(self, command: commands.Command):
         return [f'**--{a.dest}** {a.help}' for a in command.callback._def_parser._actions if lambda x: '_OPTIONAL' not in a.dest]
 
-    async def send_command_help(self, command):
+    async def send_command_help(self, command: commands.Command):
         ctx = self.context
+        description = command.help or 'Help not found.'
 
         embed = ctx.bot.embed.default(
             ctx, title=self.get_command_signature(command),
-            description=command.help.format(p=self.clean_prefix)
+            description=description.format(p=self.clean_prefix)
         ).set_footer(text=self.get_ending_note())
 
         if category := str(command.cog):
@@ -165,13 +167,15 @@ class MyHelpCommand(commands.HelpCommand):
 
         await self.get_destination().send(embed=embed)
 
-    async def send_group_help(self, group):
+    async def send_group_help(self, group: commands.Group):
         if len(subcommands := group.commands) == 0 or len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
             return await self.send_command_help(group)
 
-        await MyPages(GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0).start(self.context)
+        await MyPages(
+            GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0
+        ).start(self.context)
 
-    async def command_not_found(self, string):
+    async def command_not_found(self, string: str):
         message = f'Could not find the command `{string}`. '
         commands_list = [str(cmd) for cmd in self.context.bot.walk_commands()]
 
@@ -180,7 +184,7 @@ class MyHelpCommand(commands.HelpCommand):
 
         return message
 
-    def get_command_signature(self, command):
+    def get_command_signature(self, command: commands.Command):
         return f'{self.clean_prefix}{command} {command.signature}'
 
 
@@ -189,7 +193,7 @@ class Help(Cog):
     icon = '🆘'
     name = 'Help'
 
-    def __init__(self, bot):
+    def __init__(self, bot: Boribay):
         self.bot = bot
         self._original_help_command = bot.help_command
         bot.help_command = MyHelpCommand()
@@ -199,5 +203,5 @@ class Help(Cog):
         self.bot.help_command = self._original_help_command
 
 
-def setup(bot):
+def setup(bot: Boribay):
     bot.add_cog(Help(bot))

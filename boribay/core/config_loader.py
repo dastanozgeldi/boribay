@@ -28,14 +28,13 @@ class LinksPart:
 
 
 class ApiPart:
-    __slots__ = {'anime', 'ud', 'qr', 'trivia', 'screenshot', 'quote',
-                 'caption', 'weather', 'covid', 'google_key', 'dagpi', 'alex'}
+    __slots__ = {'anime', 'ud', 'qr', 'screenshot', 'quote', 'caption',
+                 'weather', 'covid', 'google_key', 'dagpi', 'alex'}
 
     def __init__(self, data: dict):
         self.anime = data.get('anime')
         self.ud = data.get('ud')
         self.qr = data.get('qr')
-        self.trivia = data.get('trivia')
         self.screenshot = data.get('screenshot')
         self.quote = data.get('quote')
         self.caption = data.get('caption')

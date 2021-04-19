@@ -8,4 +8,8 @@ class Cog(C):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return '{0.icon} {0.name}'.format(self)  # each cog has icon and name instances
+        try:
+            return '{0.icon} {0.name}'.format(self)
+
+        except AttributeError:
+            return self.qualified_name

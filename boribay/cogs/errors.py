@@ -1,15 +1,19 @@
 from contextlib import suppress
 
 import prettify_exceptions
-from boribay.core import Boribay
+from boribay.core import Boribay, Context
 from boribay.utils import Cog, exceptions
 from discord import Forbidden, NotFound
 from discord.ext import commands, flags
 
 
-class ErrorHandler(Cog, command_attrs={'hidden': True}):
+class ErrorHandler(Cog):
+    """The error-handling extension."""
 
-    async def send(self, ctx, exc: str = None, *args, **kwargs):
+    def __init__(self, bot: Boribay):
+        self.bot = bot
+
+    async def send(self, ctx: Context, exc: str = None, *args, **kwargs):
         try:
             return await ctx.reply(exc, *args, **kwargs)
 
@@ -22,14 +26,14 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
 
         return None
 
-    async def send_error(self, ctx, exc):
+    async def send_error(self, ctx: Context, exc: str):
         me: Boribay = ctx.bot
         channel = me.get_channel(me.config.main.errors_channel)
         embed = me.embed.error(description=f'```py\nError:\n{exc}\n```')
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
 
         if ctx.guild:
-            command = 'None' if isinstance(ctx.command, type(None)) else str(ctx.command)
+            command = 'None' if not ctx.command else str(ctx.command)
             embed.set_thumbnail(url=ctx.guild.icon_url)
             embed.add_field(
                 name='Information',
@@ -42,7 +46,7 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
         await channel.send(embed=embed)
 
     @Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: Context, error):
         error = getattr(error, 'original', error)
         embed = ctx.bot.embed.error(title='⚠ Error!')
 
@@ -53,14 +57,12 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
         invokes = (
             commands.MissingRole,
             commands.MissingAnyRole,
+            commands.DisabledCommand,
             commands.CommandOnCooldown,
-            commands.MissingPermissions,
-            commands.DisabledCommand
+            commands.MissingPermissions
         )
 
         defaults = (
-            KeyError,
-            AssertionError,
             exceptions.TooManyOptions,
             exceptions.NotEnoughOptions,
             commands.NotOwner,
@@ -68,10 +70,11 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             commands.RoleNotFound,
             commands.CheckFailure,
             commands.ExtensionError,
+            commands.CommandOnCooldown,
             commands.NSFWChannelRequired,
             commands.MaxConcurrencyReached,
             flags._parser.ArgumentParsingError,
-            commands.PartialEmojiConversionFailure
+            commands.PartialEmojiConversionFailure,
         )
 
         if isinstance(error, invokes) and ctx.original_author_id in ctx.bot.owner_ids:
@@ -83,10 +86,6 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
 
         elif isinstance(error, commands.MissingRequiredArgument):
             return await ctx.send_help(ctx.command)
-
-        elif isinstance(error, commands.CommandOnCooldown):
-            embed.description = f'This command is on cooldown. Retry after **{int(error.retry_after)} seconds**'
-            return await self.send(ctx, embed=embed)
 
         try:
             prettify_exceptions.DefaultFormatter().theme['_ansi_enabled'] = False
@@ -102,8 +101,8 @@ class ErrorHandler(Cog, command_attrs={'hidden': True}):
             await self.send(ctx, embed=ctx.bot.embed.error(description=f'Details: ```py\n{exc}\n```'))
             await self.send_error(ctx, exc)
 
-        raise error
+        self.bot.log.error(error)
 
 
-def setup(bot):
-    bot.add_cog(ErrorHandler())
+def setup(bot: Boribay):
+    bot.add_cog(ErrorHandler(bot))

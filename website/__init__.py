@@ -1,13 +1,13 @@
+from discord.ext import ipc
 from quart import Quart
-from quart_discord import DiscordOAuth2Session
 
-from .config import Config
+from .config import config
 
 
-def create_app(config_class=Config):
+def create_app(config_class=None):
     app = Quart(__name__)
-    app.config.from_object(Config)
-    app.discord = DiscordOAuth2Session(app)
+    app.config.from_object(config.qd)
+    app.web_ipc = ipc.Client(**config.IPC)
 
     from website.errors.handlers import errors
     from website.main.routes import main
