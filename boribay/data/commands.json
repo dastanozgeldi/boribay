@@ -1,0 +1,576 @@
+[
+    {
+        "category": "Economics",
+        "commands": [
+            {
+                "name": "balance",
+                "aliases": [],
+                "help": "The moderator-only user balance management command."
+            },
+            {
+                "name": "profile",
+                "aliases": [
+                    "card"
+                ],
+                "help": "Check the profile card of a user in Economics system."
+            },
+            {
+                "name": "deposit",
+                "aliases": [
+                    "dep"
+                ],
+                "help": "Deposit given amount of money into your bank."
+            },
+            {
+                "name": "withdraw",
+                "aliases": [
+                    "wd"
+                ],
+                "help": "Withdraw given amount of money from your bank."
+            },
+            {
+                "name": "transfer",
+                "aliases": [],
+                "help": "Transfer someone Batyrs whoever they would be."
+            },
+            {
+                "name": "bio",
+                "aliases": [],
+                "help": "Set your bio that will be displayed on your profile!"
+            },
+            {
+                "name": "attack",
+                "aliases": [
+                    "rob"
+                ],
+                "help": "Rob someone whoever they would be."
+            },
+            {
+                "name": "slot",
+                "aliases": [
+                    "slots"
+                ],
+                "help": "Play the game on a slot machine!"
+            },
+            {
+                "name": "work",
+                "aliases": [],
+                "help": "Working is the most legal way to get batyrs."
+            },
+            {
+                "name": "headsandtails",
+                "aliases": [
+                    "hnt"
+                ],
+                "help": "Try your luck playing heads and tails!"
+            }
+        ]
+    },
+    {
+        "category": "Fun",
+        "commands": [
+            {
+                "name": "pornhub",
+                "aliases": [
+                    "ph"
+                ],
+                "help": "PornHub logo maker."
+            },
+            {
+                "name": "didyoumean",
+                "aliases": [
+                    "dym"
+                ],
+                "help": "Google search \"Did you mean\" meme."
+            },
+            {
+                "name": "achieve",
+                "aliases": [],
+                "help": "Minecraft \"Achievement Get!\" meme maker."
+            },
+            {
+                "name": "challenge",
+                "aliases": [],
+                "help": "Minecraft \"Challenge Complete!\" meme maker."
+            },
+            {
+                "name": "triggered",
+                "aliases": [],
+                "help": "Make the \"TrIgGeReD\" meme."
+            },
+            {
+                "name": "ascii",
+                "aliases": [],
+                "help": "Get the ASCII version of an image."
+            },
+            {
+                "name": "coinflip",
+                "aliases": [],
+                "help": "A very simple coinflip game! Chances are:"
+            },
+            {
+                "name": "typeracer",
+                "aliases": [
+                    "tr",
+                    "typerace"
+                ],
+                "help": "Typeracer game. Compete with others and find out the best typist."
+            },
+            {
+                "name": "rockpaperscissors",
+                "aliases": [
+                    "rps"
+                ],
+                "help": "The Rock | Paper | Scissors game."
+            },
+            {
+                "name": "eject",
+                "aliases": [],
+                "help": "Among Us \"ejected\" meme maker."
+            },
+            {
+                "name": "peepee",
+                "aliases": [
+                    "pp",
+                    "penis"
+                ],
+                "help": "Get the random size of your PP."
+            }
+        ]
+    },
+    {
+        "category": "Images",
+        "commands": [
+            {
+                "name": "invert",
+                "aliases": [],
+                "help": "Invert an image."
+            },
+            {
+                "name": "grayscale",
+                "aliases": [],
+                "help": "Add the grayscale filter to an image."
+            },
+            {
+                "name": "monochrome",
+                "aliases": [],
+                "help": "Add the monochrome filter to an image."
+            },
+            {
+                "name": "solarize",
+                "aliases": [],
+                "help": "Solarize an image."
+            },
+            {
+                "name": "brighten",
+                "aliases": [],
+                "help": "Brighten an image."
+            },
+            {
+                "name": "avatar",
+                "aliases": [],
+                "help": "Returns either author or member avatar if specified."
+            },
+            {
+                "name": "pixelate",
+                "aliases": [],
+                "help": "Pixelate an image."
+            },
+            {
+                "name": "wanted",
+                "aliases": [],
+                "help": "Make someone wanted."
+            },
+            {
+                "name": "spawn",
+                "aliases": [],
+                "help": "Welcoming image maker command."
+            },
+            {
+                "name": "jail",
+                "aliases": [],
+                "help": "Put someone into jail."
+            },
+            {
+                "name": "f",
+                "aliases": [],
+                "help": "Pay respects to someone."
+            },
+            {
+                "name": "fiveguysonegirl",
+                "aliases": [
+                    "5g1g",
+                    "fivegoneg"
+                ],
+                "help": "Legendary \"5 guys 1 girl\" meme maker."
+            },
+            {
+                "name": "fight",
+                "aliases": [
+                    "ko"
+                ],
+                "help": "Fight someone!"
+            },
+            {
+                "name": "swirl",
+                "aliases": [],
+                "help": "Swirl an image."
+            },
+            {
+                "name": "communist",
+                "aliases": [],
+                "help": "The communist meme maker."
+            },
+            {
+                "name": "rainbow",
+                "aliases": [
+                    "gay",
+                    "gayize"
+                ],
+                "help": "Put the rainbow filter on a user."
+            },
+            {
+                "name": "whyareyougay",
+                "aliases": [
+                    "wayg"
+                ],
+                "help": "The legendary \"WhY aRe YoU gAy?\" meme maker."
+            },
+            {
+                "name": "drake",
+                "aliases": [],
+                "help": "The legendary \"Drake yes/no\" meme maker."
+            },
+            {
+                "name": "clyde",
+                "aliases": [],
+                "help": "Send a message from Clyde's POV."
+            },
+            {
+                "name": "caption",
+                "aliases": [],
+                "help": "Get caption for an image."
+            }
+        ]
+    },
+    {
+        "category": "Miscellaneous",
+        "commands": [
+            {
+                "name": "settings",
+                "aliases": [
+                    "gs"
+                ],
+                "help": "The settings command. Shows the settings of the current server."
+            },
+            {
+                "name": "leaderboard",
+                "aliases": [
+                    "lb"
+                ],
+                "help": "Leaderboard of top voters for Boribay. Defaults to 5 users,"
+            },
+            {
+                "name": "codestats",
+                "aliases": [
+                    "cs"
+                ],
+                "help": "See the code statictics of the bot."
+            },
+            {
+                "name": "extensions",
+                "aliases": [
+                    "modules",
+                    "exts"
+                ],
+                "help": "List of modules that work at a current time."
+            },
+            {
+                "name": "uptime",
+                "aliases": [],
+                "help": "Uptime command."
+            },
+            {
+                "name": "system",
+                "aliases": [
+                    "sys"
+                ],
+                "help": "Information of the system that is running the bot."
+            },
+            {
+                "name": "info",
+                "aliases": [
+                    "about",
+                    "bi",
+                    "botinfo"
+                ],
+                "help": "See some kind of information about me (such as command usage, links etc.)"
+            },
+            {
+                "name": "userinfo",
+                "aliases": [
+                    "memberinfo",
+                    "ui",
+                    "mi"
+                ],
+                "help": "See some general information about mentioned user."
+            },
+            {
+                "name": "serverinfo",
+                "aliases": [
+                    "guildinfo",
+                    "si",
+                    "gi"
+                ],
+                "help": "See some general information about current guild."
+            },
+            {
+                "name": "say",
+                "aliases": [],
+                "help": "Make the bot say what you want."
+            },
+            {
+                "name": "links",
+                "aliases": [],
+                "help": "Some useful invites (support server, bot invite and voting URL)."
+            },
+            {
+                "name": "ping",
+                "aliases": [],
+                "help": "Check latency of the bot and its system."
+            },
+            {
+                "name": "messagereactionstats",
+                "aliases": [
+                    "mrs"
+                ],
+                "help": "See what reactions are there in a message, shortly,"
+            }
+        ]
+    },
+    {
+        "category": "Moderation",
+        "commands": [
+            "Help not found.",
+            {
+                "name": "category",
+                "aliases": [],
+                "help": "The category-managing commands parent."
+            },
+            {
+                "name": "channel",
+                "aliases": [],
+                "help": "The channel-managing commands parent."
+            },
+            {
+                "name": "role",
+                "aliases": [],
+                "help": "The role-managing commands parent."
+            }
+        ]
+    },
+    {
+        "category": "Settings",
+        "commands": [
+            {
+                "name": "welcomechannel",
+                "aliases": [
+                    "wc"
+                ],
+                "help": "The welcome channel setting parent command."
+            },
+            {
+                "name": "prefix",
+                "aliases": [],
+                "help": "The prefix setting parent command. Simply shows the current prefix"
+            },
+            {
+                "name": "embedcolor",
+                "aliases": [
+                    "embedcolour",
+                    "ec"
+                ],
+                "help": "The color setting parent command."
+            },
+            {
+                "name": "autorole",
+                "aliases": [],
+                "help": "The autorole setting parent command."
+            },
+            {
+                "name": "automeme",
+                "aliases": [],
+                "help": "The automeme setting parent command."
+            },
+            {
+                "name": "logging",
+                "aliases": [],
+                "help": "The log-channel setting parent command."
+            }
+        ]
+    },
+    {
+        "category": "Useful",
+        "commands": [
+            {
+                "name": "zipemojis",
+                "aliases": [],
+                "help": "Zip all emojis of the current guild."
+            },
+            {
+                "name": "password",
+                "aliases": [
+                    "pw"
+                ],
+                "help": "A password creator command. Get a safe password using this command."
+            },
+            {
+                "name": "wikipedia",
+                "aliases": [],
+                "help": "Wikipedia search command. Get detailed info about the given topic."
+            },
+            {
+                "name": "anime",
+                "aliases": [],
+                "help": "Anime search command. Get the detailed information about an anime."
+            },
+            {
+                "name": "manga",
+                "aliases": [],
+                "help": "Manga search command. Get the detailed information about a manga."
+            },
+            {
+                "name": "todo",
+                "aliases": [
+                    "to-do"
+                ],
+                "help": "To-do commands parent. Sends help for its subcommands."
+            },
+            {
+                "name": "google",
+                "aliases": [],
+                "help": "The Google Search command. Google inside Discord."
+            },
+            {
+                "name": "poll",
+                "aliases": [],
+                "help": "Make a simple poll in your server using this command."
+            },
+            {
+                "name": "reddit",
+                "aliases": [],
+                "help": "Get fresh posts from your favorite subreddit."
+            },
+            {
+                "name": "urbandictionary",
+                "aliases": [
+                    "ud",
+                    "urban"
+                ],
+                "help": "Search for word definitions from urban dictionary."
+            },
+            {
+                "name": "calculator",
+                "aliases": [
+                    "calculate",
+                    "calc"
+                ],
+                "help": "A simple calculator command that supports useful features."
+            },
+            {
+                "name": "color",
+                "aliases": [
+                    "colour"
+                ],
+                "help": "Color visualizer command. Get HEX & RHB values of a color."
+            },
+            {
+                "name": "covid",
+                "aliases": [
+                    "ncov",
+                    "coronavirus"
+                ],
+                "help": "Get coronavirus statistics with this command."
+            },
+            {
+                "name": "weather",
+                "aliases": [
+                    "temp",
+                    "temperature"
+                ],
+                "help": "Simply gets the weather statistics for a city | region."
+            },
+            {
+                "name": "translate",
+                "aliases": [],
+                "help": "Translates a given text to the language you want."
+            },
+            {
+                "name": "qr",
+                "aliases": [],
+                "help": "Make QR-code from a given URL."
+            }
+        ]
+    }
+]
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ,
+                "aliases": [],
+                "help": "Make a simple poll in your server using this command."
+            },
+            {
+                "name": "reddit",
+                "aliases": [],
+                "help": "Get fresh posts from your favorite subreddit."
+            },
+            {
+                "name": "urbandictionary",
+                "aliases": [
+                    "ud",
+                    "urban"
+                ],
+                "help": "Search for word definitions from urban dictionary."
+            },
+            {
+                "name": "calculator",
+                "aliases": [
+                    "calculate",
+                    "calc"
+                ],
+                "help": "A simple calculator command that supports useful features."
+            },
+            {
+                "name": "color",
+                "aliases": [
+                    "colour"
+                ],
+                "help": "Color visualizer command. Get HEX & RHB values of a color."
+            },
+            {
+                "name": "covid",
+                "aliases": [
+                    "ncov",
+                    "coronavirus"
+                ],
+                "help": "Get coronavirus statistics with this command."
+            },
+            {
+                "name": "weather",
+                "aliases": [
+                    "temp",
+                    "temperature"
+                ],
+                "help": "Simply gets the weather statistics for a city | region."
+            },
+            {
+                "name": "translate",
+                "aliases": [],
+                "help": "Translates a given text to the language you want."
+            },
+            {
+                "name": "qr",
+                "aliases": [],
+                "help": "Make QR-code from a given URL."
+            }
+        ]
+    }
+]

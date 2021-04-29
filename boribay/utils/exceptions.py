@@ -43,3 +43,28 @@ class TooManyOptions(commands.CommandError):
 class NotEnoughOptions(commands.CommandError):
     """Raised when the options count is < 2."""
     pass
+
+
+class NotAnInteger(Exception):
+    def __init__(self, message: str = 'The number must be positive.'):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
+class NotEnough(Exception):
+    def __init__(self, message: str = 'You have not enough batyrs.'):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
+class PastMinimum(Exception):
+    def __init__(self, minimum: int, message: str = 'The minimum bet for this command: {} batyrs.'):
+        super().__init__(message)
+        self.message = message.format(minimum)
+
+    def __str__(self):
+        return self.message

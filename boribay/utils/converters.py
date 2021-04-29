@@ -8,6 +8,96 @@ import twemoji_parser
 from discord.ext import commands
 from PIL import ImageColor
 
+from .exceptions import NotAnInteger, PastMinimum, NotEnough
+
+
+class AuthorCheckConverter(commands.Converter):
+    async def convert(self, ctx, argument):
+        """The specific converter to check for strangers who
+        mention themselves everywhere. This isn't needed in economics."""
+        member = await commands.MemberConverter().convert(ctx, argument)
+
+        if ctx.author == member:
+            raise commands.BadArgument('❌ Mentioning yourself is not the way.')
+
+        return member
+
+
+def get_number(argument: str.lower, integer: bool = True):
+    if not (argument := argument.replace(',', '').replace('+', '').strip()):
+        raise ValueError()
+
+    if argument.endswith('k'):
+        argument = str(float(argument.rstrip('k')) * 1000)
+
+    elif argument.endswith('m'):
+        argument = str(float(argument.rstrip('m')) * 1000000)
+
+    elif argument.endswith('b'):
+        argument = str(float(argument.rstrip('b')) * 1000000000)
+
+    if re.match(r'\de\d+', argument):
+        number, expression = argument.split('e')
+        number, expression = float(number), round(float(expression))
+        argument = float(f'{number}e{expression}') if expression < 24 else 1e24
+
+    argument = float(argument)
+    return argument if not integer else round(argument)
+
+
+def get_amount(_all: float, minimum: int, maximum: int, argument):
+    argument = argument.lower().strip()
+
+    if argument in ('all'):
+        amount = round(_all)
+
+    elif argument in ('half'):
+        amount = round(_all / 2)
+
+    elif argument.endswith('%'):
+        percent = argument.rstrip('%')
+        try:
+            percent = float(percent) / 100
+
+        except (TypeError, ValueError):
+            raise NotAnInteger()
+
+        else:
+            amount = round(_all * percent)
+
+    else:
+        try:
+            amount = get_number(argument)
+
+        except ValueError:
+            raise NotAnInteger()
+
+    if amount > _all:
+        raise NotEnough
+
+    if amount <= 0:
+        raise NotAnInteger
+
+    if minimum <= amount <= maximum:
+        return amount
+
+    elif amount > maximum:
+        return maximum
+
+    raise PastMinimum(minimum)
+
+
+def CasinoConverter(minimum: int = 100, maximum: int = 100_000):
+
+    class _Wrapper(commands.Converter, int):
+        async def convert(self, ctx, argument):
+            _all = await ctx.db.fetchval('SELECT wallet FROM users WHERE user_id = $1', ctx.author.id)
+            amount = get_amount(_all, minimum, maximum, argument)
+
+            return amount
+
+    return _Wrapper
+
 
 class SettingsConverter(commands.Converter):
     async def convert(self, guild: discord.Guild, settings: dict):
@@ -20,7 +110,7 @@ class SettingsConverter(commands.Converter):
             elif k == 'embed_color':
                 data[k] = hex(v)
 
-            elif k in ('welcome_channel', 'automeme', 'audit_logger'):
+            elif k in ('welcome_channel', 'automeme', 'logging_channel'):
                 data[k] = guild.get_channel(v)
 
         return data
@@ -43,7 +133,8 @@ class ValueConverter(commands.Converter):
             return value
 
         except ValueError:
-            raise commands.BadArgument(f'Unable to convert {value} into {setting} value.')
+            raise commands.BadArgument(
+                f'Unable to convert {value} into {setting} value.')
 
 
 class TimeConverter(commands.Converter):
@@ -57,7 +148,8 @@ class TimeConverter(commands.Converter):
                 time += time_dict[k] * float(v)
 
             except KeyError:
-                raise commands.BadArgument(f'{k} is an invalid time-key! h/m/s/d are valid.')
+                raise commands.BadArgument(
+                    f'{k} is an invalid time-key! h/m/s/d are valid.')
 
             except ValueError:
                 raise commands.BadArgument(f'{v} is not a number!')
@@ -87,7 +179,8 @@ class ColorConverter(commands.Converter):
         if result:
             return result
 
-        raise commands.BadArgument(f'Could not find any color that matches this: `{arg}`.')
+        raise commands.BadArgument(
+            f'Could not find any color that matches this: `{arg}`.')
 
 
 class ImageURLConverter(commands.Converter):
@@ -95,7 +188,8 @@ class ImageURLConverter(commands.Converter):
         try:
             mconv = commands.MemberConverter()
             m = await mconv.convert(ctx, arg)
-            image = str(m.avatar_url_as(static_format='png', format='png', size=512))
+            image = str(m.avatar_url_as(
+                static_format='png', format='png', size=512))
             return image
 
         except (TypeError, commands.MemberNotFound):

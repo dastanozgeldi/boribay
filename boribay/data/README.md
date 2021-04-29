@@ -19,6 +19,6 @@
   </a>
 </h1>
 
-<h1 align="center">Here we store any kind of data: images, fonts, and textfiles. Don't forget to create logs/discord.log file here!</h1>
+<h1 align="center">Here we store any kind of data: images, fonts, and textfiles.</h1>
 
-<h3 align="center"><a href="https://discord.com/oauth2/authorize?client_id=735397931355471893&scope=bot&permissions=2146958847">Invite Boribay</a> | <a href="https://discord.gg/B4k8tmPDbz">Support Server</a></h3>
+<h3 align="center"><a href="https://discord.com/oauth2/authorize?client_id=735397931355471893&scope=bot&permissions=2146958847">Invite Boribay</a> | <a href="https://discord.gg/B4k8tmPDbz">Support Server</a> | <a href="https://boribay.netlify.app/">Website</a></h3>

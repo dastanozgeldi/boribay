@@ -15,10 +15,9 @@ class MyPages(menus.MenuPages):
     async def finalize(self, timed_out):
         with suppress(HTTPException):
             if timed_out:
-                await self.message.clear_reactions()
+                return await self.message.clear_reactions()
 
-            else:
-                await self.message.delete()
+            await self.message.delete()
 
 
 class TodoPageSource(menus.ListPageSource):
@@ -31,7 +30,7 @@ class TodoPageSource(menus.ListPageSource):
 
     async def format_page(self, menu, entries):
         offset = menu.current_page * self.per_page + 1
-        embed = self.ctx.bot.embed.default(self.ctx)
+        embed = self.ctx.embed()
 
         if len(entries) < 1:
             embed.description = 'Currently, you have no to-do\'s.\n'
@@ -45,18 +44,6 @@ class TodoPageSource(menus.ListPageSource):
             )
             embed.description = '\n'.join(f'[{i}]({v[1]}). {v[0]}' for i, v in enumerate(entries, start=offset))
 
-        return embed
-
-
-class SQLListPageSource(menus.ListPageSource):
-    def __init__(self, ctx, data, *, per_page=5):
-        super().__init__(data, per_page=per_page)
-        self.ctx = ctx
-
-    async def format_page(self, menu, page):
-        embed = self.ctx.bot.embed.default(
-            self.ctx, description='```py\n' + '\n'.join(page) + '\n```'
-        ).set_author(name=f'Page {menu.current_page + 1} / {self.get_max_pages()}')
         return embed
 
 
