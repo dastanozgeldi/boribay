@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import html
 import random
 from typing import Optional
 
@@ -8,7 +9,7 @@ from boribay.core import Boribay, Cog, Context
 from boribay.utils import AuthorCheckConverter, CasinoConverter, is_mod
 from discord.ext import commands
 
-from .games import Work
+from .games import Trivia, Work
 
 
 class Economics(Cog):
@@ -24,15 +25,52 @@ class Economics(Cog):
     async def cog_check(self, ctx: Context):
         return await commands.guild_only().predicate(ctx)
 
-    @staticmethod
-    async def _double(ctx: Context, choice: str, amount: int, reducer: discord.Member, adder: discord.Member):
-        reducer_query = f'UPDATE users SET {choice} = {choice} - $1 WHERE user_id = $2'
-        adder_query = f'UPDATE users SET {choice} = {choice} + $1 WHERE user_id = $2'
+    async def _get_question(self, difficulty: str):
+        url = f'https://opentdb.com/api.php?amount=1&difficulty={difficulty}'
+        r = await self.bot.session.get(url)
+        res = await r.json()
 
-        await ctx.db.execute(reducer_query, amount, reducer.id)
-        await ctx.db.execute(adder_query, amount, adder.id)
+        res = res['results'][0]
+        res['question'] = html.unescape(res['question'])
+        res['correct_answer'] = html.unescape(res['correct_answer'])
+        res['incorrect_answers'] = [html.unescape(x) for x in res['incorrect_answers']]
 
-        await ctx.user_cache.refresh()
+        return res
+
+    async def _get_answer(self, ctx: Context, question: list):
+        entries = [question['correct_answer']] + question['incorrect_answers']
+        entries = random.sample(entries, len(entries))
+        answer = await Trivia(ctx, entries, question['question']).paginate(ctx)
+        return answer == question['correct_answer']
+
+    @commands.command()
+    async def trivia(self, ctx: Context, difficulty: str.lower = 'medium'):
+        """Play the trivia game to make some money.
+
+        Example:
+            **{p}trivia** - starts the trivia game with medium difficulty.
+            **{p}trivia hard** - sets the hard difficulty to play.
+
+        Args:
+            difficulty (optional): The difficulty of a question. Defaults to 'medium'.
+
+        Raises:
+            commands.BadArgument: If the invalid difficulty was provided.
+            Available ones are: **easy | medium | hard**
+        """
+        if difficulty not in ('easy', 'medium', 'hard'):
+            raise commands.BadArgument('❌ Invalid difficulty provided.')
+
+        question = await self._get_question(difficulty)
+
+        def conclude(result: str = 'Correct'):
+            return f'**{result}!** The answer was: **{question["correct_answer"]}**'
+
+        if await self._get_answer(ctx, question):
+            await ctx.reply(conclude())
+            return await self.bot.db.add('wallet', ctx.author, 50)
+
+        return await ctx.reply(conclude('Wrong'))
 
     @commands.group(invoke_without_command=True)
     async def balance(self, ctx: Context):
@@ -113,7 +151,8 @@ class Economics(Cog):
         data = copy.copy(data)
 
         embed = ctx.embed(
-            title=f'{member}\'s profile card', description=data['bio'] or '\u200b'
+            title=f'{member}\'s profile card',
+            description=data.pop('bio') or 'No bio has been set.'
         ).set_thumbnail(url=member.avatar_url)
 
         embed.add_field(
@@ -208,7 +247,7 @@ class Economics(Cog):
             raise commands.BadArgument('❌ Too big/small amount was specified. '
                                        'It should be between 10 and 10 000 batyrs.')
 
-        await self._double(ctx, 'wallet', amount, ctx.author, member)
+        await self.bot.db.double('wallet', amount, ctx.author, member)
         await ctx.send(f'Transfered **{amount}** batyrs to **{member}**')
 
     @commands.group(invoke_without_command=True)
@@ -256,9 +295,7 @@ class Economics(Cog):
         This is useful when you want to remove the info about you
         without having to pay batyrs.
         """
-        query = 'UPDATE users SET bio = null WHERE user_id = $1;'
-        await ctx.db.execute(query, ctx.author.id)
-        await ctx.user_cache.refresh()
+        await self.bot.db.set(table, bio, ctx.author, 'null')
         await ctx.send('✅ Disabled your bio successfully.')
 
     @commands.command(aliases=['rob'])
@@ -285,15 +322,14 @@ class Economics(Cog):
             raise commands.BadArgument(f'{member} had nothing to steal (less than 100 batyrs)')
 
         choice = random.choices(population=['success', 'caught'], weights=[.5, .5], k=1)[0]
-
         if choice == 'caught':
             author_bank = ctx.user_cache[ctx.author.id]['bank']
             fine = author_bank * .1
-            await self._double(ctx, 'bank', fine, ctx.author, member)
+            await self.bot.db.double('bank', fine, ctx.author, member)
             return await ctx.reply(f'You were caught by police and **{fine}** from your bank will be transfered to **{member}** as a fine.')
 
         amount = random.randint(100, member_wallet)
-        await self._double(ctx, 'wallet', amount, member, ctx.author)
+        await self.bot.db.double('bank', fine, member, ctx.author)
         await ctx.send(f'✅ Stole **{amount}** batyrs from **{member}**')
 
     @commands.command(aliases=['slots'])

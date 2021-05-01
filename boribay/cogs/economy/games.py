@@ -3,6 +3,7 @@ import random
 
 import discord
 from boribay.core import Context
+from discord.ext import commands
 
 
 class Work:
@@ -45,3 +46,57 @@ class Work:
     async def reverse_number(self):
         number = str(random.getrandbits(random.randint(32, 64)))
         await self.template(f'Send the reversed version of this number: {number}', number[::-1])
+
+
+class Trivia:
+    def __init__(self, ctx: Context, entries: list, title: str = None):
+        self.ctx = ctx
+        self.entries = entries
+        self.title = title
+        self.embed = None
+        self.emojis = None
+
+    async def paginate(self, dest=None, user: discord.Member = None):
+        embed = self.ctx.embed(title=self.title, description='')
+        self.emojis = []
+
+        for index, chunk in enumerate(self.entries):
+            self.emojis.append(f'{index+1}\u20e3')
+            embed.description = f'{embed.description}{self.emojis[index]} {chunk}\n'
+
+        self.embed = embed
+        return await self._controller(user)
+
+    async def _controller(self, user: discord.Member):
+        base = await self.ctx.send(embed=self.embed)
+
+        for emoji in self.emojis:
+            await base.add_reaction(emoji)
+
+        def check(r, u):
+            if str(r) not in self.emojis or u.id == self.ctx.bot.user.id or r.message.id != base.id:
+                return False
+
+            if not user:
+                if u.id != self.ctx.author.id:
+                    return False
+
+            else:
+                if u.id != user.id:
+                    return False
+
+            return True
+
+        try:
+            r, u = await self.ctx.bot.wait_for(
+                'reaction_add', check=check, timeout=15.0
+            )
+
+        except asyncio.TimeoutError:
+            await self.ctx.try_delete(base)
+            raise commands.BadArgument('You didn\'t choose anything.')
+
+        control = self.entries[self.emojis.index(str(r))]
+
+        await self.ctx.try_delete(base)
+        return control
