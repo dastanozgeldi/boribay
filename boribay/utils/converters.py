@@ -10,6 +10,10 @@ from PIL import ImageColor
 
 from .exceptions import NotAnInteger, PastMinimum, NotEnough
 
+RGB_REGEX = r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?',
+EMOJI_REGEX = r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>',
+URL_REGEX = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+
 
 class AuthorCheckConverter(commands.Converter):
     async def convert(self, ctx, argument):
@@ -196,13 +200,13 @@ class ImageURLConverter(commands.Converter):
             try:
                 url = await twemoji_parser.emoji_to_url(arg, include_check=True)
 
-                if re.match(ctx.bot.regex['URL_REGEX'], url):
+                if re.match(URL_REGEX, url):
                     return url
 
-                if re.match(ctx.bot.regex['URL_REGEX'], arg):
+                if re.match(URL_REGEX, arg):
                     return arg
 
-                elif re.match(ctx.bot.regex['EMOJI_REGEX'], arg):
+                elif re.match(EMOJI_REGEX, arg):
                     econv = commands.PartialEmojiConverter()
                     e = await econv.convert(ctx, arg)
                     image = str(e.url)
@@ -228,17 +232,17 @@ class ImageConverter(commands.Converter):
                 url = await twemoji_parser.emoji_to_url(arg, include_check=True)
                 cs = ctx.bot.session
 
-                if re.match(ctx.bot.regex['URL_REGEX'], url):
+                if re.match(URL_REGEX, url):
                     r = await cs.get(url)
                     image = await r.read()
                     return image
 
-                if re.match(ctx.bot.regex['URL_REGEX'], arg):
+                if re.match(URL_REGEX, arg):
                     r = await cs.get(arg)
                     image = await r.read()
                     return image
 
-                elif re.match(ctx.bot.regex['EMOJI_REGEX'], arg):
+                elif re.match(EMOJI_REGEX, arg):
                     econv = commands.PartialEmojiConverter()
                     e = await econv.convert(ctx, arg)
                     asset = e.url

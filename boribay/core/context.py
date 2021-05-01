@@ -12,7 +12,6 @@ class Context(commands.Context):
         self.timer = Timer(self)
         self.loading = Loading(self)
         self.config = self.bot.config
-        # Typehinting to get code completion features.
 
     @property
     def db(self):

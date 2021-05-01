@@ -374,7 +374,7 @@ class Owner(Cog):
         modes = {
             'guilds': ctx.bot.guild_cache,
             'users': ctx.bot.user_cache,
-            'stats': ctx.bot.cache,  # Caching category that stores only 1 row.
+            'bot': ctx.bot.bot_cache,  # Caching category that stores only 1 row.
         }
 
         if flags.pop('all'):

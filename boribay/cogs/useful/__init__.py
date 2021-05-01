@@ -9,7 +9,7 @@ from typing import Optional
 
 import aiowiki
 import discord
-from async_cse import NoResults
+from async_cse import NoResults, Search
 from boribay.core import Boribay, Cog, Context
 from boribay.utils import (CalcLexer, CalcParser, ColorConverter,
                            EmbedPageSource, Manip, MyPages, TodoPageSource,
@@ -29,6 +29,7 @@ class Useful(Cog):
 
     def __init__(self, bot: Boribay):
         self.bot = bot
+        self.cse = Search(self.bot.config.api.google_key)
 
     async def _youtube_search(self, query: str) -> list:
         r = await self.bot.session.get(
@@ -69,7 +70,7 @@ class Useful(Cog):
         await ctx.reply('Sorry for being slow as hell but anyways:',
                         file=discord.File(buffer, filename='emojis.zip'))
 
-    def _generate_password(self, length: int, flags: dict) -> str:
+    def _generate_password(self, length: int, **flags) -> str:
         """The core of this module, generates a random password for you.
 
         Args:
@@ -77,7 +78,6 @@ class Useful(Cog):
 
         Returns:
             str: Randomly generated password due to your parameters."""
-
         BASE = 'qwertyuiopasdfghjklzxcvbnm'
         NUMBERS = '1234567890'
         UPPERCASE = 'QWERTYUIOPASDFGHJKLZXCVBNM'
@@ -133,7 +133,7 @@ class Useful(Cog):
             language (str): Language code of the wikipedia article to search.
             topic (str): Your topic to search.
         """
-        self.bot.wikipedia = aiowiki.Wiki.wikipedia(language, session=ctx.bot.session)
+        self.bot.wikipedia = aiowiki.Wiki.wikipedia(language, session=self.bot.session)
 
         try:
             page = (await self.bot.wikipedia.opensearch(topic))[0]
@@ -362,7 +362,7 @@ class Useful(Cog):
         safesearch = False if ctx.channel.is_nsfw() else True
 
         try:
-            results = await ctx.bot.cse.search(query, safesearch=safesearch)
+            results = await self.cse.search(query, safesearch=safesearch)
 
         except NoResults:
             raise commands.BadArgument(f'Your query `{query}` returned no results.')

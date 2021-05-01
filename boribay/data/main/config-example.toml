@@ -2,13 +2,13 @@ title = 'Boribay bot configuration.'
 
 [bot]  # The bot configuration.
 exts = [ # I had to hardcode extensions, sorry for that...
-    'jishaku',
     'boribay.cogs.economy',
     'boribay.cogs.errors',
     'boribay.cogs.events',
     'boribay.cogs.fun',
     'boribay.cogs.help',
     'boribay.cogs.images',
+    'boribay.cogs.jishaku',
     'boribay.cogs.misc',
     'boribay.cogs.moderation',
     'boribay.cogs.owner',

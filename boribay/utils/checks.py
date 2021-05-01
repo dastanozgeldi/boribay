@@ -51,6 +51,5 @@ def has_voted():
                 'This message means that you didn\'t vote last 12 hours.\n'
                 f'Fix it clicking **[here!]({ctx.config.links.topgg_url})**'
             )
-            return False
 
     return commands.check(predicate)

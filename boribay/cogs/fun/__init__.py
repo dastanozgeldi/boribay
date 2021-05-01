@@ -29,7 +29,6 @@ class Fun(Cog):
             discord.File: A done to send file.
         """
         alex = self.bot.config.api.alex
-
         r = await self.bot.session.get(f'{alex[0]}{url}',
                                        headers={'Authorization': alex[1]})
 
@@ -47,7 +46,6 @@ class Fun(Cog):
             discord.File: A done to send file.
         """
         dagpi = self.bot.config.api.dagpi
-
         r = await self.bot.session.get(f'{dagpi[0]}{url}',
                                        headers={'Authorization': dagpi[1]})
 
@@ -130,7 +128,7 @@ class Fun(Cog):
         """
         image = await make_image_url(ctx, image)
 
-        file = await self.dagpi_image(f'triggered/url={image}', 'triggered.gif')
+        file = await self.dagpi_image(f'triggered?url={image}', 'triggered.gif')
         await ctx.send(file=file)
 
     @commands.command(name='ascii')
@@ -145,7 +143,7 @@ class Fun(Cog):
         """
         image = await make_image_url(ctx, image)
 
-        file = await self.dagpi_image(f'ascii/?url={image}', 'ascii.png')
+        file = await self.dagpi_image(f'ascii?url={image}', 'ascii.png')
         await ctx.send(file=file)
 
     @commands.command()
@@ -157,10 +155,8 @@ class Fun(Cog):
 
         await ctx.send('Coin flipped to the `{}`, no reward.'.format(choice))
 
-    @flags.add_flag(
-        '--timeout', type=float, default=60.0,
-        help='Set your own timeout! Defaults to 60 seconds.'
-    )
+    @flags.add_flag('--timeout', type=float, default=60.0,
+                    help='Set your own timeout! Defaults to 60 seconds.')
     @flags.command(aliases=['tr', 'typerace'])
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def typeracer(self, ctx: Context, **flags):
