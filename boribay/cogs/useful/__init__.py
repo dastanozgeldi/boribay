@@ -260,7 +260,7 @@ class Useful(Cog):
         """
         query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
         todos = [(todo['content'], todo['jump_url']) for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
-        dest = ctx.author if flags.pop('dm', False) else ctx
+        dest = ctx.author if flags.pop('dm', False) else ctx.channel
 
         if flags.pop('count', False):
             return await dest.send(len(todos))
@@ -338,12 +338,9 @@ class Useful(Cog):
         """Clear your to-do list up using this command."""
         query = 'DELETE FROM todos WHERE user_id = $1'
         confirmation = await ctx.confirm('Are you sure? All to-do\'s will be dropped.')
-
         if confirmation:
             await ctx.bot.pool.execute(query, ctx.author.id)
             return await ctx.message.add_reaction('✅')
-
-        await ctx.send('The `todo clear` session was closed.')
 
     @commands.command()
     async def google(self, ctx: Context, *, query: str):
@@ -370,7 +367,7 @@ class Useful(Cog):
         embed_list = []
         for i in range(0, 10 if len(results) >= 10 else len(results)):
             embed = ctx.embed(
-                title=results[i].title, 
+                title=results[i].title,
                 description=results[i].description,
                 url=results[i].url
             ).set_thumbnail(url=results[i].image_url)

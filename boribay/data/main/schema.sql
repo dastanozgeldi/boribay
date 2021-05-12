@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS guild_config (
     welcome_channel BIGINT,
     embed_color INTEGER DEFAULT 3553598,
     autorole BIGINT,
-    automeme BIGINT,
     logging_channel BIGINT
 );
 
@@ -22,4 +21,12 @@ CREATE TABLE IF NOT EXISTS users (
     bank INTEGER DEFAULT 0,
     blacklisted BOOLEAN DEFAULT false,
     bio TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ideas (
+    id SERIAL PRIMARY KEY,
+    author_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    approved BOOLEAN DEFAULT false,
+    added TIMESTAMP WITHOUT TIME ZONE DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );

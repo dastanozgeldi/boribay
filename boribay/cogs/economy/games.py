@@ -13,7 +13,7 @@ class Work:
     def __dir__(self):
         return ['digit_length', 'reverse_number']
 
-    async def template(self, start_message: str, number: str):
+    async def _template(self, start_message: str, number: str):
         ctx = self.ctx
 
         await ctx.send(start_message + '\nYou have 10 seconds.')
@@ -41,11 +41,7 @@ class Work:
 
     async def digit_length(self):
         number = str(random.getrandbits(random.randint(32, 64)))
-        await self.template(f'Guess the length of this number: {number}', len(number))
-
-    async def reverse_number(self):
-        number = str(random.getrandbits(random.randint(32, 64)))
-        await self.template(f'Send the reversed version of this number: {number}', number[::-1])
+        await self._template(f'Guess the length of this number: {number}', len(number))
 
 
 class Trivia:
@@ -56,7 +52,7 @@ class Trivia:
         self.embed = None
         self.emojis = None
 
-    async def paginate(self, dest=None, user: discord.Member = None):
+    async def start(self, user: discord.Member = None):
         embed = self.ctx.embed(title=self.title, description='')
         self.emojis = []
 

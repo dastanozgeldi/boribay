@@ -28,7 +28,7 @@ class ErrorHandler(Cog):
         return None
 
     async def send_error(self, ctx: Context, exc: str):
-        me: Boribay = ctx.bot
+        me = self.bot
         channel = me.get_channel(me.config.main.errors_channel)
         embed = me.embed(ctx, description=f'```py\nError:\n{exc}\n```', color=0xff0000)
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
@@ -47,7 +47,7 @@ class ErrorHandler(Cog):
         await channel.send(embed=embed)
 
     @Cog.listener()
-    async def on_command_error(self, ctx: Context, error):
+    async def on_command_error(self, ctx: Context, error: str):
         error = getattr(error, 'original', error)
         embed = ctx.embed(title='⚠ Error!', color=0xff0000)
 
@@ -111,7 +111,10 @@ class ErrorHandler(Cog):
             await self.send(ctx, embed=embed)
             await self.send_error(ctx, exc)
 
-        self.logger.error(error)
+        # self.logger.error(error)
+        # It's always better to get the original traceback instead of simple logging
+        # that does not provide any details.
+        raise error
 
 
 def setup(bot: Boribay):

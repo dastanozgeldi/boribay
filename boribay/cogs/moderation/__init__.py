@@ -20,6 +20,7 @@ class Moderation(Cog):
 
     @commands.group(invoke_without_command=True)
     async def member(self, ctx: Context):
+        """Guild members managing commands parent."""
         await ctx.send_help('member')
 
     @member.command(name='nick')
@@ -35,40 +36,42 @@ class Moderation(Cog):
         await ctx.message.add_reaction('✅')
 
     @member.command(name='kick')
-    async def _member_kick(self, ctx: Context, member: AuthorCheckConverter, *, reason='Reason not specified.'):
+    async def _member_kick(self, ctx: Context, member: AuthorCheckConverter, *, reason: Optional[str]):
         """Kicks the member.
 
         Args:
             member (AuthorCheckConverter): A member you want to kick.
             reason (str, optional): The reason of kicking. Defaults to 'Reason not specified.'.
         """
+        # Variable declaration.
+        reason = reason or 'Reason not specified.'
         dest = ctx.bot.guild_cache.get('logging_channel') or ctx
-        await ctx.guild.kick(user=member, reason=reason)
 
+        await ctx.guild.kick(user=member, reason=reason)
         embed = ctx.embed(title=f'{member} was kicked.', description=reason)
         await dest.send(embed=embed)
 
     @member.command(name='ban')
-    async def _member_ban(self, ctx: Context, member: AuthorCheckConverter, *, reason: str = 'Reason not specified.'):
+    async def _member_ban(self, ctx: Context, member: AuthorCheckConverter, *, reason: Optional[str]):
         """Ban the member.
 
         Args:
             member (AuthorCheckConverter): A member you want to ban.
             reason (str, optional): The reason of banning. Defaults to 'Reason not specified.'.
         """
-        await member.ban(reason=reason)
+        await member.ban(reason=reason or 'Reason not specified.')
         await ctx.message.add_reaction('✅')
         # from command, an on_member_ban event will be triggered.
 
     @member.command(name='unban')
-    async def _member_unban(self, ctx: Context, member: AuthorCheckConverter, *, reason: str = 'Reason not specified.'):
+    async def _member_unban(self, ctx: Context, member: AuthorCheckConverter, *, reason: Optional[str]):
         """Unban the user - remove them from the guild blacklist.
 
         Args:
             member (AuthorCheckConverter): A member you want to unban.
             reason (str, optional): The reason of unbanning. Defaults to 'Reason not specified.'.
         """
-        await member.unban(reason=reason)
+        await member.unban(reason=reason or 'Reason not specified.')
         await ctx.message.add_reaction('✅')
 
     @commands.group(invoke_without_command=True)

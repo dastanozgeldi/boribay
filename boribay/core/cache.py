@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+__all__ = ('Cache',)
+
 
 class Cache(defaultdict):
     def __init__(self, query, key, db):

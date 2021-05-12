@@ -20,6 +20,26 @@ class MyPages(menus.MenuPages):
             await self.message.delete()
 
 
+class IdeaPageSource(menus.ListPageSource):
+    """IdeaPageSource, a special paginator created for the idea commands parent.
+    Takes the list of data, enumerates, then paginates through."""
+
+    def __init__(self, ctx, data: list):
+        super().__init__(data, per_page=10)
+        self.ctx = ctx
+
+    async def format_page(self, menu, entries):
+        offset = menu.current_page * self.per_page + 1
+        embed = self.ctx.embed(
+            description='\n'.join(f'{i}. {v["content"]}' for i, v in enumerate(entries, start=offset))
+        ).set_author(
+            name=f'Page {menu.current_page + 1} of {self.get_max_pages()} ({len(self.entries)} suggestions).',
+            icon_url=self.ctx.author.avatar_url
+        )
+
+        return embed
+
+
 class TodoPageSource(menus.ListPageSource):
     """TodoPageSource, a special paginator created for the todo commands parent.
     Takes the list of data, enumerates, then paginates through."""

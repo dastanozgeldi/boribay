@@ -26,9 +26,7 @@ def get_prefix(bot, msg: discord.Message) -> str:
 
 
 async def is_blacklisted(ctx: Context) -> bool:
-    if not (user := ctx.user_cache[ctx.author.id]):
-        raise commands.CheckFailure(f'❌ You are blacklisted. DM {ctx.bot.dosek} if you got any issues.')
-
+    user = ctx.user_cache[ctx.author.id]
     return not user.get('blacklisted', False)
 
 
@@ -62,8 +60,15 @@ class Boribay(commands.Bot):
         self.start_time = datetime.now()
         self.owner_ids = {682950658671902730}
         self.loop = asyncio.get_event_loop()
+
+        # Session-related.
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.dblpy = DBLClient(self, self.config.main.dbl_token)
+        self.webhook = discord.Webhook.from_url(
+            self.config.links.log_url,
+            adapter=discord.AsyncWebhookAdapter(self.session)
+        )
+
         self.setup()
 
     @property
@@ -111,6 +116,15 @@ class Boribay(commands.Bot):
         await self.process_commands(message)
 
     async def get_context(self, message: discord.Message, *, cls=Context):
+        """The same get_context but with the custom context class.
+
+        Args:
+            message (discord.Message): A message object to get the context from.
+            cls (optional): The classmethod variable. Defaults to Context.
+
+        Returns:
+            Context: The context brought from the message.
+        """
         return await super().get_context(message, cls=cls)
 
     async def close(self):
@@ -119,6 +133,13 @@ class Boribay(commands.Bot):
         await self.session.close()
 
     async def __ainit__(self) -> NoReturn:
+        """The asynchronous init method to prepare database with cache stuff.
+
+        The main bot pool, guild-user cache, all are being instantiated here.
+
+        Returns:
+            NoReturn: Means that the method returns nothing.
+        """
         self.pool = await asyncpg.create_pool(**self.config.database)
         self.db = DatabaseManager(self)
 
@@ -127,13 +148,23 @@ class Boribay(commands.Bot):
         self.user_cache = await Cache('SELECT * FROM users', 'user_id', self.pool)
 
     def setup(self) -> NoReturn:
+        """The important setup method to get already done in one place.
+
+        Environment variables, bot checks and the database.
+
+        Returns:
+            NoReturn: Means that the method returns nothing.
+        """
+        # Setting Jishaku environment variables to work with.
         os.environ['JISHAKU_NO_UNDERSCORE'] = 'True'
         os.environ['JISHAKU_NO_DM_TRACEBACK'] = 'True'
         os.environ['JISHAKU_HIDE'] = 'True'
 
+        # Checks to limit certain things.
         self.add_check(is_beta)
         self.add_check(is_blacklisted)
 
+        # Putting the async init method into loop.
         self.loop.create_task(self.__ainit__())
 
     def run(self, extensions: Union[list, set]):

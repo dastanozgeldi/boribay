@@ -155,25 +155,6 @@ class Settings(Cog):
         """Disable the autorole feature for your guild."""
         await self.update(ctx, 'autorole', None, '✅ Disabled autorole.')
 
-    # Automeme Settings Part
-    @commands.group(invoke_without_command=True)
-    async def automeme(self, ctx: Context):
-        """The automeme setting parent command."""
-        await self.shower(ctx, attr='get_channel', key='automeme',
-                          message='The automemes channel is: {}')
-
-    @automeme.command(name='set')
-    async def _set_automeme(self, ctx: Context, channel: discord.TextChannel):
-        """Set the automeme channel to your server!
-        Args: channel (discord.TextChannel): A channel you would like set."""
-        await self.update(ctx, 'automeme', channel.id,
-                          f'✅ Set `{channel}` as a channel to send memes.')
-
-    @automeme.command(name='disable')
-    async def _disable_automeme(self, ctx: Context):
-        """Disable the automeme feature for your guild."""
-        await self.update(ctx, 'automeme', None, '✅ Disabled automeme.')
-
     @commands.group(invoke_without_command=True)
     async def logging(self, ctx: Context):
         """The log-channel setting parent command."""

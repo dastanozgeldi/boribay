@@ -99,9 +99,9 @@ class GroupHelp(menus.ListPageSource):
         embed = self.ctx.embed(title=f'Help for category: {g}', description=f'{group_help}\n{self.description}')
 
         for cmd in cmds:
-            cmd_help = cmd.help.split('\n')[0] or 'Help not found.'
+            cmd_help = cmd.help or 'Help not found.'
             embed.add_field(name=f'{self.prefix}{cmd} {cmd.signature}',
-                            value=cmd_help + '..', inline=False)
+                            value=cmd_help.split('\n')[0] + '..', inline=False)
         # trying to mean that the command help ↑ has its continuation.
 
         if (maximum := self.get_max_pages()) > 1:

@@ -1,5 +1,7 @@
 import toml
 
+__all__ = ('ConfigLoader',)
+
 
 class BotPart:
     __slots__ = {'version', 'beta', 'token', 'dbl_token',

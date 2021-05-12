@@ -2,10 +2,8 @@ import argparse
 
 from boribay import Boribay
 
-description = 'A Discord Bot created to make people smile.'
-
-bot = Boribay(description=description)
-parser = argparse.ArgumentParser(description=description)
+bot = Boribay(description='A Discord Bot created to make people smile.')
+parser = argparse.ArgumentParser(description='Put some arguments beforehand.')
 parser.add_argument('--exclude', nargs='+',
                     help='Specify Cogs you don\'t want to include on startup!')
 

@@ -5,17 +5,22 @@ from time import perf_counter
 import discord
 from discord.ext import commands
 
+__all__ = ('Context',)
+
 
 class Context(commands.Context):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.timer = Timer(self)
         self.loading = Loading(self)
-        self.config = self.bot.config
 
     @property
     def db(self):
         return self.bot.pool
+
+    @property
+    def config(self):
+        return self.bot.config
 
     @property
     def user_cache(self):
@@ -47,7 +52,7 @@ class Context(commands.Context):
 
         return _result
 
-    async def confirm(self, message: discord.Message, timeout: float):
+    async def confirm(self, message: discord.Message, timeout: float = 10.0):
         msg = await self.send(message)
         emojis = {'✅': True, '❌': False}
 
@@ -61,8 +66,11 @@ class Context(commands.Context):
         )
 
         with suppress(asyncio.TimeoutError):
-            if emojis[str(payload.emoji)] is True:
+            if emojis[str(payload.emoji)]:
                 return True
+
+            await self.try_delete(msg)
+            await self.message.reply('The confirmation session was closed.')
 
 
 class Timer(ContextDecorator):

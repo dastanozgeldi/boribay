@@ -85,10 +85,18 @@ def get_amount(_all: float, minimum: int, maximum: int, argument):
     if minimum <= amount <= maximum:
         return amount
 
-    elif amount > maximum:
+    if amount > maximum:
         return maximum
 
     raise PastMinimum(minimum)
+
+
+class Choices(commands.Converter):
+    async def convert(self, chosen: str, choices: dict):
+        if chosen not in (keys := choices.keys()):
+            raise commands.BadArgument('❌ This argument cannot be taken. Choose from: [{}]'.format(', '.join(keys)))
+
+        return await choices[chosen]
 
 
 def CasinoConverter(minimum: int = 100, maximum: int = 100_000):
@@ -114,7 +122,7 @@ class SettingsConverter(commands.Converter):
             elif k == 'embed_color':
                 data[k] = hex(v)
 
-            elif k in ('welcome_channel', 'automeme', 'logging_channel'):
+            elif k in ('welcome_channel', 'logging_channel'):
                 data[k] = guild.get_channel(v)
 
         return data
@@ -131,14 +139,13 @@ class ValueConverter(commands.Converter):
             elif setting == 'embedcolor':
                 value = await ColorConverter().convert(ctx, value)
 
-            elif setting in ('welcomechannel', 'automeme', 'logging'):
+            elif setting in ('welcomechannel', 'logging'):
                 value = g.get_channel(value)
 
             return value
 
         except ValueError:
-            raise commands.BadArgument(
-                f'Unable to convert {value} into {setting} value.')
+            raise commands.BadArgument(f'Unable to convert {value} into {setting} value.')
 
 
 class TimeConverter(commands.Converter):

@@ -1,7 +1,9 @@
-from discord.ext.commands import Cog as C
+from discord.ext import commands
+
+__all__ = ('Cog',)
 
 
-class Cog(C):
+class Cog(commands.Cog):
     """The custom implementation of the commands.Cog class."""
 
     def __init__(self, *args, **kwargs):

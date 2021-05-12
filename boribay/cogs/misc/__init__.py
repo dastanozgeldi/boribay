@@ -7,7 +7,7 @@ from typing import Optional
 
 import psutil
 from boribay.core import BATYR, LOADING, PG, TYPING, Boribay, Cog, Context
-from boribay.utils import SettingsConverter
+from boribay.utils import Choices, SettingsConverter
 from discord.ext import commands, flags
 from humanize import naturaldate, naturaltime
 
@@ -22,7 +22,11 @@ class Miscellaneous(Cog):
 
     @staticmethod
     async def top_lb(ctx: Context, limit: int):
-        """The Global Leaderboard for TopGG."""
+        """The Global Leaderboard for TopGG.
+
+        Args:
+            limit (int): The user-limit on leaderboard.
+        """
         upvotes = await ctx.bot.dblpy.get_bot_upvotes()
         medals = ['🥇', '🥈', '🥉'] + ['✨' for num in range(limit - 3)]
         d = Counter([voter['username'] for voter in upvotes]).most_common(limit)
@@ -37,10 +41,14 @@ class Miscellaneous(Cog):
 
     @staticmethod
     async def eco_lb(ctx: Context, limit: int):
-        """The Global Leaderboard for Economics."""
+        """The Global Leaderboard for Economics.
+
+        Args:
+            limit (int): The user-limit on leaderboard.
+        """
         me = ctx.bot
         data = (await me.pool.fetch('SELECT * FROM users ORDER by wallet + bank DESC'))[:limit]
-        users = [f'{me.get_user(row["user_id"]) or row["user_id"]}** - {row["wallet"] + row["bank"]} {BATYR}' for row in data]
+        users = [f'**{me.get_user(row["user_id"]) or row["user_id"]}** - {row["wallet"] + row["bank"]} {BATYR}' for row in data]
 
         embed = ctx.embed(title='The Global Leaderboard', description='\n'.join(users))
         await ctx.send(embed=embed)
@@ -65,7 +73,7 @@ class Miscellaneous(Cog):
 
         return '<:tick:814838692459446293>'
 
-    @commands.command(aliases=['gs'])
+    @commands.command(aliases=('gs',))
     async def settings(self, ctx: Context):
         """The settings command. Shows the settings of the current server.
 
@@ -73,7 +81,8 @@ class Miscellaneous(Cog):
 
         What is written on "Embed Color" category? → This is the hex value of a color.
 
-        What do tick and crossmark mean? → Tick represents whether the category is set."""
+        What do tick and crossmark mean? → Tick represents whether the category is set.
+        """
         g = ctx.guild
         sc = SettingsConverter()
 
@@ -85,26 +94,45 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command(aliases=('suggestion',))
+    async def suggest(self, ctx: Context, *, content: str):
+        """Suggest an idea to the bot owner.
+
+        Example:
+            **{p}suggest More casino commands in economics e.g blackjack.**
+
+        Args:
+            content (str): Accordingly, the content of your suggestion.
+        """
+        query = 'INSERT INTO ideas(content, author_id) VALUES($1, $2);'
+
+        await self.bot.pool.execute(query, content, ctx.author.id)
+        await ctx.send('✅ Added your suggestion, you will be notified when it will be approved/rejected.')
+
     @flags.add_flag('--limit', type=int, default=5,
                     help='Set the limit of users you want to see.')
-    @flags.add_flag('--of', choices=['dbl', 'eco'], default='dbl',
-                    help='A specific topic [dbl for TopGG, eco for Economics].')
     @flags.command(aliases=['lb'])
-    async def leaderboard(self, ctx: Context, **flags):
+    async def leaderboard(self, ctx: Context, mode: str, **flags):
         """Leaderboard of top voters for Boribay. Defaults to 5 users,
-        however you can specify the limitation of the leaderboard."""
-        mode = flags.pop('of')
+        however you can specify the limitation of the leaderboard.
+
+        Args:
+            mode (str): The leaderboard mode, either "eco" or "dbl".
+
+        Raises:
+            commands.BadArgument: If the limit more than 10 users was specified.
+        """
         if (limit := flags.pop('limit')) > 10:
             raise commands.BadArgument('I cannot get why do you need more than 10 people.')
 
-        if mode == 'eco':
-            return await self.eco_lb(ctx, limit)
+        await Choices().convert(mode, {
+            'eco': self.eco_lb(ctx, limit),
+            'dbl': self.top_lb(ctx, limit)
+        })
 
-        await self.top_lb(ctx, limit)
-
-    @commands.command(aliases=['cs'])
+    @commands.command(aliases=('cs',))
     async def codestats(self, ctx: Context):
-        """See the code statictics of the bot."""
+        """See the code statistics of the bot."""
         ctr = Counter()
 
         for ctr['files'], f in enumerate(glob('./**/*.py', recursive=True)):
@@ -121,7 +149,7 @@ class Miscellaneous(Cog):
         embed = ctx.embed(description='\n'.join(f'**{k.capitalize()}:** {v}' for k, v in ctr.items()))
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['modules', 'exts'])
+    @commands.command(aliases=('modules', 'exts'))
     async def extensions(self, ctx: Context):
         """List of modules that work at a current time."""
         exts = []
@@ -144,8 +172,7 @@ class Miscellaneous(Cog):
 
     @commands.command()
     async def uptime(self, ctx: Context):
-        """Uptime command.
-        Returns: uptime: How much time bot is online."""
+        """Returns uptime: How long the bot is online."""
         h, r = divmod((self.bot.uptime), 3600)
         (m, s), (d, h) = divmod(r, 60), divmod(h, 24)
 
@@ -154,7 +181,7 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['sys'])
+    @commands.command(aliases=('sys',))
     async def system(self, ctx: Context):
         """Information of the system that is running the bot."""
         embed = ctx.embed(title='System Information')
@@ -177,39 +204,50 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['about', 'bi', 'botinfo'])
+    @commands.command(aliases=('about',))
     async def info(self, ctx: Context):
         """See some kind of information about me (such as command usage, links etc.)"""
         me = self.bot
         version = me.config.main.version
-        embed = ctx.embed().set_author(name=f'{me.user} - v{version}', icon_url=me.user.avatar_url)
+        embed = ctx.embed().set_author(
+            name=f'{me.user} - v{version}', icon_url=me.user.avatar_url
+        )
 
         fields = {
             'Development': {
                 ('Developer', str(me.dosek)),
                 ('Language', 'Python'),
                 ('Library', 'Discord.py')
-            }, 'General': {
+            },
+            'General': {
                 ('Currently in', f'{len(me.guilds)} servers'),
                 ('Commands working', f'{len(me.commands)}'),
                 ('Commands usage (last restart)', me.command_usage),
-                ('Commands usage (last year)', await me.pool.fetchval('SELECT command_usage FROM bot_stats'))
+                ('Commands usage (last year)', ctx.config['command_usage'])
             }
         }
 
         for key in fields:
-            embed.add_field(name=key, value='\n'.join([f'> **{k}:** {v}' for k, v in fields[key]]), inline=False)
+            embed.add_field(
+                name=key,
+                value='\n'.join(f'> **{k}:** {v}' for k, v in fields[key]),
+                inline=False
+            )
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['memberinfo', 'ui', 'mi'])
+    @commands.command(aliases=('memberinfo', 'ui', 'mi'))
     @commands.guild_only()
     async def userinfo(self, ctx: Context, member: Optional[commands.MemberConverter]):
-        """See some general information about mentioned user."""
-        member = member or ctx.author
-        embed = ctx.embed().set_thumbnail(url=member.avatar_url)
-        embed.set_author(name=str(member), icon_url=ctx.guild.icon_url)
+        """See some general information about the mentioned user.
 
+        Example:
+            **{p}userinfo @Dosek**
+
+        Args:
+            member (Optional[commands.MemberConverter]): A user to get info about.
+        """
+        member = member or ctx.author
         fields = [
             ('Top role', member.top_role.mention),
             ('Boosted server', bool(member.premium_since)),
@@ -217,10 +255,14 @@ class Miscellaneous(Cog):
             ('Here since', naturaldate(member.joined_at))
         ]
 
-        embed.description = '\n'.join(f'**{name}:** {value}' for name, value in fields)
+        embed = ctx.embed(
+            description='\n'.join(f'**{name}:** {value}' for name, value in fields)
+        ).set_thumbnail(url=member.avatar_url)
+        embed.set_author(name=str(member), icon_url=ctx.guild.icon_url)
+
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['guildinfo', 'si', 'gi'])
+    @commands.command(aliases=('guildinfo', 'si', 'gi'))
     @commands.guild_only()
     async def serverinfo(self, ctx: Context):
         """See some general information about current guild."""
@@ -246,9 +288,15 @@ class Miscellaneous(Cog):
     @flags.add_flag('--tts', action='store_true', help='Whether to send a tts message.')
     @flags.command()
     async def say(self, ctx: Context, message: str, **flags):
-        """Make the bot say what you want.
-        Args: message: A message that will be sent.
-        Make sure to put your message in double quotes."""
+        """Make the bot say what you want
+
+        Example:
+            **{p}say "Achievement Completed" --tts**
+
+        Args:
+            message (str): A message that is going to be sent.
+            Make sure to put your message in "double quotes".
+        """
         tts = flags.pop('tts', False)
 
         await ctx.try_delete(ctx.message)
@@ -287,10 +335,16 @@ class Miscellaneous(Cog):
         embed = ctx.embed(description='\n'.join(f'**{n}:** ```{v * 1000:.2f} ms```' for n, v in elements.items()))
         await msg.edit(embed=embed)
 
-    @commands.command(aliases=['mrs'])
-    async def messagereactionstats(self, ctx: Context, message_link: str):
-        """See what reactions are there in a message, shortly,
-        reaction statistics for a message."""
+    @commands.command(aliases=('mrs',))
+    async def messagereactionstats(self, ctx: Context, *, message_link: str):
+        """See what reactions are there in a message, i.e reaction statistics.
+
+        Example:
+            **{p}mrs https://discord.com/channels/12345/54321/32451**
+
+        Args:
+            message_link (str): An URL of a message.
+        """
         ids = [int(i) for i in message_link.split('/')[5:]]
         msg = await ctx.guild.get_channel(ids[0]).fetch_message(ids[1])
 

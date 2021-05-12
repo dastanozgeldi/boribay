@@ -3,9 +3,8 @@
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
         "--ignore=W191, E501, E731",
-        "--exclude=boribay/utils/calcparser.py, boribay/__init__.py, boribay/*/__init__.py"
+        "--exclude=boribay/utils/calcparser.py"
     ],
-    "python.linting.pylintEnabled": false,
     "files.exclude": {
         "**/.git": true,
         "**/.svn": true,
@@ -13,5 +12,6 @@
         "**/CVS": true,
         "**/.DS_Store": true,
         "**/__pycache__": true
-    }
+    },
+    "python.formatting.provider": "autopep8"
 }

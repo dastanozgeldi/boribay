@@ -19,9 +19,6 @@ class Economics(Cog):
     def __init__(self, bot: Boribay):
         self.bot = bot
 
-        with open('./boribay/data/badwords.txt', 'r') as f:
-            self.bad_words = f.read()
-
     async def cog_check(self, ctx: Context):
         return await commands.guild_only().predicate(ctx)
 
@@ -40,7 +37,7 @@ class Economics(Cog):
     async def _get_answer(self, ctx: Context, question: list):
         entries = [question['correct_answer']] + question['incorrect_answers']
         entries = random.sample(entries, len(entries))
-        answer = await Trivia(ctx, entries, question['question']).paginate(ctx)
+        answer = await Trivia(ctx, entries, question['question']).start()
         return answer == question['correct_answer']
 
     @commands.command()
@@ -63,14 +60,11 @@ class Economics(Cog):
 
         question = await self._get_question(difficulty)
 
-        def conclude(result: str = 'Correct'):
-            return f'**{result}!** The answer was: **{question["correct_answer"]}**'
-
         if await self._get_answer(ctx, question):
-            await ctx.reply(conclude())
+            await ctx.reply(f'**Correct! (+50 batyrs)** The answer was: **{question["correct_answer"]}**')
             return await self.bot.db.add('wallet', ctx.author, 50)
 
-        return await ctx.reply(conclude('Wrong'))
+        return await ctx.reply(f'**Wrong!** The answer was: **{question["correct_answer"]}**.')
 
     @commands.group(invoke_without_command=True)
     async def balance(self, ctx: Context):
@@ -82,6 +76,9 @@ class Economics(Cog):
     async def _add_balance(self, ctx: Context, member: discord.Member, amount: int):
         """Increase someone's balance for being well behaved.
 
+        However, balance adding has limits: the transaction money
+        must be 100 <= x <= 100 000 batyrs.
+
         Example:
             **{p}balance add @Dosek 1000** - gives Dosek 1000 batyrs.
 
@@ -92,7 +89,7 @@ class Economics(Cog):
         Raises:
             commands.BadArgument: If you have specified too small or too big amount to pay.
         """
-        if not 10 <= amount <= 100_000:
+        if not 100 <= amount <= 100_000:
             raise commands.BadArgument('❌ Balance adding limit has reached. '
                                        'Specify between 10 and 100 000.')
 
@@ -107,6 +104,9 @@ class Economics(Cog):
     @is_mod()
     async def _remove_balance(self, ctx: Context, member: discord.Member, amount: int):
         """Decrease someone's balance for being bad behaved.
+
+        However, balance removing has limits: the transaction money
+        must be 100 <= x <= 100 000 batyrs.
 
         Example:
             **{p}balance remove @Dosek 1000** - takes 1000 batyrs from Dosek.
@@ -258,7 +258,7 @@ class Economics(Cog):
     @bio.command(name='set')
     async def _set_bio(self, ctx: Context, *, information: str):
         """Set your bio that will be shown on your profile card.
-        Requires to pay 1000 batyrs.
+        Requires to pay 1000 batyrs from your bank.
 
         Example:
             **{p}bio set Hi, my name is Dastan and I love coding!**
@@ -274,16 +274,7 @@ class Economics(Cog):
         if (bank := ctx.user_cache[author]['bank']) < 1000:
             raise commands.BadArgument(f'❌ Setting bio requires at least 1000 batyrs (You have {bank}).')
 
-        for bad_word in self.bad_words:
-            if bad_word in information:
-                raise commands.BadArgument('❌ Swearing words are not allowed to be set.')
-
-        query = '''
-        UPDATE users
-        SET bio = $1, bank = bank - 1000
-        WHERE user_id = $2;
-        '''
-
+        query = 'UPDATE users SET bio = $1, bank = bank - 1000 WHERE user_id = $2;'
         await ctx.db.execute(query, information, author)
         await ctx.user_cache.refresh()
         await ctx.send('✅ Set your bio successfully.')
@@ -295,8 +286,16 @@ class Economics(Cog):
         This is useful when you want to remove the info about you
         without having to pay batyrs.
         """
-        await self.bot.db.set(table, bio, ctx.author, 'null')
-        await ctx.send('✅ Disabled your bio successfully.')
+        # Avoiding useless database call.
+        if not ctx.user_cache[ctx.author.id]['bio']:
+            raise commands.CheckFailure('❌ You do not currently have bio set, '
+                                        'so there is no point on trying to disable it.')
+
+        confirmation = await ctx.confirm('Are you sure? You will not be able to bring back the money paid to set your bio.')
+        if confirmation:
+            await ctx.db.execute('UPDATE users SET bio = null WHERE user_id = $1;', ctx.author.id)
+            await ctx.user_cache.refresh()
+            return await ctx.send('✅ Disabled your bio successfully.')
 
     @commands.command(aliases=['rob'])
     @commands.cooldown(1, 10.0, commands.BucketType.user)
@@ -340,7 +339,7 @@ class Economics(Cog):
             **{p}slot 69** - bets 69 batyrs to play slots.
 
         Args:
-            bets (CasinoConverter()): Your bet amount. Minimum is 50 batyrs.
+            bet (CasinoConverter(50)): Your bet amount. Minimum is 50 batyrs.
 
         Raises:
             BadArgument: If bet' amount reaches limits.

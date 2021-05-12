@@ -11,7 +11,7 @@ from typing import Optional
 
 import discord
 from boribay.core import Cog, Context
-from boribay.utils import TabularData
+from boribay.utils import IdeaPageSource, MyPages, TabularData
 from discord.ext import commands, flags
 from jishaku.codeblocks import codeblock_converter
 
@@ -386,6 +386,110 @@ class Owner(Cog):
         mode = flags.pop('of')
         await modes[mode].refresh()
         await ctx.send(f'✅ Refreshed `{mode}` cache.')
+
+    @commands.group(invoke_without_command=True)
+    async def idea(self, ctx: Context):
+        await ctx.send_help('idea')
+
+    async def _get_information(self, ctx: Context, element_id: int, *, return_author: bool = False):
+        data = dict(await ctx.bot.pool.fetchrow('SELECT * FROM ideas WHERE id = $1', element_id))
+        author = await ctx.getch('user', data.pop('author_id'))
+        embed = ctx.embed(
+            title=f'Suggestion #{data.pop("id")}',
+            description=data.pop('content')
+        ).add_field(
+            name='Additional Information',
+            value='\n'.join(f'**{k.title()}**: {v}' for k, v in data.items())
+        )
+
+        if return_author:
+            owner = ctx.bot.dosek
+            embed.set_author(name=str(owner), icon_url=owner.avatar_url)
+            return author, embed
+        
+        return embed
+
+    @idea.command()
+    @commands.is_owner()
+    async def approve(self, ctx: Context, suggestion_id: int):
+        """Approve the suggestion by its ID.
+
+        Example:
+            **{p}idea approve 2**
+
+        Args:
+            suggestion_id (int): The ID of the suggestion.
+            Multiple ID's may be specified.
+        """
+        query = 'UPDATE ideas SET approved = true WHERE id = $1;'
+        await ctx.bot.pool.execute(query, suggestion_id)
+        await ctx.message.add_reaction('✅')
+
+        data = await self._get_information(ctx, suggestion_id, return_author=True)
+        await data[0].send('🎉 Your suggestion got approved!', embed=data[1])
+
+    @idea.command()
+    @commands.is_owner()
+    async def reject(self, ctx: Context, suggestion_id: int):
+        """Reject the suggestion by its ID.
+
+        Example:
+            **{p}idea reject 3**
+
+        Args:
+            suggestion_id (int): The ID of the suggestion.
+            Multiple IDs may be specified.
+        """
+        query = 'DELETE FROM ideas WHERE id = $1;'
+        await ctx.bot.pool.execute(query, suggestion_id)
+        await ctx.message.add_reaction('✅')
+
+        data = await self._get_information(ctx, suggestion_id, return_author=True)
+        await data[0].send('❌ Your suggestion got rejected.', embed=data[1])
+
+    @flags.add_flag('--approved', action='store_true',
+                    help='Whether to list only approved suggestions.')
+    @flags.add_flag('--limit', type=int, help='Set the limit of ')
+    @idea.command(cls=flags.FlagCommand)
+    @commands.is_owner()
+    async def pending(self, ctx: Context, **flags):
+        """Check out all pending suggestions.
+
+        Example:
+            **{p}idea pending** - shows all unapproved suggestions.
+            **{p}idea pending --approved** - shows only approved ideas.
+            **{p}idea pending --limit 10** - shows last 10 added suggestions.
+        """
+        additional = 'true' if flags.pop('approved') else 'false'
+        answers = {
+            'true': 'There are no any approved ideas yet.',
+            'false': 'Currently, there are no suggestions waiting to be approved.'
+        }
+
+        query = f'''
+        SELECT id, content, author_id
+        FROM ideas WHERE approved is {additional}
+        ORDER BY added DESC;
+        '''
+        if not (data := await ctx.bot.pool.fetch(query)):
+            return await ctx.send(answers[additional])
+
+        menu = MyPages(IdeaPageSource(ctx, data))
+        await menu.start(ctx)
+
+    @idea.command()
+    @commands.is_owner()
+    async def info(self, ctx: Context, suggestion_id: int):
+        """Get some detailed information about the suggestion.
+
+        Example:
+            **{p}idea info 3** - sends the info about 3rd suggestion.
+
+        Args:
+            suggestion_id (int): The ID of the suggestion.
+        """
+        embed = await self._get_information(ctx, suggestion_id)
+        return await ctx.send(embed=embed)
 
 
 def setup(bot):
