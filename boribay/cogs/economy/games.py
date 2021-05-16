@@ -11,7 +11,7 @@ class Work:
         self.ctx = ctx
 
     def __dir__(self):
-        return ['digit_length', 'reverse_number']
+        return ['digit_length']
 
     async def _template(self, start_message: str, number: str):
         ctx = self.ctx
