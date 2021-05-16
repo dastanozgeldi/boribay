@@ -1,2 +1,2 @@
-from .core import Boribay
+from .core import *
 from .utils import *

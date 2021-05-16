@@ -6,6 +6,8 @@ from boribay.utils.exceptions import (CalcError, KeywordAlreadyTaken, Overflow,
                                       UndefinedVariable)
 from sly import Lexer, Parser
 
+__all__ = ('CalcLexer', 'CalcParser')
+
 
 class CalcLexer(Lexer):
     tokens = {NUMBER, NEWLINE_CHAR, NAME}

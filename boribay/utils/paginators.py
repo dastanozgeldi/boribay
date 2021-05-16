@@ -28,10 +28,14 @@ class IdeaPageSource(menus.ListPageSource):
         super().__init__(data, per_page=10)
         self.ctx = ctx
 
+    def _format_content(self, entry: str):
+        content = entry['content']
+        author = self.ctx.bot.get_user(entry['author_id']) or entry['author_id']
+        return f'{content[:50] if len(content) > 50 else content} ~ {author}'
+
     async def format_page(self, menu, entries):
-        offset = menu.current_page * self.per_page + 1
         embed = self.ctx.embed(
-            description='\n'.join(f'{i}. {v["content"]}' for i, v in enumerate(entries, start=offset))
+            description='\n'.join(f'{x["id"]}. {self._format_content(x)}' for x in entries)
         ).set_author(
             name=f'Page {menu.current_page + 1} of {self.get_max_pages()} ({len(self.entries)} suggestions).',
             icon_url=self.ctx.author.avatar_url
