@@ -160,6 +160,15 @@ class TimeConverter(commands.Converter):
         return time
 
 
+def color_exists(color: str) -> bool:
+    try:
+        ImageColor.getrgb(color)
+        return True
+
+    except ValueError:
+        return False
+
+
 class ColorConverter(commands.Converter):
     async def convert(self, ctx, arg: str):
         with contextlib.suppress(AttributeError):
