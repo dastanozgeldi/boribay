@@ -3,11 +3,13 @@ from io import BytesIO
 
 from boribay.utils import ImageConverter, ImageURLConverter
 from discord import File
-from googletrans import Translator
 from jishaku.functools import executor_function
 from PIL import Image, ImageDraw, ImageFont
 from polaroid import Image as PI
 from wand.image import Image as WI
+
+BASE_PATH = './boribay/data/layouts'
+FONT_PATH = './boribay/data/fonts'
 
 
 async def make_image_url(ctx, argument: str):
@@ -48,17 +50,7 @@ def polaroid_filter(image: bytes, *, method: str, args: list = None, kwargs: dic
     return File(BytesIO(img.save_bytes()), f'{method}.png')
 
 
-BASE_PATH = './boribay/data/layouts'
-FONT_PATH = './boribay/data/fonts'
-
-
 class Manip:
-
-    @staticmethod
-    @executor_function
-    def translate(language, *, sentence):
-        t = Translator()
-        return t.translate(sentence, dest=language)
 
     @staticmethod
     @executor_function

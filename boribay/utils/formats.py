@@ -1,3 +1,4 @@
+
 class TabularData:
     """TabularData is stolen from R. Danny.
 

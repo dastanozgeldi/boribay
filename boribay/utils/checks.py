@@ -37,19 +37,3 @@ def beta_command():
         return True
 
     return commands.check(predicate)
-
-
-def has_voted():
-    async def predicate(ctx):
-        check = await ctx.bot.dblpy.get_user_vote(ctx.author.id)
-
-        if check:
-            return True
-
-        else:
-            raise commands.CheckFailure(
-                'This message means that you didn\'t vote last 12 hours.\n'
-                f'Fix it clicking **[here!]({ctx.config.links.topgg_url})**'
-            )
-
-    return commands.check(predicate)

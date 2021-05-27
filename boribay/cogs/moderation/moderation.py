@@ -9,10 +9,13 @@ from humanize import naturaldate
 
 
 class Moderation(Cog):
-    """Commands for moderators. Manage guild permission required."""
-    icon = '🛡'
+    """The moderation extension.
+
+    `Manage guild` permission is required for the user.
+    """
 
     def __init__(self, bot: Boribay):
+        self.icon = '🛡'
         self.bot = bot
 
     async def cog_check(self, ctx: Context):
@@ -45,7 +48,7 @@ class Moderation(Cog):
         """
         # Variable declaration.
         reason = reason or 'Reason not specified.'
-        dest = ctx.bot.guild_cache.get('logging_channel') or ctx
+        dest = ctx.guild_cache.get('logging_channel') or ctx
 
         await ctx.guild.kick(user=member, reason=reason)
         embed = ctx.embed(title=f'{member} was kicked.', description=reason)

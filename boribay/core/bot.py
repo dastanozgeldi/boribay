@@ -7,13 +7,13 @@ from typing import NoReturn, Union
 import aiohttp
 import asyncpg
 import discord
-from dbl import DBLClient
 from discord.ext import commands
 
 from .cache import Cache
 from .configuration import ConfigLoader
 from .context import Context
 from .database import DatabaseManager
+from .events import set_events
 from .logger import create_logger
 
 __all__ = ('Boribay',)
@@ -38,7 +38,10 @@ async def is_beta(ctx: Context) -> bool:
 
 
 class Boribay(commands.Bot):
-    """A custom Bot class subclassed from commands.Bot"""
+    """The main bot class - Boribay.
+
+    This class inherits from `discord.ext.commands.Bot`.
+    """
 
     def __init__(self, **kwargs):
         intents = discord.Intents.default()
@@ -55,7 +58,7 @@ class Boribay(commands.Bot):
             **kwargs
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
-        self.config = ConfigLoader('boribay/data/main/config.toml')
+        self.config = ConfigLoader('boribay/data/config.toml')
         self.command_usage = 0
         self.start_time = datetime.now()
         self.owner_ids = {682950658671902730}
@@ -63,7 +66,6 @@ class Boribay(commands.Bot):
 
         # Session-related.
         self.session = aiohttp.ClientSession(loop=self.loop)
-        self.dblpy = DBLClient(self, self.config.main.dbl_token)
         self.webhook = discord.Webhook.from_url(
             self.config.links.log_url,
             adapter=discord.AsyncWebhookAdapter(self.session)
@@ -92,21 +94,14 @@ class Boribay(commands.Bot):
         Returns:
             discord.Embed: Embed that already has useful features.
         """
-        embed_color = self.guild_cache[ctx.guild.id]['embed_color']
-
-        kwargs.update(timestamp=datetime.utcnow(),
-                      color=kwargs.pop('color', embed_color))
+        embed_color = 0x36393e if ctx.guild is None else self.guild_cache[ctx.guild.id]['embed_color']
+        kwargs.update(timestamp=datetime.utcnow(), color=kwargs.pop('color', embed_color))
 
         return discord.Embed(**kwargs)
 
     async def on_message(self, message: discord.Message):
         if not self.is_ready():
             return
-
-        # id below is the news channel from the support server.
-        if message.channel.id == self.config.main.news_channel:
-            with open('./boribay/data/main/detailed_news.md', 'w') as f:
-                f.write(message.content)
 
         # checking if a message was the clean mention of the bot.
         if re.fullmatch(f'<@(!)?{self.user.id}>', message.content):
@@ -129,7 +124,6 @@ class Boribay(commands.Bot):
 
     async def close(self):
         await super().close()
-        await self.dblpy.close()
         await self.session.close()
 
     async def __ainit__(self) -> NoReturn:
@@ -143,9 +137,10 @@ class Boribay(commands.Bot):
         self.pool = await asyncpg.create_pool(**self.config.database)
         self.db = DatabaseManager(self)
 
-        self.bot_cache = dict(await self.pool.fetchrow('SELECT * FROM bot_stats'))
         self.guild_cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
         self.user_cache = await Cache('SELECT * FROM users', 'user_id', self.pool)
+
+        # await self.check_guilds()
 
     def setup(self) -> NoReturn:
         """The important setup method to get already done in one place.
@@ -168,10 +163,47 @@ class Boribay(commands.Bot):
         self.loop.create_task(self.__ainit__())
 
     def run(self, extensions: Union[list, set]):
-        """A custom run method to make the launcher file smaller."""
+        """An overridden run method to make the launcher file smaller.
+
+        Args:
+            extensions (Union[list, set]): Extensions (cogs) to get loaded.
+        """
         for ext in extensions:
             # loading all extensions before running the bot.
             self.load_extension(ext)
             logger.info(f'[MODULE] {ext} loaded.')
 
+        set_events(self)  # Setting up the events.
+
+        # Finally, running the bot instance.
         super().run(self.config.main.token)
+
+    async def check_guilds(self) -> dict:
+        """Check for new guilds before start.
+
+        This is needed when the bot gone offline for a while
+        and got added/removed to some servers.
+
+        Since the bot was offline they aren't accordingly existing
+        in the database/cache making servers' users unable to use the bot.
+
+        Returns:
+            dict: The refreshed guild cache.
+        """
+        guild_config = await self.pool.fetch('SELECT * FROM guild_config;')
+
+        # preparing the guild id's to compare
+        bot_guild_ids = {guild.id for guild in self.guilds}
+        db_guild_ids = {row['guild_id'] for row in guild_config}
+
+        if difference := list(bot_guild_ids - db_guild_ids):  # check for new guilds.
+            self.logger.info(f'New {len(difference)} guilds are being inserted.')
+            for guild_id in difference:
+                await self.pool.execute('INSERT INTO guild_config(guild_id) VALUES($1);', guild_id)
+
+        if difference := list(db_guild_ids - bot_guild_ids):  # check for old guilds.
+            logger.info(f'Old {len(difference)} guilds are being deleted.')
+            for guild_id in difference:
+                await self.pool.execute('DELETE FROM guild_config WHERE guild_id = $1;', guild_id)
+
+        await self.guild_cache.refresh()

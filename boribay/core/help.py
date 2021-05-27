@@ -2,11 +2,11 @@ from difflib import get_close_matches
 from typing import Union
 
 import discord
-from boribay.core import Cog, Context
+from boribay.core import Boribay, Cog, Context
 from boribay.utils import MyPages
 from discord.ext import commands, menus
 
-__all__ = ('MyHelpCommand',)
+__all__ = ('HelpCommand', 'Help')
 
 
 class HelpPages(menus.Menu):
@@ -75,7 +75,7 @@ class HelpPages(menus.Menu):
     @menus.button('📢')
     async def news(self, payload):
         """See detailed news for the update."""
-        with open('boribay/data/main/detailed_news.md', 'r') as f:
+        with open('boribay/data/detailed_news.md', 'r') as f:
             content = f.readlines()
 
         embed = self.ctx.embed(title=content[0], description=''.join(content[2:]))
@@ -113,7 +113,7 @@ class GroupHelp(menus.ListPageSource):
         return embed
 
 
-class MyHelpCommand(commands.HelpCommand):
+class HelpCommand(commands.HelpCommand):
     def __init__(self):
         super().__init__(command_attrs={
             'hidden': True,
@@ -140,7 +140,7 @@ class MyHelpCommand(commands.HelpCommand):
 
         embed.add_field(name='Modules:', value='\n'.join(cats))
 
-        with open('./boribay/data/main/news.md', 'r') as f:
+        with open('./boribay/data/news.md', 'r') as f:
             news = f.readlines()
 
         embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
@@ -197,3 +197,21 @@ class MyHelpCommand(commands.HelpCommand):
 
     def get_command_signature(self, command: commands.Command):
         return f'{self.clean_prefix}{command} {command.signature}'
+
+
+class Help(Cog):
+    """The help command extension."""
+
+    def __init__(self, bot: Boribay):
+        self.icon = '🆘'
+        self.bot = bot
+        self._original_help_command = bot.help_command
+        bot.help_command = HelpCommand()
+        bot.help_command.cog = self
+
+    def cog_unload(self):
+        self.bot.help_command = self._original_help_command
+
+
+def setup(bot: Boribay):
+    bot.add_cog(Help(bot))

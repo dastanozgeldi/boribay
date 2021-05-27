@@ -4,6 +4,13 @@ __all__ = ('Cache',)
 
 
 class Cache(defaultdict):
+    """Cache loader for Boribay created in order to use less DB calls.
+
+    Any kind of caching stuff is done by this class.
+
+    This class inherits from `collections.defaultdict`.
+    """
+
     def __init__(self, query, key, db):
         super().__init__(dict)
         self.query = query

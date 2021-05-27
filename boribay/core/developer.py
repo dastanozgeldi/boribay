@@ -10,21 +10,25 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from boribay.core import Cog, Context, Boribay
+from boribay.core import Boribay, Cog, Context
 from boribay.utils import DefaultError, IdeaPageSource, MyPages, TabularData
 from discord.ext import commands, flags
 from jishaku.codeblocks import codeblock_converter
 
+__all__ = ('Developer',)
 Output = namedtuple('Output', 'stdout stderr returncode')
 
 
-class Owner(Cog):
-    """Nothing really to see here. But, if you are that interested,
-    those are commands that help me to manage the bot while it's online
-    without restarting it. The favorite module of the Owner btw."""
-    icon = '👑'
+class Developer(Cog):
+    """The owner extension.
+
+    Commands that help owner to manage the bot itself.
+
+    No restarting needed using these commands.
+    """
 
     def __init__(self, bot: Boribay):
+        self.icon = '👑'
         self.bot = bot
 
     async def cog_check(self, ctx: Context):
@@ -88,7 +92,7 @@ class Owner(Cog):
             await self.bot.pool.execute(query, user.id)
 
         await ctx.send(f'✅ Successfully put **{", ".join(str(x) for x in users)}** into blacklist.')
-        await self.bot.user_cache.refresh()
+        await ctx.user_cache.refresh()
 
     @blacklist.command(name='remove')
     async def _blacklist_remove(self, ctx: Context, users: commands.Greedy[discord.Member]):
@@ -108,7 +112,7 @@ class Owner(Cog):
             await self.bot.pool.execute(query, user.id)
 
         await ctx.send(f'✅ Successfully removed **{", ".join(str(x) for x in users)}** from blacklist.')
-        await self.bot.user_cache.refresh()
+        await ctx.user_cache.refresh()
 
     @commands.command()
     async def leave(self, ctx: Context, guild: Optional[discord.Guild]):
@@ -374,12 +378,7 @@ class Owner(Cog):
         Raises:
             commands.BadArgument: If an invalid mode was given.
         """
-        modes = {
-            'guilds': self.bot.guild_cache,
-            'users': self.bot.user_cache,
-            'bot': self.bot.bot_cache,  # Caching category that stores only 1 row.
-        }
-
+        modes = {'guilds': ctx.guild_cache, 'users': ctx.user_cache}
         if flags.pop('all'):
             for mode in modes.values():
                 await mode.refresh()
@@ -493,3 +492,7 @@ class Owner(Cog):
         """
         embed = await self._get_information(ctx, suggestion_id)
         return await ctx.send(embed=embed)
+
+
+def setup(bot: Boribay):
+    bot.add_cog(Developer(bot))

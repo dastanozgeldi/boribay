@@ -1,8 +1,9 @@
 import asyncio
 import random
+from html import unescape
 
 import discord
-from boribay.core import Context
+from boribay.core import BATYR, Context
 from discord.ext import commands
 
 
@@ -10,8 +11,11 @@ class Work:
     def __init__(self, ctx: Context):
         self.ctx = ctx
 
-    def __dir__(self):
-        return ['digit_length']
+    async def start(self):
+        # Uncomment the stuff below when one more type of job appears :)
+        # available = () - include jobs there consequently.
+        # job = random.choice(available)
+        return await self.digit_length()
 
     async def _template(self, start_message: str, number: str):
         ctx = self.ctx
@@ -45,12 +49,37 @@ class Work:
 
 
 class Trivia:
-    def __init__(self, ctx: Context, entries: list, title: str = None):
+    def __init__(self, ctx: Context, entries: list = None, title: str = None):
         self.ctx = ctx
         self.entries = entries
         self.title = title
-        self.embed = None
-        self.emojis = None
+
+    async def _get_question(self, difficulty: str):
+        url = f'https://opentdb.com/api.php?amount=1&difficulty={difficulty}'
+        r = await self.ctx.bot.session.get(url)
+        res = await r.json()
+
+        res = res['results'][0]
+        res['question'] = unescape(res['question'])
+        res['correct_answer'] = unescape(res['correct_answer'])
+        res['incorrect_answers'] = [unescape(x) for x in res['incorrect_answers']]
+
+        return res
+
+    async def run(self, difficulty: str):
+        ctx = self.ctx
+        question = await self._get_question(difficulty)
+        correct = question['correct_answer']
+
+        entries = [correct] + question['incorrect_answers']
+        entries = random.sample(entries, len(entries))
+        answer = await Trivia(ctx, entries, question['question']).start()
+
+        if answer == question['correct_answer']:
+            await ctx.reply(f'**Correct! (+50 {BATYR})** The answer was: **{correct}**')
+            return await self.ctx.bot.db.add('wallet', ctx.author, 50)
+
+        return await ctx.reply(f'**Wrong!** The answer was: **{correct}**.')
 
     async def start(self, user: discord.Member = None):
         embed = self.ctx.embed(title=self.title, description='')
@@ -84,9 +113,8 @@ class Trivia:
             return True
 
         try:
-            r, u = await self.ctx.bot.wait_for(
-                'reaction_add', check=check, timeout=15.0
-            )
+            r, u = await self.ctx.bot.wait_for('reaction_add', check=check,
+                                               timeout=15.0)
 
         except asyncio.TimeoutError:
             await self.ctx.try_delete(base)

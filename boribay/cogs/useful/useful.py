@@ -4,32 +4,25 @@ import re
 import zipfile
 from datetime import datetime
 from io import BytesIO
-from textwrap import wrap
 from typing import Optional
 
-import aiowiki
 import discord
-from async_cse import NoResults, Search
 from boribay.core import Boribay, Cog, Context
-from boribay.utils import (CalcLexer, CalcParser, ColorConverter,
-                           EmbedPageSource, Manip, MyPages, TodoPageSource,
-                           exceptions, has_voted, make_image_url)
+from boribay.utils import (CalcLexer, CalcParser, ColorConverter, MyPages,
+                           TodoPageSource, exceptions, make_image_url)
 from discord.ext import commands, flags
 from humanize import time
 
 
 class Useful(Cog):
-    """Useful commands extension.
+    """The useful commands extension.
 
-    Simply made to help people in some kind of specific situations,
-
-    such as solving math expression, finding lyrics of the song and so on.
+    Made to help people in specific situations, such as solving math expressions.
     """
-    icon = '<:pickaxe:807534625785380904>'
 
     def __init__(self, bot: Boribay):
+        self.icon = '<:pickaxe:807534625785380904>'
         self.bot = bot
-        self.cse = Search(self.bot.config.api.google_key)
 
     async def _youtube_search(self, query: str) -> list:
         r = await self.bot.session.get(
@@ -51,7 +44,6 @@ class Useful(Cog):
         await ctx.send(results[0])
 
     @commands.command()
-    @has_voted()
     @commands.cooldown(1, 60.0, commands.BucketType.guild)
     async def zipemojis(self, ctx: Context):
         """Zip all emojis of the current guild.
@@ -121,38 +113,6 @@ class Useful(Cog):
         await ctx.reply('✅ Generated you the password.')
         # To make people sure this is working. ↑
         await ctx.author.send(f'Here is your password: ```{result}```')
-
-    @commands.command()
-    async def wikipedia(self, ctx: Context, language: str, *, topic: str):
-        """Wikipedia search command. Get detailed info about the given topic.
-
-        Example:
-            **{p}wikipedia en python programming language.**
-
-        Args:
-            language (str): Language code of the wikipedia article to search.
-            topic (str): Your topic to search.
-        """
-        self.bot.wikipedia = aiowiki.Wiki.wikipedia(language, session=self.bot.session)
-
-        try:
-            page = (await self.bot.wikipedia.opensearch(topic))[0]
-            text = await page.summary()
-
-        except (aiowiki.exceptions.PageNotFound, IndexError):
-            return await ctx.send('No wikipedia article found, sorry.')
-
-        if not text:
-            return await ctx.send('Article summary gave no results on call.')
-
-        wrapped = wrap(text, 1000, drop_whitespace=False, replace_whitespace=False)
-        embed_list = []
-
-        for description in wrapped:
-            embed = ctx.embed(title=page.title, description=description).set_thumbnail(url=(await page.media())[0])
-            embed_list.append(embed)
-
-        await MyPages(EmbedPageSource(embed_list)).start(ctx)
 
     @commands.command()
     async def anime(self, ctx: Context, *, anime: str):
@@ -341,44 +301,6 @@ class Useful(Cog):
         if confirmation:
             await ctx.bot.pool.execute(query, ctx.author.id)
             return await ctx.message.add_reaction('✅')
-
-    @commands.command()
-    async def google(self, ctx: Context, *, query: str):
-        """The Google Search command. Google inside Discord.
-
-        Example:
-            **{p}google who are simps?** - sends the search results for this query.
-
-        Args:
-            ctx ([type]): [description]
-            query (str): The topic to google.
-
-        Raises:
-            commands.BadArgument: If the search had no results.
-        """
-        safesearch = False if ctx.channel.is_nsfw() else True
-
-        try:
-            results = await self.cse.search(query, safesearch=safesearch)
-
-        except NoResults:
-            raise commands.BadArgument(f'Your query `{query}` returned no results.')
-
-        embed_list = []
-        for i in range(0, 10 if len(results) >= 10 else len(results)):
-            embed = ctx.embed(
-                title=results[i].title,
-                description=results[i].description,
-                url=results[i].url
-            ).set_thumbnail(url=results[i].image_url)
-
-            embed.set_author(
-                name=f'Page {i + 1} / {10 if len(results) >= 10 else len(results)}',
-                icon_url=ctx.author.avatar_url
-            )
-            embed_list.append(embed)
-
-        await MyPages(EmbedPageSource(embed_list), delete_message_after=True).start(ctx)
 
     @commands.command()
     async def poll(self, ctx: Context, question: str, *options):
@@ -654,26 +576,6 @@ class Useful(Cog):
             return await ctx.send(embed=embed)
 
         await ctx.send(f'City `{city}` not found.')
-
-    @commands.command()
-    async def translate(self, ctx: Context, language: str, *, sentence: str):
-        """Translates a given text to the language you want.
-
-        Args:
-            language (str): The language code (e.g en).
-            sentence (str): A sentence you want to translate.
-
-        Example:
-            **{p}translate ja pancake** - translates to Japanese.
-        """
-        translation = await Manip.translate(language, sentence=sentence)
-
-        embed = ctx.embed(
-            title=f'Translating from {translation.src} to {translation.dest}:'
-        ).add_field(name='Translation:', value=f'```{translation.text}```', inline=False)
-        embed.add_field(name='Pronunciation:', value=f'```{translation.pronunciation}```')
-
-        await ctx.send(embed=embed)
 
     @commands.command()
     async def qr(self, ctx: Context, url: Optional[str]):

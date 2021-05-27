@@ -4,4 +4,10 @@ from .cog import *
 from .configuration import *
 from .constants import *
 from .context import *
+from .database import *
+from .developer import *
+from .events import *
+from .help import *
+from .i18n import *
+from .jsk import *
 from .logger import *

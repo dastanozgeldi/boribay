@@ -2,26 +2,22 @@ title = 'Boribay bot configuration.'
 
 [bot]  # The bot configuration.
 exts = [ # I had to hardcode extensions, sorry for that...
+    # Kinda private extensions.
+    'boribay.core.help',
+    'boribay.core.jsk',
+    'boribay.core.developer',
+    # General purpose extensions.
     'boribay.cogs.economy',
-    'boribay.cogs.errors',
-    'boribay.cogs.events',
     'boribay.cogs.fun',
-    'boribay.cogs.help',
     'boribay.cogs.images',
-    'boribay.cogs.jishaku',
     'boribay.cogs.misc',
     'boribay.cogs.moderation',
-    'boribay.cogs.owner',
     'boribay.cogs.settings',
     'boribay.cogs.useful'
 ]
 beta = false
-news_channel = 'Replace with a channel ID where you would type announcements about the bot updates.'
 errors_channel = 'Replace with a channel ID where you would like to log errors in.'
-owner_exts = ['Jishaku', 'Events', 'Owner', 'ErrorHandler']  # Extensions that have to be ignored.
-version = '1.1.4'  # The bot version.
 token = 'Put your token here.'
-dbl_token = 'Your TopGG API token here.'
 
 [database]  # Database credentials to be able to log with.
 user = 'postgres'  # But I'm sure you have a different username
@@ -47,7 +43,6 @@ caption = 'https://captionbot.azurewebsites.net/api/messages'
 covid = 'https://disease.sh/v3/covid-19/'
 
 # API's that require a token ↓
-google_key = 'Put your Google Developer key here.'
 weather = ['http://api.openweathermap.org/data/2.5/weather?', 'Token of this API.']
 dagpi = ['https://beta.dagpi.xyz/image/', 'Token of this API.']
 alex = ['https://api.alexflipnote.dev/', 'Token of this API.']

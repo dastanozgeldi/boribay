@@ -1,14 +1,27 @@
 import asyncio
 from contextlib import ContextDecorator, suppress
 from time import perf_counter
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    from .bot import Boribay
 
 __all__ = ('Context',)
 
 
 class Context(commands.Context):
+    """Customized context for Boribay.
+
+    Any usage case of context in the bot will be of this type.
+
+    This class inherits from `discord.ext.commands.Context`.
+    """
+
+    bot: 'Boribay'
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.timer = Timer(self)
@@ -46,7 +59,6 @@ class Context(commands.Context):
 
         try:
             _result = getattr(obj, 'get_' + method)(object_id) or await getattr(obj, 'fetch_' + method)(object_id)
-
         except (discord.Forbidden, discord.HTTPException, discord.NotFound):
             return None
 
@@ -74,6 +86,10 @@ class Context(commands.Context):
 
 
 class Timer(ContextDecorator):
+    """The Timer class made to count the time spent to execute the known stuff.
+
+    This class inherits from `contextlib.ContextDecorator`."""
+
     def __init__(self, ctx):
         self.ctx = ctx
 
@@ -86,6 +102,10 @@ class Timer(ContextDecorator):
 
 
 class Loading(ContextDecorator):
+    """The Loading class made to take some time for users while the command is getting executed.
+
+    This class inherits from `contextlib.ContextDecorator`."""
+
     def __init__(self, ctx, message='Loading...'):
         self.ctx = ctx
         self.message = None

@@ -6,7 +6,12 @@ __all__ = ('create_logger',)
 # https://github.com/nickofolas/neo/blob/master/neo/core/__init__.py
 # Thanks for this awesome way of logging!
 class ColoredFormatter(logging.Formatter):
-    """The fancy way of formatting the logger."""
+    """Customized logging formatter Boribay.
+
+    The console logger uses this as the main formatting style.
+
+    This class inherits from `logging.Formatter`.
+    """
 
     prefix = '\x1b[38;5;'
     codes = {

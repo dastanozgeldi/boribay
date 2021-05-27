@@ -91,14 +91,6 @@ def get_amount(_all: float, minimum: int, maximum: int, argument):
     raise PastMinimum(minimum)
 
 
-class Choices(commands.Converter):
-    async def convert(self, chosen: str, choices: dict):
-        if chosen not in (keys := choices.keys()):
-            raise commands.BadArgument('❌ This argument cannot be taken. Choose from: [{}]'.format(', '.join(keys)))
-
-        return await choices[chosen]
-
-
 def CasinoConverter(minimum: int = 100, maximum: int = 100_000):
 
     class _Wrapper(commands.Converter, int):

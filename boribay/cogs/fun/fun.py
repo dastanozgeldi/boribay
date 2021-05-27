@@ -12,10 +12,10 @@ from discord.ext import commands, flags
 
 
 class Fun(Cog):
-    """Fun extension. Hope the name makes sense and commands correspond their parent."""
-    icon = '🎉'
+    """The fun commands extension."""
 
     def __init__(self, bot: Boribay):
+        self.icon = '🎉'
         self.bot = bot
 
     async def alex_image(self, url: str, fn: str = None) -> discord.File:

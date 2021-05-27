@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
     wallet INTEGER DEFAULT 0,
     bank INTEGER DEFAULT 0,
     blacklisted BOOLEAN DEFAULT false,
-    bio TEXT
+    bio TEXT,
+    locale VARCHAR(20) DEFAULT 'en_US'::character varying NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS ideas (

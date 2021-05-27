@@ -4,7 +4,12 @@ __all__ = ('Cog',)
 
 
 class Cog(commands.Cog):
-    """The custom implementation of the commands.Cog class."""
+    """The customized cog instance for Boribay.
+
+    All cogs of this bot will be of this type.
+
+    This class inherits from `discord.ext.commands.Cog`.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

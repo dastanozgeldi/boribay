@@ -2,8 +2,7 @@ import decimal
 import math
 from functools import lru_cache
 
-from boribay.utils.exceptions import (CalcError, KeywordAlreadyTaken, Overflow,
-                                      UndefinedVariable)
+from boribay.utils import exceptions
 from sly import Lexer, Parser
 
 __all__ = ('CalcLexer', 'CalcParser')
@@ -16,7 +15,7 @@ class CalcLexer(Lexer):
     NAME = '[a-zA-Z_][a-zA-Z0-9_]*'
 
     def error(self, t):
-        raise CalcError(t.value[0])
+        raise exceptions.CalcError(t.value[0])
 
     @_(r'(\d+(?:\.\d+)?)')
     def NUMBER(self, t):
@@ -32,7 +31,7 @@ class CalcLexer(Lexer):
 @lru_cache(5)
 def fib(n):
     if n > 400:
-        raise Overflow()
+        raise exceptions.Overflow()
 
     elif n <= 1:
         return n
@@ -75,7 +74,8 @@ class CalcParser(Parser):
     @_('NAME "=" expression')
     def statement(self, p):
         if p.NAME in self.funcs or p.NAME in self.constants:
-            raise KeywordAlreadyTaken()
+            raise exceptions.KeywordAlreadyTaken()
+
         self.variables[p.NAME] = p.expression
         return f'{p.NAME} = {p.expression}'
 
@@ -106,13 +106,13 @@ class CalcParser(Parser):
     @_('expression "^" expression')
     def expression(self, p):
         if p.expression0 > 200 or p.expression1 > 200:
-            raise Overflow()
+            raise exceptions.Overflow()
         return p.expression0 ** p.expression1
 
     @_('expression "!"')
     def expression(self, p):
         if p.expression > 50:
-            raise Overflow()
+            raise exceptions.Overflow()
         return decimal.Decimal(math.gamma(p.expression + decimal.Decimal("1.0")))
 
     @_('"-" expression %prec UMINUS')
@@ -128,7 +128,7 @@ class CalcParser(Parser):
         try:
             return decimal.Decimal(self.funcs[p.NAME](p.expression))
         except KeyError:
-            raise UndefinedVariable(p.NAME)
+            raise exceptions.UndefinedVariable(p.NAME)
 
     @_('NUMBER')
     def expression(self, p):
@@ -142,10 +142,10 @@ class CalcParser(Parser):
             except KeyError:
                 return self.variables[p.NAME]
         except KeyError:
-            raise UndefinedVariable(p.NAME)
+            raise exceptions.UndefinedVariable(p.NAME)
 
     def error(self, p):
-        raise CalcError(getattr(p, 'value', 'EOF'))
+        raise exceptions.CalcError(getattr(p, 'value', 'EOF'))
 
     def __init__(self):
         self.variables = {}

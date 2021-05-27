@@ -1,47 +1,29 @@
 import asyncio
 import copy
-import html
 import random
 from typing import Optional
 
 import discord
-from boribay.core import Boribay, Cog, Context
+from boribay.core import BATYR, Boribay, Cog, Context
 from boribay.utils import (AuthorCheckConverter, CasinoConverter, DefaultError,
                            is_mod)
-from discord.ext import commands
+from discord.ext import commands, flags
 
 from .games import Trivia, Work
 
 
 class Economics(Cog):
-    """The Economics extension which is currently in beta-testing."""
-    icon = '💵'
+    """The Economics extension."""
 
     def __init__(self, bot: Boribay):
+        self.icon = '💵'
         self.bot = bot
 
     async def cog_check(self, ctx: Context):
         return await commands.guild_only().predicate(ctx)
 
-    async def _get_question(self, difficulty: str):
-        url = f'https://opentdb.com/api.php?amount=1&difficulty={difficulty}'
-        r = await self.bot.session.get(url)
-        res = await r.json()
-
-        res = res['results'][0]
-        res['question'] = html.unescape(res['question'])
-        res['correct_answer'] = html.unescape(res['correct_answer'])
-        res['incorrect_answers'] = [html.unescape(x) for x in res['incorrect_answers']]
-
-        return res
-
-    async def _get_answer(self, ctx: Context, question: list):
-        entries = [question['correct_answer']] + question['incorrect_answers']
-        entries = random.sample(entries, len(entries))
-        answer = await Trivia(ctx, entries, question['question']).start()
-        return answer == question['correct_answer']
-
     @commands.command()
+    @commands.max_concurrency(1, commands.BucketType.channel)
     async def trivia(self, ctx: Context, difficulty: str.lower = 'medium'):
         """Play the trivia game to make some money.
 
@@ -59,13 +41,36 @@ class Economics(Cog):
         if difficulty not in ('easy', 'medium', 'hard'):
             raise DefaultError('Invalid difficulty provided.')
 
-        question = await self._get_question(difficulty)
+        await Trivia(ctx).run(difficulty)
 
-        if await self._get_answer(ctx, question):
-            await ctx.reply(f'**Correct! (+50 batyrs)** The answer was: **{question["correct_answer"]}**')
-            return await self.bot.db.add('wallet', ctx.author, 50)
+    @staticmethod
+    async def eco_lb(ctx: Context, limit: int):
+        """The Global Leaderboard for Economics.
 
-        return await ctx.reply(f'**Wrong!** The answer was: **{question["correct_answer"]}**.')
+        Args:
+            limit (int): The user-limit on leaderboard.
+        """
+        me = ctx.bot
+        data = (await me.pool.fetch('SELECT * FROM users ORDER by wallet + bank DESC'))[:limit]
+        users = [f'**{me.get_user(row["user_id"]) or row["user_id"]}** - {row["wallet"] + row["bank"]} {BATYR}' for row in data]
+
+        embed = ctx.embed(title='The Global Leaderboard', description='\n'.join(users))
+        await ctx.send(embed=embed)
+
+    @flags.add_flag('--limit', type=int, default=5,
+                    help='Set the limit of users you want to see.')
+    @flags.command(aliases=['lb'])
+    async def leaderboard(self, ctx: Context, **flags):
+        """Boribay economics leaderboard. Defaults to 5 users,
+        however you can specify the limitation of the leaderboard.
+
+        Raises:
+            commands.BadArgument: If the limit more than 10 users was specified.
+        """
+        if (limit := flags.pop('limit')) > 10:
+            raise commands.BadArgument('I cannot get why do you need more than 10 people.')
+
+        await self.eco_lb(ctx, limit)
 
     @commands.group(invoke_without_command=True)
     async def balance(self, ctx: Context):
@@ -96,7 +101,7 @@ class Economics(Cog):
 
         member = member or ctx.author
         query = 'UPDATE users SET bank = bank + $1 WHERE user_id = $2;'
-        await ctx.send(f'✅ Successfully added **{amount} batyrs** to **{member}**.')
+        await ctx.send(f'✅ Successfully added **{amount} {BATYR}** to **{member}**.')
 
         await ctx.db.execute(query, amount, member.id)
         await ctx.user_cache.refresh()
@@ -124,7 +129,7 @@ class Economics(Cog):
                                'Specify between 10 and 100 000.')
 
         query = 'UPDATE users SET bank = bank - $1 WHERE user_id = $2;'
-        await ctx.send(f'✅ Successfully removed **{amount} batyrs** from **{member}**.')
+        await ctx.send(f'✅ Successfully removed **{amount} {BATYR}** from **{member}**.')
 
         await ctx.db.execute(query, amount, member.id)
         await ctx.user_cache.refresh()
@@ -188,7 +193,7 @@ class Economics(Cog):
         query = 'UPDATE users SET bank = bank + $1, wallet = wallet - $1 WHERE user_id = $2'
 
         await ctx.db.execute(query, amount, ctx.author.id)
-        await ctx.send(f'Successfully transfered **{amount}** batyrs into your bank!')
+        await ctx.send(f'Successfully transfered **{amount}** {BATYR} into your bank!')
         await ctx.user_cache.refresh()
 
     @commands.command(aliases=['wd'])
@@ -220,7 +225,7 @@ class Economics(Cog):
         '''
 
         await ctx.db.execute(query, amount, ctx.author.id)
-        await ctx.send(f'Successfully withdrew **{amount} batyrs** to your wallet!')
+        await ctx.send(f'Successfully withdrew **{amount}** {BATYR} to your wallet!')
         await ctx.user_cache.refresh()
 
     @commands.command()
@@ -238,18 +243,18 @@ class Economics(Cog):
             DefaultError: If you have less than 100 batyrs on your balance.
         """
         if (wallet := ctx.user_cache[ctx.author.id]['wallet']) < 100:
-            raise DefaultError('You have nothing to pay (less than 100 batyrs)')
+            raise DefaultError(f'You have nothing to pay (less than 100 {BATYR})')
 
         if amount > wallet:
             raise DefaultError('Unfortunately, you cannot remain in debt. '
-                               f'(You only have {wallet} batyrs).')
+                               f'(You only have {wallet} {BATYR}).')
 
         if not 10 < amount < 10_000:
             raise DefaultError('Too big/small amount was specified. '
-                               'It should be between 10 and 10 000 batyrs.')
+                               f'It should be between 10 and 10 000 {BATYR}.')
 
         await self.bot.db.double('wallet', amount, ctx.author, member)
-        await ctx.send(f'Transfered **{amount}** batyrs to **{member}**')
+        await ctx.send(f'Transfered **{amount}** {BATYR} to **{member}**')
 
     @commands.group(invoke_without_command=True)
     async def bio(self, ctx: Context):
@@ -273,7 +278,7 @@ class Economics(Cog):
         author = ctx.author.id
 
         if (bank := ctx.user_cache[author]['bank']) < 1000:
-            raise DefaultError(f'Setting bio requires at least 1000 batyrs (You have {bank}).')
+            raise DefaultError(f'Setting bio requires at least 1000 {BATYR} (You have {bank}).')
 
         query = 'UPDATE users SET bio = $1, bank = bank - 1000 WHERE user_id = $2;'
         await ctx.db.execute(query, information, author)
@@ -284,15 +289,14 @@ class Economics(Cog):
     async def _disable_bio(self, ctx: Context):
         """Disable bio feature in your profile.
 
-        This is useful when you want to remove the info about you
-        without having to pay batyrs.
+        This is useful when you want to remove the info about you without having to pay batyrs.
         """
         # Avoiding useless database call.
         if not ctx.user_cache[ctx.author.id]['bio']:
-            raise commands.CheckFailure('❌ You do not currently have bio set, '
-                                        'so there is no point on trying to disable it.')
+            raise DefaultError('You do not currently have bio set, '
+                               'so there is no point on trying to disable it.')
 
-        confirmation = await ctx.confirm('Are you sure? You will not be able to bring back the money paid to set your bio.')
+        confirmation = await ctx.confirm('Are you sure? You will not be able to bring back batyrs paid to set your bio.')
         if confirmation:
             await ctx.db.execute('UPDATE users SET bio = null WHERE user_id = $1;', ctx.author.id)
             await ctx.user_cache.refresh()
@@ -319,7 +323,7 @@ class Economics(Cog):
             DefaultError: When a victim has not enough batyrs to get robbed.
         """
         if (member_wallet := ctx.user_cache[member.id]['wallet']) < 100:
-            raise DefaultError(f'{member} had nothing to steal (less than 100 batyrs)')
+            raise DefaultError(f'{member} had nothing to steal (less than 100 {BATYR})')
 
         choice = random.choices(population=['success', 'caught'], weights=[.5, .5], k=1)[0]
         if choice == 'caught':
@@ -330,7 +334,7 @@ class Economics(Cog):
 
         amount = random.randint(100, member_wallet)
         await self.bot.db.double('bank', fine, member, ctx.author)
-        await ctx.send(f'✅ Stole **{amount}** batyrs from **{member}**')
+        await ctx.send(f'✅ Stole **{amount}** {BATYR} from **{member}**')
 
     @commands.command(aliases=['slots'])
     async def slot(self, ctx: Context, bet: CasinoConverter(50)):
@@ -351,11 +355,11 @@ class Economics(Cog):
 
         if a == b == c:
             result = bet * 20
-            await ctx.send(f'{text}All match, we have a big winner! 🎉 {result} batyrs!')
+            await ctx.send(f'{text}All match, we have a big winner! 🎉 {result} {BATYR}!')
 
         elif (a == b) or (a == c) or (b == c):
             result = bet * 2
-            await ctx.send(f'{text}2 match, you won! 🎉 {result} batyrs!')
+            await ctx.send(f'{text}2 match, you won! 🎉 {result} {BATYR}!')
 
         else:
             query = 'UPDATE users SET wallet = wallet - $1 WHERE user_id = $2;'
@@ -366,67 +370,11 @@ class Economics(Cog):
         await ctx.user_cache.refresh()
 
     @commands.command()
-    async def diceroll(self, ctx: Context, bet: CasinoConverter()):
-        rolls = random.choices(times := range(1, 7), k=2)
-        my_rolls = random.choices(times, k=2)
-
-        winner = sum(rolls) > sum(my_rolls)
-        draw = sum(rolls) == sum(my_rolls)
-
-        def _visualize(r: list):
-            return f'{r[0]} {r[1]}'
-
-        embed = ctx.embed()
-        query = '''
-        UPDATE users
-        SET wallet = wallet + $1
-        WHERE user_id = $2;
-        '''
-
-        if winner:
-            _multiplier = random.randint(.5, .95)
-            profit = round(bet * _multiplier)
-
-            await ctx.db.execute(query, profit, ctx.author.id)
-            await ctx.user_cache.refresh()
-            wallet = ctx.user_cache[ctx.author.id]['wallet']
-
-            embed.add_field(name='Winner!', value=(
-                f'You won **{profit} batyrs**. ({round(_multiplier * 100)}%)\n'
-                f'You now have **{wallet} batyrs**.'
-            ), inline=False)
-
-        elif draw:
-            embed.add_field(name='Draw!', value=(
-                'Our sums are the same. Try again later..?'
-            ), inline=False)
-
-        else:
-            await ctx.db.execute(query, -bet, ctx.author.id)
-            await ctx.user_cache.refresh()
-            wallet = ctx.user_cache[ctx.author.id]['wallet']
-
-            embed.add_field(name='Loser!', value=(
-                f'You lost **{bet} batyrs.**\n'
-                f'You now have **{wallet} batyrs**.'
-            ), inline=False)
-
-        embed.add_field(name=f'{ctx.author} ({sum(rolls)})', value=_visualize(rolls))
-        embed.add_field(name=f'{ctx.bot.user} ({sum(my_rolls)})', value=_visualize(my_rolls))
-
-        message = await ctx.send(f'Rolling your dice... (Bet: {bet})')
-        await asyncio.sleep(3)
-
-        await message.edit(content=None, embed=embed)
-
-    @commands.command()
     async def work(self, ctx: Context):
         """Working is the most legal way to get batyrs.
 
         Reverse numbers, guess their lengths, more later."""
-        game = Work(ctx)
-        job = random.choice(dir(game))
-        await getattr(game, job)()
+        await Work(ctx).start()
 
     @commands.command(aliases=['hnt'])
     @commands.cooldown(1, 60.0, commands.BucketType.user)
@@ -466,7 +414,7 @@ class Economics(Cog):
 
         if choice == (answer := random.choice(choices)):
             query = 'UPDATE users SET wallet = wallet + 50 WHERE user_id = $1'
-            embed.title = f'You guessed right! ({answer}) → +50 batyrs.'
+            embed.title = f'You guessed right! ({answer}) → +50 {BATYR}.'
 
             await ctx.db.execute(query, ctx.author.id)
             await ctx.user_cache.refresh()

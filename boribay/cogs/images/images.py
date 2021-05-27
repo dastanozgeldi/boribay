@@ -9,11 +9,14 @@ from discord.ext import commands
 
 
 class Images(Cog):
-    """Images extension. A module that is created to work with images.
+    """The image commands extension.
+
+    A module that is created to work with images.
+
     Has features like: filters, text-images and legendary memes."""
-    icon = '🖼'
 
     def __init__(self, bot: Boribay):
+        self.icon = '🖼'
         self.bot = bot
 
     @commands.command()

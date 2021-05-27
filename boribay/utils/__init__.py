@@ -1,4 +1,4 @@
-from .calcparser import *
+from .calculator import *
 from .checks import *
 from .converters import *
 from .exceptions import *

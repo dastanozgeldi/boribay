@@ -1,14 +1,17 @@
 import discord
 from boribay.core import Boribay, Cog, Context
-from boribay.utils import ColorConverter, is_mod
+from boribay.utils import ColorConverter, SettingsConverter, is_mod
 from discord.ext import commands
 
 
 class Settings(Cog):
-    """The commands extension to work with guild config."""
-    icon = '⚙'
+    """The settings extension.
+
+    Created to make users able to manage the guild configuration.
+    """
 
     def __init__(self, bot: Boribay):
+        self.icon = '⚙'
         self.bot = bot
 
     async def cog_check(self, ctx: Context):
@@ -56,6 +59,51 @@ class Settings(Cog):
         embed = b.embed(ctx, description=message.format(value))
         return await ctx.send(embed=embed)
 
+    @staticmethod
+    def on_or_off(ctx: Context, key: str) -> str:
+        """A function to check whether the setting is set or not.
+
+        Args:
+            ctx (Context): To get the bot instance.
+            key (str): A key from cache to check.
+
+        Returns:
+            str: Either crossmark or a tick.
+        """
+        checks = ('.', None, 0x36393f, None, None, None)
+        # Someone help how to not hardcode this ;-;
+
+        for check in checks:
+            if ctx.guild_cache[ctx.guild.id][key] == check:
+                return '<:crossmark:814742130190712842>'
+
+        return '<:tick:814838692459446293>'
+
+    @commands.command(aliases=('gs', 'settings'))
+    async def guildsettings(self, ctx: Context):
+        """The settings command. Shows the settings of the current server.
+
+        FAQ
+        ---
+        1. What does "None" mean?
+            This means this category is not set yet.
+
+        2. What is written on "Embed Color" category?
+            This is the hex value of a color.
+
+        3. What do tick and crossmark mean?
+            Tick represents whether the category is set.
+        """
+        g = ctx.guild
+        sc = SettingsConverter()
+
+        creds = await sc.convert(g, ctx.guild_cache)
+        embed = ctx.embed(
+            description='\n'.join(f'**{self.on_or_off(ctx, k)} {k.replace("_", " ").title()}:** {v}' for k, v in creds.items())
+        ).set_author(name=f'Settings of {g}', icon_url=g.icon_url)
+
+        await ctx.send(embed=embed)
+
     @commands.group(invoke_without_command=True, aliases=['wc'])
     async def welcomechannel(self, ctx: Context):
         """The welcome channel setting parent command."""
@@ -78,18 +126,21 @@ class Settings(Cog):
     @welcomechannel.command(name='disable')
     async def _disable_welcome_channel(self, ctx: Context):
         """Disable the welcoming channel feature!"""
-        await self.update(ctx, 'welcome_channel', None,
-                          '✅ Disabled welcome-channel.')
+        await self.update(ctx, 'welcome_channel', None, '✅ Disabled welcome-channel.')
 
     @commands.group(invoke_without_command=True)
     async def prefix(self, ctx: Context):
-        """The prefix setting parent command. Simply shows the current prefix
-        if nothing was specified. The default prefix is '.'"""
+        """The prefix setting parent command.
+
+        Simply shows the current prefix if nothing was specified.
+
+        The default prefix is '.'
+        """
+
         b = self.bot
         g = ctx.guild
         prefix = '.' if not g else b.guild_cache[g.id].get('prefix', '.')
-        await self.shower(ctx, value=prefix,
-                          message='The prefix is: `{}` or %s' % b.user.mention)
+        await self.shower(ctx, value=prefix, message='The prefix is: `{}` or %s' % b.user.mention)
 
     @prefix.command(name='set')
     async def _set_prefix(self, ctx: Context, new: str):
@@ -113,13 +164,20 @@ class Settings(Cog):
     @commands.group(invoke_without_command=True, aliases=['embedcolour', 'ec'])
     async def embedcolor(self, ctx: Context):
         """The color setting parent command."""
-        color = self.bot.guild_cache[ctx.guild.id].get('color', 3553599)
+        color = ctx.guild_cache[ctx.guild.id].get('color', 3553599)
         await self.shower(ctx, value=hex(color), message='The custom color is: {}')
 
     @embedcolor.command(name='set')
     async def _set_color(self, ctx: Context, color: ColorConverter):
-        """Sets the custom color for the bot.
-        Then all embeds' color will be one that you specified."""
+        """Set the custom color to your server.
+
+        Example:
+            **{p}color set 0xff0000** - sets this color (red in hex).
+
+        Args:
+            color (ColorConverter): The color you would like to set.
+            It can be hex, a word (e.g blurple) or an integer.
+        """
         color = int(str(color).replace('#', ''), 16)  # The hex value of a color.
         await self.update(ctx, 'embed_color', color,
                           '✅ As of now, the embed color will look like this.')
@@ -127,15 +185,13 @@ class Settings(Cog):
     @embedcolor.command(name='default', aliases=['disable'])
     async def _default_color(self, ctx: Context):
         """Return back the default color for your guild!"""
-        await self.update(ctx, 'embed_color', 3553599,
-                          '✅ Embed color has been set to the default one.')
+        await self.update(ctx, 'embed_color', 3553599, '✅ Embed color has been set to the default one.')
 
     # Autorole Settings Part
     @commands.group(invoke_without_command=True)
     async def autorole(self, ctx: Context):
         """The autorole setting parent command."""
-        await self.shower(ctx, attr='get_role', key='autorole',
-                          message='The custom role is: {}')
+        await self.shower(ctx, attr='get_role', key='autorole', message='The custom role is: {}')
 
     @autorole.command(name='set')
     async def _set_autorole(self, ctx: Context, role: discord.Role):
@@ -158,15 +214,17 @@ class Settings(Cog):
     @commands.group(invoke_without_command=True)
     async def logging(self, ctx: Context):
         """The log-channel setting parent command."""
-        await self.shower(ctx, attr='get_channel', key='logging_channel',
-                          message='The logging channel is: {}')
+        await self.shower(
+            ctx, attr='get_channel', key='logging_channel', message='The logging channel is: {}'
+        )
 
     @logging.command(name='set')
     async def _set_logging(self, ctx: Context, channel: discord.TextChannel):
         """Set the logging channel to your server!
         Args: channel (discord.TextChannel): A channel you would like set."""
-        await self.update(ctx, 'logging_channel', channel.id,
-                          f'✅ Set `{channel}` as a logging channel.')
+        await self.update(
+            ctx, 'logging_channel', channel.id, f'✅ Set `{channel}` as a logging channel.'
+        )
 
     @logging.command(name='disable')
     async def _disable_logging(self, ctx: Context):
