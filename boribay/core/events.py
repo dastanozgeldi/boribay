@@ -156,7 +156,6 @@ def set_events(bot: 'Boribay'):
         await guild.get_channel(channel_id).send(embed=embed)
 
     # And finally, error handling.
-    @staticmethod
     async def send(ctx, exc: str = None, *args, **kwargs):
         try:
             return await ctx.reply(exc, *args, **kwargs)
