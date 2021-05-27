@@ -114,8 +114,9 @@ def set_events(bot: 'Boribay'):
                 if payload.emoji.name == emoji:
                     role = discord.utils.get(guild.roles, name=name)
 
-            member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
-            await member.remove_roles(role)
+            with suppress(AttributeError):
+                member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
+                await member.remove_roles(role)
 
     # Next the stuff related to the guild logging.
     @bot.event
