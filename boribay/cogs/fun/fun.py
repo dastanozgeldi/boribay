@@ -7,7 +7,7 @@ from typing import Optional
 
 import discord
 from boribay.core import Boribay, Cog, Context
-from boribay.utils import Manip, make_image_url
+from boribay.utils import Manip, color_exists, make_image_url
 from discord.ext import commands, flags
 
 
@@ -53,7 +53,7 @@ class Fun(Cog):
         return discord.File(fp, fn or 'dagpi.png')
 
     @commands.command(aliases=['ph'])
-    async def pornhub(self, ctx: Context, text_1: str, text_2: str = 'Hub'):
+    async def pornhub(self, ctx: Context, text_1: str, text_2: str = 'Hub') -> None:
         """PornHub logo maker.
 
         Example:
@@ -71,7 +71,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command(aliases=['dym'])
-    async def didyoumean(self, ctx: Context, search: str, did_you_mean: str):
+    async def didyoumean(self, ctx: Context, search: str, did_you_mean: str) -> None:
         """Google search "Did you mean" meme.
 
         Example:
@@ -85,7 +85,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def achieve(self, ctx: Context, *, text: str):
+    async def achieve(self, ctx: Context, *, text: str) -> None:
         """Minecraft "Achievement Get!" meme maker.
 
         Example:
@@ -101,7 +101,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def challenge(self, ctx: Context, *, text: str):
+    async def challenge(self, ctx: Context, *, text: str) -> None:
         """Minecraft "Challenge Complete!" meme maker.
 
         Example:
@@ -117,7 +117,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def triggered(self, ctx: Context, image: Optional[str]):
+    async def triggered(self, ctx: Context, image: Optional[str]) -> None:
         """Make the "TrIgGeReD" meme.
 
         Example:
@@ -132,7 +132,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command(name='ascii')
-    async def ascii_command(self, ctx: Context, image: Optional[str]):
+    async def ascii_command(self, ctx: Context, image: Optional[str]) -> None:
         """Get the ASCII version of an image.
 
         Example:
@@ -148,12 +148,22 @@ class Fun(Cog):
 
     @commands.command()
     async def coinflip(self, ctx: Context):
-        """A very simple coinflip game! Chances are:
-        **head → 49.5%**, **tail → 49.5%** and **side → 1%**"""
-        if (choice := random.choices(population=['head', 'tail', 'side'], weights=[0.49, 0.49, 0.02], k=1)[0]) == 'side':
+        """Play the simple coinflip game.
+
+        Chances:
+        --------
+        **head → 49.5%**; **tail → 49.5%**; **side → 1%**
+        """
+        choice = random.choices(
+            population=['head', 'tail', 'side'],
+            weights=[0.49, 0.49, 0.02],
+            k=1
+        )[0]
+
+        if choice == 'side':
             return await ctx.send('Coin was flipped **to the side**!')
 
-        await ctx.send('Coin flipped to the `{}`, no reward.'.format(choice))
+        await ctx.send(f'Coin flipped to the `{choice}`, no reward.')
 
     @flags.add_flag('--timeout', type=float, default=60.0,
                     help='Set your own timeout! Defaults to 60 seconds.')
@@ -223,11 +233,12 @@ class Fun(Cog):
             await ctx.try_delete(race)
 
     @commands.command(aliases=['rps'])
-    async def rockpaperscissors(self, ctx: Context):
-        """The Rock | Paper | Scissors game.
+    async def rockpaperscissors(self, ctx: Context) -> None:
+        """The Rock-Paper-Scissors game.
 
-        There are three different reactions, depending on your choice
-        random will find did you win, lose or made a draw.
+        There are three different reactions:
+        ------------------------------------
+        🪨 - for rock; 📄 - for paper; ✂ - for scissors.
         """
         rps_dict = {
             '🪨': {'🪨': 'draw', '📄': 'lose', '✂': 'win'},
@@ -258,21 +269,40 @@ class Fun(Cog):
             await ctx.try_delete(msg)
 
     @commands.command()
-    async def eject(self, ctx: Context, color: str.lower, is_impostor: bool, *, name: Optional[str]):
+    async def eject(
+        self,
+        ctx: Context,
+        color: str.lower,
+        *,
+        name: Optional[str]
+    ) -> None:
         """Among Us "ejected" meme maker.
 
         Example:
             **{p}eject blue yes Dosek** - sends an ejected meme of blue impostor with nick "Dosek"
 
         Args:
-            color (str.lower): Color of an ejected guy. Available colors:
-            black • blue • brown • cyan • darkgreen • lime • orange • pink • purple • red • white • yellow
-            is_impostor (bool): Is a guy the impostor or not.
+            color (str.lower): Color of an ejected guy.
             name (Optional[str]): The name of the impostor.
+
+        Available colors:
+            black • blue • brown • cyan • darkgreen • lime
+            • orange • pink • purple • red • white • yellow
         """
+        # This check is still bad since the API colors are limited
+        # and ImageColor.getrgb supports more colors.
+        if not color_exists(color):
+            raise commands.BadArgument(f'Color {color} does not exist.')
+
         name = name or ctx.author.display_name
-        r = await self.bot.session.get(f'https://vacefron.nl/api/ejected?name={name}&impostor={is_impostor}&crewmate={color}')
+        url = f'https://vacefron.nl/api/ejected?name={name}&impostor=true&crewmate={color}'
+
+        # Calling the API.
+        r = await self.bot.session.get(url)
+        # Bufferizing the fetched image.
         io = BytesIO(await r.read())
+
+        # Sending to the contextual channel.
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
     @commands.command(aliases=['pp', 'penis'])
