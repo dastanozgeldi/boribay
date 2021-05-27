@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from datetime import datetime
-from typing import NoReturn, Union
+from typing import Union
 
 import aiohttp
 import asyncpg
@@ -126,13 +126,13 @@ class Boribay(commands.Bot):
         await super().close()
         await self.session.close()
 
-    async def __ainit__(self) -> NoReturn:
+    async def __ainit__(self) -> None:
         """The asynchronous init method to prepare database with cache stuff.
 
         The main bot pool, guild-user cache, all are being instantiated here.
 
         Returns:
-            NoReturn: Means that the method returns nothing.
+            None: Means that the method returns nothing.
         """
         self.pool = await asyncpg.create_pool(**self.config.database)
         self.db = DatabaseManager(self)
@@ -142,13 +142,13 @@ class Boribay(commands.Bot):
 
         # await self.check_guilds()
 
-    def setup(self) -> NoReturn:
+    def setup(self) -> None:
         """The important setup method to get already done in one place.
 
         Environment variables, bot checks and the database.
 
         Returns:
-            NoReturn: Means that the method returns nothing.
+            None: Means that the method returns nothing.
         """
         # Setting Jishaku environment variables to work with.
         os.environ['JISHAKU_NO_UNDERSCORE'] = 'True'

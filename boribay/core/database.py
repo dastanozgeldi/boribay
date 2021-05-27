@@ -1,4 +1,4 @@
-from typing import NoReturn, Union
+from typing import Union
 
 import discord
 from asyncpg.pool import Pool
@@ -14,7 +14,7 @@ class DatabaseManager(Pool):
     async def _operate(
         self, op: str, column: str,
         user: discord.Member, amount: Union[int, float]
-    ) -> NoReturn:
+    ) -> None:
         """The operate method made to ease up database manipulation.
 
         Args:
@@ -24,7 +24,7 @@ class DatabaseManager(Pool):
             amount (Union[int, float]): Amount of currency to manipulate with.
 
         Returns:
-            NoReturn: Means that the method returns nothing.
+            None: Means that the method returns nothing.
         """
         query = f'''
         UPDATE "users"
@@ -34,7 +34,7 @@ class DatabaseManager(Pool):
         await self.pool.execute(query, amount, user.id)
         await self.bot.user_cache.refresh()
 
-    async def add(self, *args) -> NoReturn:
+    async def add(self, *args) -> None:
         """Database Manager add method to ease up mostly Economics manipulation.
 
         Args:
@@ -43,11 +43,11 @@ class DatabaseManager(Pool):
             amount (Union[int, float]): Amount of (xp/money) to add.
 
         Returns:
-            NoReturn: Means that the method returns nothing.
+            None: Means that the method returns nothing.
         """
         await self._operate('+', *args)
 
-    async def take(self, *args) -> NoReturn:
+    async def take(self, *args) -> None:
         """Database Manager take method to ease up mostly Economics manipulation.
 
         Args:
@@ -56,14 +56,14 @@ class DatabaseManager(Pool):
             amount (Union[int, float]): Amount of (xp/money) to take.
 
         Returns:
-            NoReturn: Means that the method returns nothing.
+            None: Means that the method returns nothing.
         """
         await self._operate('-', *args)
 
     async def double(
         self, choice: str, amount: int,
         reducer: discord.Member, adder: discord.Member
-    ) -> NoReturn:
+    ) -> None:
         """The "double" method to ease up database manipulation.
 
         Args:
@@ -73,7 +73,7 @@ class DatabaseManager(Pool):
             adder (discord.Member): The user the money will be added to.
 
         Returns:
-            NoReturn: Means that the method returns nothing.
+            None: Means that the method returns nothing.
         """
         reducer_query = f'UPDATE users SET {choice} = {choice} - $1 WHERE user_id = $2'
         adder_query = f'UPDATE users SET {choice} = {choice} + $1 WHERE user_id = $2'
@@ -82,7 +82,7 @@ class DatabaseManager(Pool):
         await self.pool.execute(adder_query, amount, adder.id)
         await self.bot.user_cache.refresh()
 
-    async def set(self, table: str, column: str, user: discord.Member, value: str) -> NoReturn:
+    async def set(self, table: str, column: str, user: discord.Member, value: str) -> None:
         """Database Manager set method that is attainable for all tables.
 
         Args:
@@ -92,7 +92,7 @@ class DatabaseManager(Pool):
             value (str): A new value to replace old one with.
 
         Returns:
-            NoReturn: Means that the method returns nothing.
+            None: Means that the method returns nothing.
         """
         dirs = {'users': 'user', 'guild_config': 'guild'}
         query = f'UPDATE "{table}" SET "{column}" = $1 WHERE "{dirs[table]}_id" = $2'
