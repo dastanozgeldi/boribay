@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 __all__ = ('set_events',)
 
-log = create_logger('Events')
+log = create_logger('events')
 with open(f'{PATH}/rr.json', 'r') as f:
     local_reaction_roles = json.load(f)
 
@@ -117,43 +117,6 @@ def set_events(bot: 'Boribay'):
             with suppress(AttributeError):
                 member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
                 await member.remove_roles(role)
-
-    # Next the stuff related to the guild logging.
-    @bot.event
-    async def on_member_ban(guild: discord.Guild, user: discord.User):
-        if not (channel_id := bot.guild_cache[guild.id].get('logging_channel')):
-            return
-
-        data = (await (guild.audit_logs(action=discord.AuditLogAction.ban)).flatten())[0]
-        fields = [
-            ('User', f'{user.mention} | {user}'),
-            ('Reason', data.reason or 'None provided.'),
-            ('Moderator', data.user.mention)
-        ]
-
-        embed = bot.embed(
-            title='Member Ban',
-            description='\n'.join(f'**{n}:** {v}' for n, v in fields)
-        )
-        await guild.get_channel(channel_id).send(embed=embed)
-
-    @bot.event
-    async def on_member_unban(guild: discord.Guild, user: discord.User):
-        if not (channel_id := bot.guild_cache[guild.id].get('logging_channel')):
-            return
-
-        data = (await (guild.audit_logs(action=discord.AuditLogAction.unban)).flatten())[0]
-        fields = [
-            ('User', f'{user.mention} | {user}'),
-            ('Reason', data.reason or 'None provided.'),
-            ('Moderator', data.user.mention)
-        ]
-
-        embed = bot.embed(
-            title='Member Unban',
-            description='\n'.join(f'**{n}:** {v}' for n, v in fields)
-        )
-        await guild.get_channel(channel_id).send(embed=embed)
 
     # And finally, error handling.
     async def send(ctx, exc: str = None, *args, **kwargs):

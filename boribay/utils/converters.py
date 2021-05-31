@@ -1,14 +1,14 @@
 import contextlib
 import copy
 import re
-import typing
+from typing import Union
 
 import discord
 import twemoji_parser
 from discord.ext import commands
 from PIL import ImageColor
 
-from .exceptions import NotAnInteger, PastMinimum, NotEnough
+from .exceptions import NotAnInteger, NotEnough, PastMinimum
 
 RGB_REGEX = r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?',
 EMOJI_REGEX = r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>',
@@ -16,9 +16,13 @@ URL_REGEX = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9
 
 
 class AuthorCheckConverter(commands.Converter):
+    """The author checking converter to check for strangers who
+    mention themselves everywhere. This isn't needed in economics.
+
+    `[p]rob @user` command could serve here as an usage case.
+    """
+
     async def convert(self, ctx, argument):
-        """The specific converter to check for strangers who
-        mention themselves everywhere. This isn't needed in economics."""
         member = await commands.MemberConverter().convert(ctx, argument)
 
         if ctx.author == member:
@@ -28,6 +32,14 @@ class AuthorCheckConverter(commands.Converter):
 
 
 def get_number(argument: str.lower, integer: bool = True):
+    """Sometimes not all users want to specify exact numbers on their bets.
+
+    Arguments, like `5k` could lead to the RuntimeError and we want to handle
+    those arguments consequently.
+
+    This method parses those arguments into usual numbers, like `5k -> 5000`.
+    """
+
     if not (argument := argument.replace(',', '').replace('+', '').strip()):
         raise ValueError()
 
@@ -50,6 +62,11 @@ def get_number(argument: str.lower, integer: bool = True):
 
 
 def get_amount(_all: float, minimum: int, maximum: int, argument):
+    """Similar to the `get_number` method, but this one parses arguments like:
+
+    `all`, `half` and `x%`.
+    As you could see it returns a piece of a number (bet) according to the parsed argument.
+    """
     argument = argument.lower().strip()
 
     if argument in ('all'):
@@ -92,7 +109,6 @@ def get_amount(_all: float, minimum: int, maximum: int, argument):
 
 
 def CasinoConverter(minimum: int = 100, maximum: int = 100_000):
-
     class _Wrapper(commands.Converter, int):
         async def convert(self, ctx, argument):
             _all = await ctx.db.fetchval('SELECT wallet FROM users WHERE user_id = $1', ctx.author.id)
@@ -114,7 +130,7 @@ class SettingsConverter(commands.Converter):
             elif k == 'embed_color':
                 data[k] = hex(v)
 
-            elif k in ('welcome_channel', 'logging_channel'):
+            elif k == 'welcome_channel':
                 data[k] = guild.get_channel(v)
 
         return data
@@ -131,13 +147,15 @@ class ValueConverter(commands.Converter):
             elif setting == 'embedcolor':
                 value = await ColorConverter().convert(ctx, value)
 
-            elif setting in ('welcomechannel', 'logging'):
+            elif setting == 'welcome_channel':
                 value = g.get_channel(value)
 
             return value
 
         except ValueError:
-            raise commands.BadArgument(f'Unable to convert {value} into {setting} value.')
+            raise commands.BadArgument(
+                f'Unable to convert {value} into {setting} value.'
+            )
 
 
 class TimeConverter(commands.Converter):
@@ -161,6 +179,16 @@ class TimeConverter(commands.Converter):
 
 
 def color_exists(color: str) -> bool:
+    """Checking whether the given color exists is important in some commands.
+
+    This is done by using `ImageColor.getrgb` method and try/catch.
+
+    Args:
+        color (str): The color to check existence of.
+
+    Returns:
+        bool: The boolean according to the color value.
+    """
     try:
         ImageColor.getrgb(color)
         return True
@@ -170,6 +198,10 @@ def color_exists(color: str) -> bool:
 
 
 class ColorConverter(commands.Converter):
+    """The color converter class created to convert string color values.
+
+    This class inherits from `commands.Converter`.
+    """
     async def convert(self, ctx, arg: str):
         with contextlib.suppress(AttributeError):
             match = re.match(r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?', arg)
@@ -191,23 +223,25 @@ class ColorConverter(commands.Converter):
         if result:
             return result
 
-        raise commands.BadArgument(
-            f'Could not find any color that matches this: `{arg}`.')
+        raise commands.BadArgument(f'Could not find any color that matches this: `{arg}`.')
 
 
 class ImageURLConverter(commands.Converter):
-    async def convert(self, ctx, arg: typing.Union[discord.Emoji, str]):
+    """The URL image converter class created to convert argument into URL.
+
+    This class inherits from `commands.Converter`.
+    """
+    async def convert(self, ctx, arg: Union[discord.Emoji, str]):
         try:
-            mconv = commands.MemberConverter()
-            m = await mconv.convert(ctx, arg)
-            image = str(m.avatar_url_as(
-                static_format='png', format='png', size=512))
+            mc = commands.MemberConverter()
+            member = await mc.convert(ctx, arg)
+            image = str(member.avatar_url_as(static_format='png', format='png', size=512))
             return image
 
+        # Converter could not find the member to grab an avatar from, looking for emoji.
         except (TypeError, commands.MemberNotFound):
             try:
                 url = await twemoji_parser.emoji_to_url(arg, include_check=True)
-
                 if re.match(URL_REGEX, url):
                     return url
 
@@ -227,7 +261,11 @@ class ImageURLConverter(commands.Converter):
 
 
 class ImageConverter(commands.Converter):
-    async def convert(self, ctx, arg: typing.Union[discord.Emoji, str]):
+    """The image converter class created to convert argument into image.
+
+    This class inherits from `commands.Converter`.
+    """
+    async def convert(self, ctx, arg: Union[discord.Emoji, str]):
         try:
             mconv = commands.MemberConverter()
             m = await mconv.convert(ctx, arg)

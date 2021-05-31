@@ -17,7 +17,7 @@ from .events import set_events
 from .logger import create_logger
 
 __all__ = ('Boribay',)
-logger = create_logger('Bot')
+logger = create_logger('bot')
 
 
 def get_prefix(bot, msg: discord.Message) -> str:
@@ -58,7 +58,7 @@ class Boribay(commands.Bot):
             **kwargs
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
-        self.config = ConfigLoader('boribay/data/config.toml')
+        self.config = ConfigLoader('./data/config.toml')
         self.command_usage = 0
         self.start_time = datetime.now()
         self.owner_ids = {682950658671902730}
@@ -73,6 +73,22 @@ class Boribay(commands.Bot):
 
         self.setup()
 
+    async def __ainit__(self) -> None:
+        """The asynchronous init method to prepare database with cache stuff.
+
+        The main bot pool, guild-user cache, all are being instantiated here.
+
+        Returns:
+            None: Means that the method returns nothing.
+        """
+        self.pool = await asyncpg.create_pool(**self.config.database)
+        self.db = DatabaseManager(self)
+
+        self.guild_cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
+        self.user_cache = await Cache('SELECT * FROM users', 'user_id', self.pool)
+
+        # await self.check_guilds()
+
     @property
     def dosek(self) -> discord.User:
         return self.get_user(682950658671902730)
@@ -81,7 +97,7 @@ class Boribay(commands.Bot):
     def uptime(self) -> int:
         return int((datetime.now() - self.start_time).total_seconds())
 
-    def embed(self, ctx: Context, **kwargs):
+    def embed(self, ctx: Context, **kwargs) -> discord.Embed:
         """The way to manipulate with Embeds.
 
         This method adds features like:
@@ -110,7 +126,9 @@ class Boribay(commands.Bot):
 
         await self.process_commands(message)
 
-    async def get_context(self, message: discord.Message, *, cls=Context):
+    async def get_context(
+        self, message: discord.Message, *, cls=Context
+    ) -> Context:
         """The same get_context but with the custom context class.
 
         Args:
@@ -125,22 +143,6 @@ class Boribay(commands.Bot):
     async def close(self):
         await super().close()
         await self.session.close()
-
-    async def __ainit__(self) -> None:
-        """The asynchronous init method to prepare database with cache stuff.
-
-        The main bot pool, guild-user cache, all are being instantiated here.
-
-        Returns:
-            None: Means that the method returns nothing.
-        """
-        self.pool = await asyncpg.create_pool(**self.config.database)
-        self.db = DatabaseManager(self)
-
-        self.guild_cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
-        self.user_cache = await Cache('SELECT * FROM users', 'user_id', self.pool)
-
-        # await self.check_guilds()
 
     def setup(self) -> None:
         """The important setup method to get already done in one place.
@@ -161,6 +163,13 @@ class Boribay(commands.Bot):
 
         # Putting the async init method into loop.
         self.loop.create_task(self.__ainit__())
+
+    def list_extensions(self):
+        """
+        List all extensions of the bot's extensions directory.
+        """
+        # We should also avoid folders, like __pycache__.
+        return [ext for ext in os.listdir('./boribay/extensions') if not ext.startswith('_')]
 
     def run(self, extensions: Union[list, set]):
         """An overridden run method to make the launcher file smaller.

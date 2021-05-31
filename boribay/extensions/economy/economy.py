@@ -257,12 +257,12 @@ class Economics(Cog):
         await ctx.send(f'Transfered **{amount}** {BATYR} to **{member}**')
 
     @commands.group(invoke_without_command=True)
-    async def bio(self, ctx: Context):
+    async def bio(self, ctx: Context) -> None:
         """Set your bio that will be displayed on your profile!"""
         await ctx.send_help('bio')
 
     @bio.command(name='set')
-    async def _set_bio(self, ctx: Context, *, information: str):
+    async def _set_bio(self, ctx: Context, *, information: str) -> None:
         """Set your bio that will be shown on your profile card.
         Requires to pay 1000 batyrs from your bank.
 
@@ -337,7 +337,7 @@ class Economics(Cog):
         await ctx.send(f'✅ Stole **{amount}** {BATYR} from **{member}**')
 
     @commands.command(aliases=['slots'])
-    async def slot(self, ctx: Context, bet: CasinoConverter(50)):
+    async def slot(self, ctx: Context, bet: CasinoConverter(50)) -> None:
         """Play the game on a slot machine!
 
         Example:
@@ -370,7 +370,7 @@ class Economics(Cog):
         await ctx.user_cache.refresh()
 
     @commands.command()
-    async def work(self, ctx: Context):
+    async def work(self, ctx: Context) -> None:
         """Working is the most legal way to get batyrs.
 
         Reverse numbers, guess their lengths, more later."""

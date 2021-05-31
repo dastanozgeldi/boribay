@@ -8,8 +8,8 @@ from PIL import Image, ImageDraw, ImageFont
 from polaroid import Image as PI
 from wand.image import Image as WI
 
-BASE_PATH = './boribay/data/layouts'
-FONT_PATH = './boribay/data/fonts'
+BASE_PATH = './data/layouts'
+FONT_PATH = './data/fonts'
 
 
 async def make_image_url(ctx, argument: str):

@@ -6,7 +6,8 @@ class TabularData:
 
     The MPL-2.0 License
 
-    Copyright (c) 2015 Rapptz"""
+    Copyright (c) 2015 Rapptz
+    """
 
     def __init__(self):
         self._widths = []

@@ -147,7 +147,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def coinflip(self, ctx: Context):
+    async def coinflip(self, ctx: Context) -> None:
         """Play the simple coinflip game.
 
         Chances:
@@ -165,11 +165,15 @@ class Fun(Cog):
 
         await ctx.send(f'Coin flipped to the `{choice}`, no reward.')
 
-    @flags.add_flag('--timeout', type=float, default=60.0,
-                    help='Set your own timeout! Defaults to 60 seconds.')
-    @flags.command(aliases=['tr', 'typerace'])
+    @flags.add_flag(
+        '--timeout',
+        type=float,
+        default=60.0,
+        help='Set your own timeout! Defaults to 60 seconds.'
+    )
+    @flags.command(aliases=('tr', 'typerace'))
     @commands.max_concurrency(1, per=commands.BucketType.channel)
-    async def typeracer(self, ctx: Context, **flags):
+    async def typeracer(self, ctx: Context, **flags) -> None:
         """Typeracer game. Compete with others and find out the best typist.
 
         If you don't like the given quote, react with a wastebasket to close the game.
@@ -180,9 +184,6 @@ class Fun(Cog):
 
         Raises:
             commands.BadArgument: If too big or too small timeout was set.
-
-        Returns:
-            The average WPM of the winner, spent time and the original text.
         """
         timeout = flags.pop('timeout')
         if not 10.0 < timeout < 120.0:
@@ -283,7 +284,7 @@ class Fun(Cog):
 
         Args:
             color (str.lower): Color of an ejected guy.
-            name (Optional[str]): The name of the impostor.
+            name (Optional[str]): The name for the impostor.
 
         Available colors:
             black • blue • brown • cyan • darkgreen • lime
@@ -292,9 +293,11 @@ class Fun(Cog):
         # This check is still bad since the API colors are limited
         # and ImageColor.getrgb supports more colors.
         if not color_exists(color):
-            raise commands.BadArgument(f'Color {color} does not exist.')
+            raise commands.BadArgument(
+                f'Color {color} does not exist. '
+                f'Choose one from `{ctx.prefix}help {ctx.command}`'
+            )
 
-        name = name or ctx.author.display_name
         url = f'https://vacefron.nl/api/ejected?name={name}&impostor=true&crewmate={color}'
 
         # Calling the API.
@@ -305,8 +308,8 @@ class Fun(Cog):
         # Sending to the contextual channel.
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
-    @commands.command(aliases=['pp', 'penis'])
-    async def peepee(self, ctx, member: Optional[discord.Member]):
+    @commands.command(aliases=('pp', 'penis'))
+    async def peepee(self, ctx: Context, member: Optional[discord.Member]) -> None:
         """Get the random size of your PP.
 
         Example:

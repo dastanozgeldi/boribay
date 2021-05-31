@@ -1,6 +1,7 @@
 # Folders
+api/
+website/
 __pycache__/
-boribay/locales/
 
 # Files
-config.toml
+data/config.toml

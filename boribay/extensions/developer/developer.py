@@ -319,7 +319,7 @@ class Developer(Cog):
 
         Example:
             **{p}ext ~** - reloads all extensions.
-            **{p}ext boribay.cogs.fun** - reloads the "Fun" cog.
+            **{p}ext boribay.extensions.fun** - reloads the "Fun" cog.
         """
         modes = {
             'r': self.bot.reload_extension,
@@ -492,7 +492,3 @@ class Developer(Cog):
         """
         embed = await self._get_information(ctx, suggestion_id)
         return await ctx.send(embed=embed)
-
-
-def setup(bot: Boribay):
-    bot.add_cog(Developer(bot))

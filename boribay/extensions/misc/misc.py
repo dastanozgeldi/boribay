@@ -53,9 +53,9 @@ class Miscellaneous(Cog):
         embed = ctx.embed(description='\n'.join(f'**{k.capitalize()}:** {v}' for k, v in ctr.items()))
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('modules', 'exts'))
+    @commands.command(aliases=('modules',))
     async def extensions(self, ctx: Context):
-        """List of modules that work at a current time."""
+        """Get the list of modules that are currently loaded."""
         exts = [str(ext) for ext in self.bot.cogs.values()]
         exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
         length = [len(element) for row in exts for element in row]

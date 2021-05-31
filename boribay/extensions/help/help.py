@@ -72,15 +72,6 @@ class HelpPages(menus.Menu):
 
         await self.message.edit(embed=embed)
 
-    @menus.button('📢')
-    async def news(self, payload):
-        """See detailed news for the update."""
-        with open('boribay/data/detailed_news.md', 'r') as f:
-            content = f.readlines()
-
-        embed = self.ctx.embed(title=content[0], description=''.join(content[2:]))
-        await self.message.edit(embed=embed)
-
 
 class GroupHelp(menus.ListPageSource):
     """Sends help for group-commands."""
@@ -92,19 +83,27 @@ class GroupHelp(menus.ListPageSource):
         self.prefix = prefix
         self.description = '```fix\n<> ← required argument\n[] ← optional argument```'
 
-    async def format_page(self, menu, cmds):
+    async def format_page(self, menu: menus.Menu, cmds) -> discord.Embed:
         g = self.group
-        doc = g.__doc__ if isinstance(g, Cog) else g.help or 'Help not found.'
 
-        group_help = doc.split('\n')[0] or 'Help not found.'
+        if isinstance(g, Cog):
+            doc = g.__doc__
+        else:
+            doc = (g.help or 'Help not provided.').split('\n')[0]
 
-        embed = self.ctx.embed(title=f'Help for category: {g}', description=f'{group_help}\n{self.description}')
+        embed = self.ctx.embed(
+            title=f'Help for category: {g}',
+            description=doc + self.description
+        )
 
         for cmd in cmds:
             cmd_help = cmd.help or 'Help not found.'
-            embed.add_field(name=f'{self.prefix}{cmd} {cmd.signature}',
-                            value=cmd_help.split('\n')[0] + '..', inline=False)
-        # trying to mean that the command help ↑ has its continuation.
+            embed.add_field(
+                name=f'{self.prefix}{cmd} {cmd.signature}',
+                value=cmd_help.split('\n')[0] + '..',
+                # trying to mean that this help ↑ has its continuation.
+                inline=False
+            )
 
         if (maximum := self.get_max_pages()) > 1:
             embed.set_author(name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} commands)')
@@ -140,7 +139,7 @@ class HelpCommand(commands.HelpCommand):
 
         embed.add_field(name='Modules:', value='\n'.join(cats))
 
-        with open('./boribay/data/news.md', 'r') as f:
+        with open('./data/news.md', 'r') as f:
             news = f.readlines()
 
         embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
@@ -152,11 +151,28 @@ class HelpCommand(commands.HelpCommand):
         ctx = self.context
         entries = await self.filter_commands(cog.get_commands(), sort=True)
 
-        await MyPages(GroupHelp(ctx, cog, entries, self.clean_prefix),
-                      timeout=30.0, clear_reactions_after=True).start(ctx)
+        await MyPages(
+            GroupHelp(ctx, cog, entries, self.clean_prefix),
+            timeout=30.0,
+            clear_reactions_after=True
+        ).start(ctx)
 
-    def get_flags(self, command: commands.Command):
-        return [f'**--{a.dest}** {a.help}' for a in command.callback._def_parser._actions if lambda x: '_OPTIONAL' not in a.dest]
+    def get_flags(self, command: commands.Command) -> list:
+        """Get all available flags for the command.
+
+        Parameters
+        ----------
+        command : commands.Command
+            A command you are trying to get help for.
+
+        Returns
+        -------
+        list
+            A joinable list of strings, like `**--mode** the manager mode`.
+        """
+        return [f'**--{a.dest}** {a.help}'
+                for a in command.callback._def_parser._actions
+                if lambda x: '_OPTIONAL' not in a.dest]
 
     async def send_command_help(self, command: commands.Command):
         ctx = self.context
@@ -174,7 +190,11 @@ class HelpCommand(commands.HelpCommand):
             embed.add_field(name='Aliases', value=' | '.join(aliases))
 
         if hasattr(command.callback, '_def_parser'):
-            embed.add_field(name='Flags', value='\n'.join(self.get_flags(command)), inline=False)
+            embed.add_field(
+                name='Flags',
+                value='\n'.join(self.get_flags(command)),
+                inline=False
+            )
 
         await self.get_destination().send(embed=embed)
 
@@ -200,7 +220,9 @@ class HelpCommand(commands.HelpCommand):
 
 
 class Help(Cog):
-    """The help command extension."""
+    """
+    The help command extension.
+    """
 
     def __init__(self, bot: Boribay):
         self.icon = '🆘'
@@ -211,7 +233,3 @@ class Help(Cog):
 
     def cog_unload(self):
         self.bot.help_command = self._original_help_command
-
-
-def setup(bot: Boribay):
-    bot.add_cog(Help(bot))
