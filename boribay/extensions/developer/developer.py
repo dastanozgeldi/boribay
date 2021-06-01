@@ -1,22 +1,18 @@
-import asyncio
 import copy
 import inspect
-import io
 import os.path
-import textwrap
-from collections import namedtuple
 from contextlib import redirect_stdout
-from io import BytesIO
+from io import BytesIO, StringIO
+from textwrap import indent
 from typing import Optional
 
 import discord
 from boribay.core import Boribay, Cog, Context
-from boribay.utils import DefaultError, IdeaPageSource, MyPages, TabularData
+from boribay.utils import DefaultError, IdeaPageSource, Paginate, TabularData
 from discord.ext import commands, flags
 from jishaku.codeblocks import codeblock_converter
 
 __all__ = ('Developer',)
-Output = namedtuple('Output', 'stdout stderr returncode')
 
 
 class Developer(Cog):
@@ -33,14 +29,6 @@ class Developer(Cog):
 
     async def cog_check(self, ctx: Context):
         return await self.bot.is_owner(ctx.author)
-
-    @staticmethod
-    async def shell(command):
-        process = await asyncio.create_subprocess_shell(
-            command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        return Output(stdout, stderr, str(process.returncode))
 
     @commands.command()
     async def nick(self, ctx, *, nick: str):
@@ -182,8 +170,8 @@ class Developer(Cog):
             'channel': ctx.channel
         }
 
-        with io.StringIO() as stdout:
-            exec(f'async def func():\n{textwrap.indent(code, "  ")}', env, env)
+        with StringIO() as stdout:
+            exec(f'async def func():\n{indent(code, "  ")}', env, env)
             with redirect_stdout(stdout):
                 result = await env['func']()
 
@@ -268,7 +256,7 @@ class Developer(Cog):
     @_git_commands.command(cls=flags.FlagCommand, name='pull')
     async def _git_pull(self, ctx, **flags):
         """Pull changes from original source code on GitHub."""
-        await self.shell('git pull')
+        await self.bot.shell('git pull')
 
         if flags.pop('reload'):
             cmd = self.bot.get_command('ext')
@@ -476,7 +464,7 @@ class Developer(Cog):
         if not (data := await self.bot.pool.fetch(query)):
             return await ctx.send(answers[additional])
 
-        menu = MyPages(IdeaPageSource(ctx, data))
+        menu = Paginate(IdeaPageSource(ctx, data))
         await menu.start(ctx)
 
     @idea.command()

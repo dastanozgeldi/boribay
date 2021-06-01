@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+from collections import namedtuple
 from datetime import datetime
 from typing import Union
 
@@ -18,6 +19,7 @@ from .logger import create_logger
 
 __all__ = ('Boribay',)
 logger = create_logger('bot')
+Output = namedtuple('Output', 'stdout stderr returncode')
 
 
 def get_prefix(bot, msg: discord.Message) -> str:
@@ -96,6 +98,29 @@ class Boribay(commands.Bot):
     @property
     def uptime(self) -> int:
         return int((datetime.now() - self.start_time).total_seconds())
+
+    @staticmethod
+    async def shell(command: str):
+        """The shell method made to ease up terminal manipulation
+        for some bot commands, such as `git pull`.
+
+        Parameters
+        ----------
+        command : str
+            The command to put inside terminal, e.g `git add .`
+
+        Returns
+        -------
+        namedtuple
+            The output terminal returned us.
+        """
+        process = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        return Output(stdout, stderr, str(process.returncode))
 
     def embed(self, ctx: Context, **kwargs) -> discord.Embed:
         """The way to manipulate with Embeds.

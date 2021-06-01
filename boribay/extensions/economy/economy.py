@@ -5,8 +5,7 @@ from typing import Optional
 
 import discord
 from boribay.core import BATYR, Boribay, Cog, Context
-from boribay.utils import (AuthorCheckConverter, CasinoConverter, DefaultError,
-                           is_mod)
+from boribay.utils import checks, converters, exceptions
 from discord.ext import commands, flags
 
 from .games import Trivia, Work
@@ -39,7 +38,7 @@ class Economics(Cog):
             Available ones are: **easy | medium | hard**
         """
         if difficulty not in ('easy', 'medium', 'hard'):
-            raise DefaultError('Invalid difficulty provided.')
+            raise exceptions.DefaultError('Invalid difficulty provided.')
 
         await Trivia(ctx).run(difficulty)
 
@@ -78,7 +77,7 @@ class Economics(Cog):
         await ctx.send_help('balance')
 
     @balance.command(name='add')
-    @is_mod()
+    @checks.is_mod()
     async def _add_balance(self, ctx: Context, member: discord.Member, amount: int):
         """Increase someone's balance for being well behaved.
 
@@ -96,8 +95,10 @@ class Economics(Cog):
             DefaultError: If you have specified too small or too big amount to pay.
         """
         if not 100 <= amount <= 100_000:
-            raise DefaultError('Balance adding limit has reached. '
-                               'Specify between 10 and 100 000.')
+            raise exceptions.DefaultError(
+                'Balance adding limit has reached. '
+                'Specify between 10 and 100 000.'
+            )
 
         member = member or ctx.author
         query = 'UPDATE users SET bank = bank + $1 WHERE user_id = $2;'
@@ -107,7 +108,7 @@ class Economics(Cog):
         await ctx.user_cache.refresh()
 
     @balance.command(name='remove')
-    @is_mod()
+    @checks.is_mod()
     async def _remove_balance(self, ctx: Context, member: discord.Member, amount: int):
         """Decrease someone's balance for being bad behaved.
 
@@ -125,8 +126,10 @@ class Economics(Cog):
             DefaultError: If you have specified too small or too big amount to take.
         """
         if not 10 <= amount <= 100_000:
-            raise DefaultError('Balance adding limit has reached. '
-                               'Specify between 10 and 100 000.')
+            raise exceptions.DefaultError(
+                'Balance adding limit has reached. '
+                'Specify between 10 and 100 000.'
+            )
 
         query = 'UPDATE users SET bank = bank - $1 WHERE user_id = $2;'
         await ctx.send(f'✅ Successfully removed **{amount} {BATYR}** from **{member}**.')
@@ -152,7 +155,7 @@ class Economics(Cog):
         member = member or ctx.author
 
         if not (data := ctx.user_cache[member.id]):
-            raise DefaultError(f'{member} has no profile card.')
+            raise exceptions.DefaultError(f'{member} has no profile card.')
 
         data = copy.copy(data)
 
@@ -188,7 +191,9 @@ class Economics(Cog):
         amount = amount or wallet
 
         if amount > wallet or wallet == 0:
-            raise DefaultError('Transfering amount cannot be higher than your wallet balance')
+            raise exceptions.DefaultError(
+                'Transfering amount cannot be higher than your wallet balance'
+            )
 
         query = 'UPDATE users SET bank = bank + $1, wallet = wallet - $1 WHERE user_id = $2'
 
@@ -216,7 +221,9 @@ class Economics(Cog):
         amount = amount or bank
 
         if amount > bank or bank == 0:
-            raise DefaultError('Withdrawing amount cannot be higher than your bank balance.')
+            raise exceptions.DefaultError(
+                'Withdrawing amount cannot be higher than your bank balance.'
+            )
 
         query = '''
         UPDATE users
@@ -229,7 +236,12 @@ class Economics(Cog):
         await ctx.user_cache.refresh()
 
     @commands.command()
-    async def transfer(self, ctx: Context, member: AuthorCheckConverter, amount: int):
+    async def transfer(
+        self,
+        ctx: Context,
+        member: converters.AuthorCheckConverter,
+        amount: int
+    ):
         """Transfer someone Batyrs whoever they would be.
 
         Example:
@@ -243,22 +255,28 @@ class Economics(Cog):
             DefaultError: If you have less than 100 batyrs on your balance.
         """
         if (wallet := ctx.user_cache[ctx.author.id]['wallet']) < 100:
-            raise DefaultError(f'You have nothing to pay (less than 100 {BATYR})')
+            raise exceptions.DefaultError(f'You have nothing to pay (less than 100 {BATYR})')
 
         if amount > wallet:
-            raise DefaultError('Unfortunately, you cannot remain in debt. '
-                               f'(You only have {wallet} {BATYR}).')
+            raise exceptions.DefaultError(
+                'Unfortunately, you cannot remain in debt. '
+                f'(You only have {wallet} {BATYR}).'
+            )
 
         if not 10 < amount < 10_000:
-            raise DefaultError('Too big/small amount was specified. '
-                               f'It should be between 10 and 10 000 {BATYR}.')
+            raise exceptions.DefaultError(
+                'Too big/small amount was specified. '
+                f'It should be between 10 and 10 000 {BATYR}.'
+            )
 
         await self.bot.db.double('wallet', amount, ctx.author, member)
         await ctx.send(f'Transfered **{amount}** {BATYR} to **{member}**')
 
     @commands.group(invoke_without_command=True)
     async def bio(self, ctx: Context) -> None:
-        """Set your bio that will be displayed on your profile!"""
+        """
+        Set your bio that will be displayed on your profile.
+        """
         await ctx.send_help('bio')
 
     @bio.command(name='set')
@@ -278,7 +296,9 @@ class Economics(Cog):
         author = ctx.author.id
 
         if (bank := ctx.user_cache[author]['bank']) < 1000:
-            raise DefaultError(f'Setting bio requires at least 1000 {BATYR} (You have {bank}).')
+            raise exceptions.DefaultError(
+                f'Setting bio requires at least 1000 {BATYR} (You have {bank}).'
+            )
 
         query = 'UPDATE users SET bio = $1, bank = bank - 1000 WHERE user_id = $2;'
         await ctx.db.execute(query, information, author)
@@ -293,10 +313,14 @@ class Economics(Cog):
         """
         # Avoiding useless database call.
         if not ctx.user_cache[ctx.author.id]['bio']:
-            raise DefaultError('You do not currently have bio set, '
-                               'so there is no point on trying to disable it.')
+            raise exceptions.DefaultError(
+                'You do not currently have bio set, '
+                'so there is no point on trying to disable it.'
+            )
 
-        confirmation = await ctx.confirm('Are you sure? You will not be able to bring back batyrs paid to set your bio.')
+        confirmation = await ctx.confirm(
+            'Are you sure? You will not be able to bring back batyrs paid to set your bio.'
+        )
         if confirmation:
             await ctx.db.execute('UPDATE users SET bio = null WHERE user_id = $1;', ctx.author.id)
             await ctx.user_cache.refresh()
@@ -304,7 +328,11 @@ class Economics(Cog):
 
     @commands.command(aliases=['rob'])
     @commands.cooldown(1, 10.0, commands.BucketType.user)
-    async def attack(self, ctx: Context, member: AuthorCheckConverter):
+    async def attack(
+        self,
+        ctx: Context,
+        member: converters.AuthorCheckConverter
+    ):
         """Rob someone whoever they would be.
 
         Remember that this only works when the victim has more than 100 batyrs
@@ -323,7 +351,9 @@ class Economics(Cog):
             DefaultError: When a victim has not enough batyrs to get robbed.
         """
         if (member_wallet := ctx.user_cache[member.id]['wallet']) < 100:
-            raise DefaultError(f'{member} had nothing to steal (less than 100 {BATYR})')
+            raise exceptions.DefaultError(
+                f'{member} had nothing to steal (less than 100 {BATYR})'
+            )
 
         choice = random.choices(population=['success', 'caught'], weights=[.5, .5], k=1)[0]
         if choice == 'caught':
@@ -337,7 +367,11 @@ class Economics(Cog):
         await ctx.send(f'✅ Stole **{amount}** {BATYR} from **{member}**')
 
     @commands.command(aliases=['slots'])
-    async def slot(self, ctx: Context, bet: CasinoConverter(50)) -> None:
+    async def slot(
+        self,
+        ctx: Context,
+        bet: converters.CasinoConverter(50)
+    ) -> None:
         """Play the game on a slot machine!
 
         Example:
@@ -373,7 +407,8 @@ class Economics(Cog):
     async def work(self, ctx: Context) -> None:
         """Working is the most legal way to get batyrs.
 
-        Reverse numbers, guess their lengths, more later."""
+        Reverse numbers, guess their lengths, more later.
+        """
         await Work(ctx).start()
 
     @commands.command(aliases=['hnt'])
@@ -395,7 +430,9 @@ class Economics(Cog):
             return msg.author == ctx.author and msg.channel == ctx.channel
 
         try:
-            choice = (await self.bot.wait_for('message', timeout=10.0, check=check)).content
+            choice = (
+                await self.bot.wait_for('message', timeout=10.0, check=check)
+            ).content
 
         except asyncio.TimeoutError:
             return await ctx.send('❌ You took too long.')
@@ -403,8 +440,10 @@ class Economics(Cog):
         choices = ('heads', 'tails')
 
         if choice not in choices:
-            raise DefaultError(f'Choice {choice} does not exist.\n'
-                               f'Choose from **{", ".join(choices)}**')
+            raise exceptions.DefaultError(
+                f'Choice {choice} does not exist. '
+                'Choose from: ' + ', '.join(choices)
+            )
 
         embed = ctx.embed(title='Flipping the coin...')
         embed.set_image(url='http://www.mathwire.com/images/animatedcoinflip2.gif')

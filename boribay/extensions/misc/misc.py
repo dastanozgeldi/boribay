@@ -19,7 +19,7 @@ class Miscellaneous(Cog):
         self.icon = '💫'
         self.bot = bot
 
-    @commands.command(aliases=('suggestion',))
+    @commands.command(aliases=['suggestion'])
     async def suggest(self, ctx: Context, *, content: str):
         """Suggest an idea to the bot owner.
 
@@ -34,8 +34,8 @@ class Miscellaneous(Cog):
         await self.bot.pool.execute(query, content, ctx.author.id)
         await ctx.send('✅ Added your suggestion, you will be notified when it will be approved/rejected.')
 
-    @commands.command(aliases=('cs',))
-    async def codestats(self, ctx: Context):
+    @commands.command(aliases=['codestats', 'cs'])
+    async def codestatistics(self, ctx: Context):
         """See the code statistics of the bot."""
         ctr = Counter()
 
@@ -53,7 +53,7 @@ class Miscellaneous(Cog):
         embed = ctx.embed(description='\n'.join(f'**{k.capitalize()}:** {v}' for k, v in ctr.items()))
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('modules',))
+    @commands.command(aliases=['modules'])
     async def extensions(self, ctx: Context):
         """Get the list of modules that are currently loaded."""
         exts = [str(ext) for ext in self.bot.cogs.values()]
@@ -78,7 +78,7 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('about',))
+    @commands.command(aliases=['about'])
     async def info(self, ctx: Context):
         """See some kind of information about me (such as command usage, links etc.)"""
         me = self.bot
@@ -109,7 +109,7 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('memberinfo', 'ui', 'mi'))
+    @commands.command(aliases=['memberinfo', 'ui', 'mi'])
     @commands.guild_only()
     async def userinfo(self, ctx: Context, member: Optional[commands.MemberConverter]):
         """See some general information about the mentioned user.
@@ -135,7 +135,7 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('guildinfo', 'si', 'gi'))
+    @commands.command(aliases=['guildinfo', 'si', 'gi'])
     @commands.guild_only()
     async def serverinfo(self, ctx: Context):
         """See some general information about current guild."""
@@ -208,7 +208,7 @@ class Miscellaneous(Cog):
         embed = ctx.embed(description='\n'.join(f'**{n}:** ```{v * 1000:.2f} ms```' for n, v in elements.items()))
         await msg.edit(embed=embed)
 
-    @commands.command(aliases=('mrs',))
+    @commands.command(aliases=['mrs'])
     async def messagereactionstats(self, ctx: Context, *, message_link: str):
         """See what reactions are there in a message, i.e reaction statistics.
 

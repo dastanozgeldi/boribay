@@ -3,7 +3,7 @@ from typing import Union
 
 import discord
 from boribay.core import Boribay, Cog, Context
-from boribay.utils import MyPages
+from boribay.utils import Paginate
 from discord.ext import commands, menus
 
 __all__ = ('HelpCommand', 'Help')
@@ -151,7 +151,7 @@ class HelpCommand(commands.HelpCommand):
         ctx = self.context
         entries = await self.filter_commands(cog.get_commands(), sort=True)
 
-        await MyPages(
+        await Paginate(
             GroupHelp(ctx, cog, entries, self.clean_prefix),
             timeout=30.0,
             clear_reactions_after=True
@@ -202,7 +202,7 @@ class HelpCommand(commands.HelpCommand):
         if len(subcommands := group.commands) == 0 or len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
             return await self.send_command_help(group)
 
-        await MyPages(
+        await Paginate(
             GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0
         ).start(self.context)
 

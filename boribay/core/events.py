@@ -138,13 +138,13 @@ def set_events(bot: 'Boribay'):
         embed = me.embed(ctx, description=f'```py\nError:\n{exc}\n```', color=0xff0000)
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
 
-        if ctx.guild:
+        if g := ctx.guild:
             command = 'None' if not ctx.command else str(ctx.command)
-            embed.set_thumbnail(url=ctx.guild.icon_url)
+            embed.set_thumbnail(url=g.icon_url)
             embed.add_field(
                 name='Information',
                 value=f'Channel: {ctx.channel.mention}\n'
-                f'Guild: {ctx.guild}\n'
+                f'Guild: {g} | {g.id}\n'
                 f'Command: {command}\n'
                 f'Message: {ctx.message.content}'
             )
@@ -155,20 +155,24 @@ def set_events(bot: 'Boribay'):
     async def on_command_error(ctx, error: str):
         error = getattr(error, 'original', error)
         embed = ctx.embed(title='⚠ Error!', color=0xff0000)
+        CUSTOM = (
+            exceptions.DefaultError,
+            exceptions.NotAnInteger,
+            exceptions.NotEnough,
+            exceptions.PastMinimum,
+            exceptions.CalcError,
+            exceptions.UndefinedVariable,
+            exceptions.KeywordAlreadyTaken,
+            exceptions.Overflow,
+            exceptions.UnclosedBrackets,
+            exceptions.EmptyBrackets,
+            exceptions.OptionsNotInRange
+        )
 
         if isinstance(error, commands.CommandNotFound):
             return
 
         setattr(ctx, 'original_author_id', getattr(ctx, 'original_author_id', ctx.author.id))
-
-        CUSTOM = (
-            exceptions.DefaultError,
-            exceptions.NotEnough,
-            exceptions.PastMinimum,
-            exceptions.NotAnInteger,
-            exceptions.TooManyOptions,
-            exceptions.NotEnoughOptions
-        )
 
         if isinstance(
             error,
@@ -221,6 +225,6 @@ def set_events(bot: 'Boribay'):
             await send_error(ctx, exc)
 
         # log.error(error)
-        # It's always better to get the original traceback instead of simple logging
-        # that does not provide any details.
+        # It's always better to get the original traceback instead of
+        # simple logging that does not provide any details.
         raise error

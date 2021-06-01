@@ -171,7 +171,7 @@ class Fun(Cog):
         default=60.0,
         help='Set your own timeout! Defaults to 60 seconds.'
     )
-    @flags.command(aliases=('tr', 'typerace'))
+    @flags.command(aliases=['tr', 'typerace'])
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def typeracer(self, ctx: Context, **flags) -> None:
         """Typeracer game. Compete with others and find out the best typist.
@@ -308,7 +308,7 @@ class Fun(Cog):
         # Sending to the contextual channel.
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
-    @commands.command(aliases=('pp', 'penis'))
+    @commands.command(aliases=['pp', 'penis'])
     async def peepee(self, ctx: Context, member: Optional[discord.Member]) -> None:
         """Get the random size of your PP.
 

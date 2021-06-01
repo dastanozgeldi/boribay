@@ -1,11 +1,4 @@
-"""check_guild_perms, is_mod
-are stolen from R. Danny.
-
-Thanks Danny for this awesome piece of code!
-
-The MPL-2.0 License
-
-Copyright (c) 2015 Rapptz"""
+from re import search
 
 from discord.ext import commands
 
@@ -37,3 +30,19 @@ def beta_command():
         return True
 
     return commands.check(predicate)
+
+
+def is_valid_alias(name: str) -> bool:
+    """A quick alias name validness check.
+
+    Parameters
+    ----------
+    name : str
+        The name of the alias to check.
+
+    Returns
+    -------
+    bool
+        True - if the name passed all checks, otherwise False.
+    """
+    return not bool(search(r'\s', name)) and name.isprintable()

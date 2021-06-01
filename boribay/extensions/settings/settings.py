@@ -63,7 +63,7 @@ class Settings(Cog):
 
         return constants.TICK
 
-    @commands.command(aliases=('gs', 'settings'))
+    @commands.command(aliases=['gs', 'settings'])
     async def guildsettings(self, ctx: Context):
         """The settings command. Shows the settings of the current server.
 

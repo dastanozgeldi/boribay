@@ -12,8 +12,11 @@ class DatabaseManager(Pool):
         self.pool = bot.pool
 
     async def _operate(
-        self, op: str, column: str,
-        user: discord.Member, amount: Union[int, float]
+        self,
+        op: str,
+        column: str,
+        user: discord.Member,
+        amount: Union[int, float]
     ) -> None:
         """The operate method made to ease up database manipulation.
 

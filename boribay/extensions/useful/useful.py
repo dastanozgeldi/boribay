@@ -7,11 +7,55 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from boribay.core import Boribay, Cog, Context
-from boribay.utils import (CalcLexer, CalcParser, ColorConverter, MyPages,
-                           TodoPageSource, exceptions, make_image_url)
+from boribay.core import Boribay, Cog, Context, constants
+from boribay.utils import (calculator, converters, exceptions, make_image_url,
+                           paginators)
 from discord.ext import commands, flags
 from humanize import time
+
+
+class Poll:
+    def __init__(self, ctx: Context, options: list, **kwargs):
+        self.ctx = ctx
+        self.options = options
+        self.embed = ctx.embed(**kwargs)
+
+    def get_reactions(self) -> tuple:
+        if len(self.options) == 2 and ('y', 'n') == tuple(map(str.lower, self.options)):
+            return (
+                '<:thumbs_up:746352051717406740>',
+                '<:thumbs_down:746352095510265881>'
+            )
+
+        return (
+            '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'
+        )
+
+    async def start(self) -> None:
+        ctx = self.ctx
+        opt = len(self.options)
+        reactions = self.get_reactions()
+
+        if not 2 <= opt <= 10:
+            raise exceptions.OptionsNotInRange(
+                'Please keep poll options range (min 2 : max 10).'
+            )
+
+        # Adding reactions on an embed field.
+        self.embed.add_field(
+            name='📊 Options',
+            value='\n'.join(
+                f'{reactions[x]} {option}' for x, option in enumerate(self.options)
+            )
+        )
+
+        # Attempting to delete a message sent by user.
+        await ctx.try_delete(ctx.message)
+        message = await ctx.send(embed=self.embed)
+
+        # Adding some real reactions.
+        for emoji in reactions[:opt]:
+            await message.add_reaction(emoji)
 
 
 class Useful(Cog):
@@ -59,8 +103,10 @@ class Useful(Cog):
                     f.writestr(f'{emoji.name}.{"gif" if emoji.animated else "png"}', bts)
             buffer.seek(0)
 
-        await ctx.reply('Sorry for being slow as hell but anyways:',
-                        file=discord.File(buffer, filename='emojis.zip'))
+        await ctx.reply(
+            'Sorry for being slow as hell but anyways:',
+            file=discord.File(buffer, filename='emojis.zip')
+        )
 
     def _generate_password(self, length: int, **flags) -> str:
         """The core of this module, generates a random password for you.
@@ -87,12 +133,23 @@ class Useful(Cog):
         result = random.choices(BASE, k=length)
         return ''.join(result)
 
-    @flags.add_flag('--numbers', '-n', action='store_true',
-                    help='Whether to add numbers.')
-    @flags.add_flag('--uppercase', '-u', action='store_true',
-                    help='Whether to add Uppercased Characters.')
-    @flags.add_flag('--special-characters', '-sc', action='store_true',
-                    help='Whether to add special characters, like: $%^&')
+    @flags.add_flag(
+        '--numbers',
+        '-n',
+        action='store_true',
+        help='Whether to add numbers.'
+    )
+    @flags.add_flag(
+        '--uppercase', '-u',
+        action='store_true',
+        help='Whether to add Uppercased Characters.'
+    )
+    @flags.add_flag(
+        '--special-characters',
+        '-sc',
+        action='store_true',
+        help='Whether to add special characters, like: $%^&'
+    )
     @flags.command(aliases=['pw'])
     async def password(self, ctx: Context, length: int = 25, **flags):
         """A password creator command. Get a safe password using this command.
@@ -225,8 +282,10 @@ class Useful(Cog):
         if flags.pop('count', False):
             return await dest.send(len(todos))
 
-        await MyPages(
-            TodoPageSource(ctx, todos), clear_reactions_after=True, timeout=60.0,
+        await paginators.Paginate(
+            paginators.TodoPageSource(ctx, todos),
+            clear_reactions_after=True,
+            timeout=60.0
         ).start(ctx, channel=dest)
 
     @todo.command(name='add', aliases=['append'])
@@ -302,52 +361,24 @@ class Useful(Cog):
             await ctx.bot.pool.execute(query, ctx.author.id)
             return await ctx.message.add_reaction('✅')
 
-    @commands.command()
-    async def poll(self, ctx: Context, question: str, *options):
+    @commands.command(name='poll')
+    async def command_poll(self, ctx: Context, *, options: str) -> None:
         """Make a simple poll in your server using this command.
         You can add an image so it will be added as the main image.
 
         Don't forget to separate options using quotation marks ("")
 
         Example:
-            **{p}poll "What to do with @Dosek ?" "kick him" "give him the last chance"**
+            **{p}poll What to do with @Dosek ? | kick him | give him the last chance**
 
         Args:
-            question (str): Simply, the title of your poll.
-            options: Options of your poll.
-
-        Raises:
-            TooManyOptions: If there were more than 10 options.
-            NotEnoughOptions: If there were less than 10 options.
+            options: Title + Options for your poll. Separate by `|`.
         """
-        if len(options) > 10:
-            raise exceptions.TooManyOptions('There were too many options to create a poll.')
+        # Variable assignment.
+        options = list(map(str.strip, options.split('|')))
+        description = options.pop(0)  # Getting the first one as the poll title.
 
-        elif len(options) < 2:
-            raise exceptions.NotEnoughOptions('There were not enough options to create a poll.')
-
-        elif len(options) == 2 and options[0].lower() == 'yes' and options[1].lower() == 'no':
-            reactions = ['<:thumbs_up:746352051717406740>', '<:thumbs_down:746352095510265881>']
-
-        else:
-            reactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
-
-        description = '**%s**' % question.replace("\n", '')
-        embed = ctx.embed(description=description)
-        embed.add_field(
-            name='📊 Options',
-            value='\n'.join(f'{reactions[x]} {option}' for x, option in enumerate(options))
-        )
-
-        if ctx.message.attachments:
-            embed.set_image(url=ctx.message.attachments[0].url)
-
-        message = await ctx.send(embed=embed)
-
-        for emoji in reactions[:len(options)]:
-            await message.add_reaction(emoji)
-
-        return await ctx.try_delete(ctx.message)
+        await Poll(ctx, options, description=description).start()
 
     @commands.command()
     async def reddit(self, ctx: Context, subreddit: str):
@@ -376,7 +407,7 @@ class Useful(Cog):
 
         embed = ctx.embed().set_image(url=data['url'])
 
-        embed.set_author(name=data['title'], icon_url='https://icons.iconarchive.com/icons/papirus-team/papirus-apps/96/reddit-icon.png')
+        embed.set_author(name=data['title'], icon_url=constants.REDDIT_ICON_URL)
         embed.set_footer(text=f'from {data["subreddit_name_prefixed"]}')
 
         await ctx.send(embed=embed)
@@ -391,31 +422,28 @@ class Useful(Cog):
         Args:
             word (str): Your word to search for.
         """
-        try:
-            r = await ctx.bot.session.get(f'{ctx.config.api.ud}?term={word}')
-            js = await r.json()
-            source = js['list'][0]
+        r = await ctx.bot.session.get(f'{ctx.config.api.ud}?term={word}')
 
-        except IndexError:
-            return await ctx.send(f'No definition found for **{word}**.')
+        if (stat := r.status) != 200:
+            return await ctx.send(f'Facing some issues: {stat} {r.reason}')
 
-        embed = ctx.embed(description=f"**{source['definition'].replace('[', '').replace(']', '')}**")
-        embed.set_author(
-            name=word, url=source['permalink'],
-            icon_url='https://is4-ssl.mzstatic.com/image/thumb/Purple111/v4/7e/49/85/7e498571-a905-d7dc-26c5-33dcc0dc04a8/source/64x64bb.jpg'
-        ).add_field(name='Example:', value=js['list'][0]['example'].replace('[', '').replace(']', '')[:1024])
-        embed.set_footer(text=f'{source["thumbs_up"]}👍 | {source["thumbs_down"]}👎 | {source["written_on"][0:10]}')
+        js = await r.json()
+        if not (source := js.get('list', [])):
+            return await ctx.send(f'No definitions found for `{word}`.')
 
-        await ctx.send(embed=embed)
+        # Everything is done, paginating...
+        await paginators.Paginate(
+            paginators.UrbanDictionaryPageSource(ctx, source)
+        ).start(ctx)
 
-    @commands.command(aliases=['calculate', 'calc'])
-    async def calculator(self, ctx: Context, *, expression: str):
+    @commands.command(aliases=['calc'])
+    async def calculate(self, ctx: Context, *, expression: str):
         """A simple calculator command that supports useful features.
 
-        Supported functions:
+        Features:
             round, sin, cos, tan, sqrt, abs, fib.
 
-        Supported constants:
+        Constants:
             pi, e, tau, inf, NaN.
 
         Example:
@@ -428,8 +456,8 @@ class Useful(Cog):
             UnclosedBrackets: If an expression has unclosed brackets.
             EmptyBrackets: If an expression has empty-useless brackets.
         """
-        lexer = CalcLexer()
-        parser = CalcParser()
+        lexer = calculator.CalcLexer()
+        parser = calculator.CalcParser()
         reg = ''.join(i for i in expression if i in '()')
 
         try:
@@ -468,7 +496,7 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['colour'])
-    async def color(self, ctx: Context, *, color: ColorConverter):
+    async def color(self, ctx: Context, *, color: converters.ColorConverter):
         """Color visualizer command. Get HEX & RHB values of a color.
 
         Argument can be either RGB, HEX, or even a human-friendly word.
@@ -483,7 +511,7 @@ class Useful(Cog):
 
         embed = ctx.embed(
             color=discord.Color.from_rgb(*rgb)
-        ).set_thumbnail(url=f'https://kal-byte.co.uk/colour/{"/".join(str(i) for i in rgb)}')
+        ).set_thumbnail(url='https://kal-byte.co.uk/colour/' + '/'.join(str(i) for i in rgb))
         embed.add_field(name='Hex', value=str(color), inline=False)
         embed.add_field(name='RGB', value=str(rgb), inline=False)
 
@@ -556,12 +584,13 @@ class Useful(Cog):
         Args:
             city: The city you want to get weather data of.
         """
-        r = await ctx.bot.session.get(f'{ctx.config.api.weather[0]}appid={ctx.config.api.weather[1]}&q={city}')
+        conf = ctx.config.api.weather
+        r = await ctx.bot.session.get(f'{conf[0]}appid={conf[1]}&q={city}')
         x = await r.json()
 
         if x['cod'] != '404':
             embed = ctx.embed(title=f'Weather in {city}')
-            embed.set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
+            embed.set_thumbnail(url=constants.WEATHER_ICON_URL)
 
             fields = [
                 ('Description', f'**{x["weather"][0]["description"]}**', False),

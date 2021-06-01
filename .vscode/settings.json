@@ -8,6 +8,5 @@
     "files.exclude": {
         "**/__pycache__": true
     },
-    "python.formatting.provider": "autopep8",
     "autoDocstring.docstringFormat": "numpy"
 }

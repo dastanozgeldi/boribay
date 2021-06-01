@@ -58,11 +58,6 @@ class EmptyBrackets(Exception):
     pass
 
 
-class TooManyOptions(commands.CommandError):
+class OptionsNotInRange(commands.CommandError):
     """Raised when there were more than 10 options on a poll."""
-    pass
-
-
-class NotEnoughOptions(commands.CommandError):
-    """Raised when the options count is < 2."""
     pass

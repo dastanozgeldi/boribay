@@ -224,7 +224,7 @@ class Images(Cog):
         message = await ctx.send(file=file)
         await message.add_reaction('<:press_f:796264575065653248>')
 
-    @commands.command(aliases=('5g1g', 'fivegoneg'))
+    @commands.command(aliases=['5g1g', 'fivegoneg'])
     async def fiveguysonegirl(self, ctx: Context, member: Optional[str]) -> None:
         """Legendary "5 guys 1 girl" meme maker.
 
@@ -242,7 +242,7 @@ class Images(Cog):
         file = discord.File(buffer, '5g1g.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=('ko',))
+    @commands.command(aliases=['ko'])
     async def fight(self, ctx: Context, member: str) -> None:
         """Fight someone!
 
@@ -301,7 +301,7 @@ class Images(Cog):
         file = discord.File(buffer, 'communist.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=('gay', 'gayize'))
+    @commands.command(aliases=['gay', 'gayize'])
     async def rainbow(self, ctx: Context, image: Optional[str]) -> None:
         """Put the rainbow filter on a user.
 
