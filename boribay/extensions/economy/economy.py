@@ -4,7 +4,7 @@ import random
 from typing import Optional
 
 import discord
-from boribay.core import BATYR, Boribay, Cog, Context
+from boribay.core import BATYR, Cog, Context
 from boribay.utils import checks, converters, exceptions
 from discord.ext import commands, flags
 
@@ -14,16 +14,16 @@ from .games import Trivia, Work
 class Economics(Cog):
     """The Economics extension."""
 
-    def __init__(self, bot: Boribay):
-        self.icon = '💵'
-        self.bot = bot
+    icon = '💵'
 
     async def cog_check(self, ctx: Context):
         return await commands.guild_only().predicate(ctx)
 
     @commands.command()
     @commands.max_concurrency(1, commands.BucketType.channel)
-    async def trivia(self, ctx: Context, difficulty: str.lower = 'medium'):
+    async def trivia(
+        self, ctx: Context, difficulty: str.lower = 'medium'
+    ) -> None:
         """Play the trivia game to make some money.
 
         Example:
@@ -42,24 +42,14 @@ class Economics(Cog):
 
         await Trivia(ctx).run(difficulty)
 
-    @staticmethod
-    async def eco_lb(ctx: Context, limit: int):
-        """The Global Leaderboard for Economics.
-
-        Args:
-            limit (int): The user-limit on leaderboard.
-        """
-        me = ctx.bot
-        data = (await me.pool.fetch('SELECT * FROM users ORDER by wallet + bank DESC'))[:limit]
-        users = [f'**{me.get_user(row["user_id"]) or row["user_id"]}** - {row["wallet"] + row["bank"]} {BATYR}' for row in data]
-
-        embed = ctx.embed(title='The Global Leaderboard', description='\n'.join(users))
-        await ctx.send(embed=embed)
-
-    @flags.add_flag('--limit', type=int, default=5,
-                    help='Set the limit of users you want to see.')
+    @flags.add_flag(
+        '--limit',
+        type=int,
+        default=5,
+        help='Set the limit of users you want to see.'
+    )
     @flags.command(aliases=['lb'])
-    async def leaderboard(self, ctx: Context, **flags):
+    async def leaderboard(self, ctx: Context, **flags) -> None:
         """Boribay economics leaderboard. Defaults to 5 users,
         however you can specify the limitation of the leaderboard.
 
@@ -69,16 +59,25 @@ class Economics(Cog):
         if (limit := flags.pop('limit')) > 10:
             raise commands.BadArgument('I cannot get why do you need more than 10 people.')
 
-        await self.eco_lb(ctx, limit)
+        data = await ctx.bot.pool.fetch('SELECT * FROM users ORDER by wallet + bank DESC')
+        users = [
+            f'**{ctx.bot.get_user(row["user_id"]) or row["user_id"]}** - {row["wallet"] + row["bank"]} {BATYR}'
+            for row in data[:limit]
+        ]
+
+        embed = ctx.embed(title='The Global Leaderboard', description='\n'.join(users))
+        await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True)
-    async def balance(self, ctx: Context):
+    async def balance(self, ctx: Context) -> None:
         """The moderator-only user balance management command."""
         await ctx.send_help('balance')
 
     @balance.command(name='add')
     @checks.is_mod()
-    async def _add_balance(self, ctx: Context, member: discord.Member, amount: int):
+    async def _add_balance(
+        self, ctx: Context, member: discord.Member, amount: int
+    ) -> None:
         """Increase someone's balance for being well behaved.
 
         However, balance adding has limits: the transaction money
@@ -97,19 +96,19 @@ class Economics(Cog):
         if not 100 <= amount <= 100_000:
             raise exceptions.DefaultError(
                 'Balance adding limit has reached. '
-                'Specify between 10 and 100 000.'
+                'Specify between 100 and 100 000.'
             )
 
         member = member or ctx.author
         query = 'UPDATE users SET bank = bank + $1 WHERE user_id = $2;'
+        await ctx.db.push(query, amount, member.id)
         await ctx.send(f'✅ Successfully added **{amount} {BATYR}** to **{member}**.')
-
-        await ctx.db.execute(query, amount, member.id)
-        await ctx.user_cache.refresh()
 
     @balance.command(name='remove')
     @checks.is_mod()
-    async def _remove_balance(self, ctx: Context, member: discord.Member, amount: int):
+    async def _remove_balance(
+        self, ctx: Context, member: discord.Member, amount: int
+    ) -> None:
         """Decrease someone's balance for being bad behaved.
 
         However, balance removing has limits: the transaction money
@@ -125,20 +124,20 @@ class Economics(Cog):
         Raises:
             DefaultError: If you have specified too small or too big amount to take.
         """
-        if not 10 <= amount <= 100_000:
+        if not 100 <= amount <= 100_000:
             raise exceptions.DefaultError(
                 'Balance adding limit has reached. '
-                'Specify between 10 and 100 000.'
+                'Specify between 100 and 100 000.'
             )
 
         query = 'UPDATE users SET bank = bank - $1 WHERE user_id = $2;'
+        await ctx.db.push(query, amount, member.id)
         await ctx.send(f'✅ Successfully removed **{amount} {BATYR}** from **{member}**.')
 
-        await ctx.db.execute(query, amount, member.id)
-        await ctx.user_cache.refresh()
-
     @commands.command(aliases=['card'])
-    async def profile(self, ctx: Context, member: Optional[discord.Member]):
+    async def profile(
+        self, ctx: Context, member: Optional[discord.Member]
+    ) -> None:
         """Check the profile card of a user in Economics system.
         If you don't specify anyone you get your own card information.
 
@@ -172,7 +171,7 @@ class Economics(Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['dep'])
-    async def deposit(self, ctx: Context, amount: int = None):
+    async def deposit(self, ctx: Context, amount: int = None) -> None:
         """Deposit given amount of money into your bank.
         By not specifying the amount of money you deposit them all.
 
@@ -197,12 +196,11 @@ class Economics(Cog):
 
         query = 'UPDATE users SET bank = bank + $1, wallet = wallet - $1 WHERE user_id = $2'
 
-        await ctx.db.execute(query, amount, ctx.author.id)
+        await ctx.db.push(query, amount, ctx.author.id)
         await ctx.send(f'Successfully transfered **{amount}** {BATYR} into your bank!')
-        await ctx.user_cache.refresh()
 
     @commands.command(aliases=['wd'])
-    async def withdraw(self, ctx: Context, amount: int = None):
+    async def withdraw(self, ctx: Context, amount: int = None) -> None:
         """Withdraw given amount of money from your bank.
         By not specifying the amount of money you withdraw them all.
 
@@ -231,9 +229,8 @@ class Economics(Cog):
         WHERE user_id = $2
         '''
 
-        await ctx.db.execute(query, amount, ctx.author.id)
+        await ctx.db.push(query, amount, ctx.author.id)
         await ctx.send(f'Successfully withdrew **{amount}** {BATYR} to your wallet!')
-        await ctx.user_cache.refresh()
 
     @commands.command()
     async def transfer(
@@ -241,7 +238,7 @@ class Economics(Cog):
         ctx: Context,
         member: converters.AuthorCheckConverter,
         amount: int
-    ):
+    ) -> None:
         """Transfer someone Batyrs whoever they would be.
 
         Example:
@@ -269,7 +266,7 @@ class Economics(Cog):
                 f'It should be between 10 and 10 000 {BATYR}.'
             )
 
-        await self.bot.db.double('wallet', amount, ctx.author, member)
+        await ctx.db.double('wallet', amount, ctx.author, member)
         await ctx.send(f'Transfered **{amount}** {BATYR} to **{member}**')
 
     @commands.group(invoke_without_command=True)
@@ -301,12 +298,11 @@ class Economics(Cog):
             )
 
         query = 'UPDATE users SET bio = $1, bank = bank - 1000 WHERE user_id = $2;'
-        await ctx.db.execute(query, information, author)
-        await ctx.user_cache.refresh()
+        await ctx.db.push(query, information, author)
         await ctx.send('✅ Set your bio successfully.')
 
     @bio.command(name='disable')
-    async def _disable_bio(self, ctx: Context):
+    async def _disable_bio(self, ctx: Context) -> None:
         """Disable bio feature in your profile.
 
         This is useful when you want to remove the info about you without having to pay batyrs.
@@ -322,9 +318,11 @@ class Economics(Cog):
             'Are you sure? You will not be able to bring back batyrs paid to set your bio.'
         )
         if confirmation:
-            await ctx.db.execute('UPDATE users SET bio = null WHERE user_id = $1;', ctx.author.id)
-            await ctx.user_cache.refresh()
-            return await ctx.send('✅ Disabled your bio successfully.')
+            await ctx.db.push(
+                'UPDATE users SET bio = null WHERE user_id = $1;',
+                ctx.author.id
+            )
+            await ctx.send('✅ Disabled your bio successfully.')
 
     @commands.command(aliases=['rob'])
     @commands.cooldown(1, 10.0, commands.BucketType.user)
@@ -332,7 +330,7 @@ class Economics(Cog):
         self,
         ctx: Context,
         member: converters.AuthorCheckConverter
-    ):
+    ) -> None:
         """Rob someone whoever they would be.
 
         Remember that this only works when the victim has more than 100 batyrs
@@ -355,15 +353,22 @@ class Economics(Cog):
                 f'{member} had nothing to steal (less than 100 {BATYR})'
             )
 
-        choice = random.choices(population=['success', 'caught'], weights=[.5, .5], k=1)[0]
+        choice = random.choices(
+            population=['success', 'caught'],
+            weights=(.5, .5),
+            k=1
+        )[0]
         if choice == 'caught':
             author_bank = ctx.user_cache[ctx.author.id]['bank']
             fine = author_bank * .1
-            await self.bot.db.double('bank', fine, ctx.author, member)
-            return await ctx.reply(f'You were caught by police and **{fine}** from your bank will be transfered to **{member}** as a fine.')
+            await ctx.db.double('bank', fine, ctx.author, member)
+            return await ctx.reply(
+                f'You were caught by police and **{fine}** from your bank '
+                f'will be transfered to **{member}** as a fine.'
+            )
 
         amount = random.randint(100, member_wallet)
-        await self.bot.db.double('bank', fine, member, ctx.author)
+        await ctx.db.double('bank', fine, member, ctx.author)
         await ctx.send(f'✅ Stole **{amount}** {BATYR} from **{member}**')
 
     @commands.command(aliases=['slots'])
@@ -400,8 +405,7 @@ class Economics(Cog):
             result = bet
             await ctx.send(f'{text}No matches, I wish you win next time. No batyrs.')
 
-        await ctx.db.execute(query, result, ctx.author.id)
-        await ctx.user_cache.refresh()
+        await ctx.db.push(query, result, ctx.author.id)
 
     @commands.command()
     async def work(self, ctx: Context) -> None:
@@ -413,7 +417,7 @@ class Economics(Cog):
 
     @commands.command(aliases=['hnt'])
     @commands.cooldown(1, 60.0, commands.BucketType.user)
-    async def headsandtails(self, ctx: Context):
+    async def headsandtails(self, ctx: Context) -> None:
         """Try your luck playing heads and tails!
 
         If your choice equals the random one, this means you won.
@@ -431,7 +435,7 @@ class Economics(Cog):
 
         try:
             choice = (
-                await self.bot.wait_for('message', timeout=10.0, check=check)
+                await ctx.bot.wait_for('message', timeout=10.0, check=check)
             ).content
 
         except asyncio.TimeoutError:
@@ -455,8 +459,7 @@ class Economics(Cog):
             query = 'UPDATE users SET wallet = wallet + 50 WHERE user_id = $1'
             embed.title = f'You guessed right! ({answer}) → +50 {BATYR}.'
 
-            await ctx.db.execute(query, ctx.author.id)
-            await ctx.user_cache.refresh()
+            await ctx.db.push(query, ctx.author.id)
 
         else:
             embed.title = f'Unfortunately, you guessed wrong ({answer}).'

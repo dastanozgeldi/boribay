@@ -1,6 +1,6 @@
 import toml
 
-__all__ = ('ConfigLoader',)
+__all__ = ('Config',)
 
 
 class BotPart:
@@ -41,7 +41,7 @@ class ApiPart:
         self.alex = data.get('alex', [])  # A list which is like [url, token]
 
 
-class ConfigLoader:
+class Config:
     """Configuration loader class for Boribay.
 
     All file-configuration stuff is controlled here using `.toml` files.

@@ -1,19 +1,17 @@
 import asyncio
 import os
 import re
-from collections import namedtuple
+from collections import Counter, namedtuple
 from datetime import datetime
-from typing import Union
 
 import aiohttp
 import asyncpg
 import discord
 from discord.ext import commands
 
-from .cache import Cache
-from .configuration import ConfigLoader
+from .config import Config
 from .context import Context
-from .database import DatabaseManager
+from .database import Cache, DatabaseManager
 from .events import set_events
 from .logger import create_logger
 
@@ -22,7 +20,7 @@ logger = create_logger('bot')
 Output = namedtuple('Output', 'stdout stderr returncode')
 
 
-def get_prefix(bot, msg: discord.Message) -> str:
+def get_prefix(bot: 'Boribay', msg: discord.Message) -> str:
     prefix = '.' if not msg.guild else bot.guild_cache[msg.guild.id]['prefix']
     return commands.when_mentioned_or(prefix)(bot, msg)
 
@@ -45,7 +43,7 @@ class Boribay(commands.Bot):
     This class inherits from `discord.ext.commands.Bot`.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, *, cli_flags, **kwargs):
         intents = discord.Intents.default()
         intents.members = True
         super().__init__(
@@ -53,25 +51,20 @@ class Boribay(commands.Bot):
             intents=intents,
             max_messages=1000,
             case_insensitive=True,
+            owner_ids={682950658671902730},
             chunk_guilds_at_startup=False,
             activity=discord.Game(name='.help'),
             member_cache_flags=discord.flags.MemberCacheFlags.from_intents(intents),
-            allowed_mentions=discord.AllowedMentions(everyone=False, roles=False, replied_user=False),
+            allowed_mentions=discord.AllowedMentions(
+                everyone=False, roles=False, replied_user=False
+            ),
             **kwargs
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
-        self.config = ConfigLoader('./data/config.toml')
-        self.command_usage = 0
+        self.cli = cli_flags
         self.start_time = datetime.now()
-        self.owner_ids = {682950658671902730}
-        self.loop = asyncio.get_event_loop()
-
-        # Session-related.
-        self.session = aiohttp.ClientSession(loop=self.loop)
-        self.webhook = discord.Webhook.from_url(
-            self.config.links.log_url,
-            adapter=discord.AsyncWebhookAdapter(self.session)
-        )
+        self.counter = Counter()
+        self.config = Config('./data/config.toml')
 
         self.setup()
 
@@ -79,17 +72,28 @@ class Boribay(commands.Bot):
         """The asynchronous init method to prepare database with cache stuff.
 
         The main bot pool, guild-user cache, all are being instantiated here.
-
-        Returns:
-            None: Means that the method returns nothing.
         """
+        # Session-related.
+        self.session = aiohttp.ClientSession(loop=self.loop)
+        self.webhook = discord.Webhook.from_url(
+            self.config.links.log_url,
+            adapter=discord.AsyncWebhookAdapter(self.session)
+        )
+
+        # Data-related.
         self.pool = await asyncpg.create_pool(**self.config.database)
         self.db = DatabaseManager(self)
 
-        self.guild_cache = await Cache('SELECT * FROM guild_config', 'guild_id', self.pool)
-        self.user_cache = await Cache('SELECT * FROM users', 'user_id', self.pool)
-
-        # await self.check_guilds()
+        self.guild_cache = await Cache(
+            'SELECT * FROM guild_config',
+            'guild_id',
+            self.pool
+        )
+        self.user_cache = await Cache(
+            'SELECT * FROM users',
+            'user_id',
+            self.pool
+        )
 
     @property
     def dosek(self) -> discord.User:
@@ -165,6 +169,10 @@ class Boribay(commands.Bot):
         """
         return await super().get_context(message, cls=cls)
 
+    async def on_ready(self):
+        """The bot is ready, telling the developer."""
+        logger.info('Logged in as -> {0} | ID: {0.id}'.format(self.user))
+
     async def close(self):
         await super().close()
         await self.session.close()
@@ -189,55 +197,52 @@ class Boribay(commands.Bot):
         # Putting the async init method into loop.
         self.loop.create_task(self.__ainit__())
 
+        # Check for flags.
+        if self.cli.developer or self.config.main.beta:
+            logger.info('Developer mode enabled.')
+            dev_extensions = ('boribay.core.jsk', 'boribay.core.developer')
+
+            for ext in dev_extensions:
+                self.load_extension(ext)
+                logger.info(f'[MODULE] {ext} loaded.')
+
     def list_extensions(self):
         """
         List all extensions of the bot's extensions directory.
         """
         # We should also avoid folders, like __pycache__.
-        return [ext for ext in os.listdir('./boribay/extensions') if not ext.startswith('_')]
+        return [ext for ext in os.listdir('./boribay/extensions')
+                if not ext.startswith('_')]
 
-    def run(self, extensions: Union[list, set]):
+    def run(self):
         """An overridden run method to make the launcher file smaller.
 
         Args:
             extensions (Union[list, set]): Extensions (cogs) to get loaded.
         """
-        for ext in extensions:
-            # loading all extensions before running the bot.
-            self.load_extension(ext)
-            logger.info(f'[MODULE] {ext} loaded.')
+        if self.cli.no_cogs:
+            logger.info('Booting up with no extensions loaded.')
+
+        else:
+            extensions = self.config.main.exts
+            if (to_exclude := self.cli.exclude):
+                extensions = set(extensions) - set(to_exclude)
+
+            for ext in extensions:
+                # loading all extensions before running the bot.
+                self.load_extension(ext)
+                logger.info(f'[MODULE] {ext} loaded.')
 
         set_events(self)  # Setting up the events.
 
+        # Getting the token.
+        token = self.config.main.token
+        if self.cli.token:
+            logger.info(
+                'Logging in without using the native token. Consider setting '
+                'a token in the configuration file, i.e data/config.toml'
+            )
+            token = self.cli.token
+
         # Finally, running the bot instance.
-        super().run(self.config.main.token)
-
-    async def check_guilds(self) -> dict:
-        """Check for new guilds before start.
-
-        This is needed when the bot gone offline for a while
-        and got added/removed to some servers.
-
-        Since the bot was offline they aren't accordingly existing
-        in the database/cache making servers' users unable to use the bot.
-
-        Returns:
-            dict: The refreshed guild cache.
-        """
-        guild_config = await self.pool.fetch('SELECT * FROM guild_config;')
-
-        # preparing the guild id's to compare
-        bot_guild_ids = {guild.id for guild in self.guilds}
-        db_guild_ids = {row['guild_id'] for row in guild_config}
-
-        if difference := list(bot_guild_ids - db_guild_ids):  # check for new guilds.
-            self.logger.info(f'New {len(difference)} guilds are being inserted.')
-            for guild_id in difference:
-                await self.pool.execute('INSERT INTO guild_config(guild_id) VALUES($1);', guild_id)
-
-        if difference := list(db_guild_ids - bot_guild_ids):  # check for old guilds.
-            logger.info(f'Old {len(difference)} guilds are being deleted.')
-            for guild_id in difference:
-                await self.pool.execute('DELETE FROM guild_config WHERE guild_id = $1;', guild_id)
-
-        await self.guild_cache.refresh()
+        super().run(token)

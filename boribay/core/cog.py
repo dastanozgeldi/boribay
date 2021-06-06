@@ -15,4 +15,4 @@ class Cog(commands.Cog):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return '{0.icon} {0.__class__.__name__}'.format(self)
+        return f'{self.icon} {self.__class__.__name__}'

@@ -27,9 +27,6 @@ def set_events(bot: 'Boribay'):
     """
 
     # Bot-related events.
-    @bot.event
-    async def on_ready():
-        log.info(f'Logged in as -> {bot.user} | ID: {bot.user.id}')
 
     @bot.event
     async def on_message_edit(before, after):
@@ -62,18 +59,63 @@ def set_events(bot: 'Boribay'):
 
     @bot.event
     async def on_guild_join(guild: discord.Guild):
-        await _log_guild(guild, text='Joined a server: {}🎉', color=0x2ecc71,
-                         query='INSERT INTO guild_config(guild_id) VALUES($1);')
+        """Gets triggered whenever the bot joins a guild.
+
+        Parameters
+        ----------
+        guild : discord.Guild
+            The new guild.
+        """
+        embed = bot.embed(
+            title=f'Joined a server: {guild}🎉',
+            description=f'Member count: {guild.member_count}'
+            f'Guild ID: {guild.id}'
+            f'Now in {len(bot.guilds)} guilds.',
+            color=0x2ecc71
+        ).set_thumbnail(url=guild.icon_url)
+
+        await bot.webhook.send(embed=embed)
+        await bot.pool.execute(
+            'INSERT INTO guild_config(guild_id) VALUES($1);',
+            guild.id
+        )
+        await bot.guild_cache.refresh()
 
     @bot.event
     async def on_guild_remove(guild: discord.Guild):
-        await _log_guild(guild, text='Lost a server: {}💔', color=0xff0000,
-                         query='DELETE FROM guild_config WHERE guild_id = $1;')
+        """Gets triggered whenever the bot loses a guild.
+
+        Parameters
+        ----------
+        guild : discord.Guild
+            The lost guild.
+        """
+        embed = bot.embed(
+            title=f'Lost a server: {guild}💔',
+            description=f'Member count: {guild.member_count}'
+            f'Guild ID: {guild.id}'
+            f'Now in {len(bot.guilds)} guilds.',
+            color=0xff0000
+        ).set_thumbnail(url=guild.icon_url)
+
+        await bot.webhook.send(embed=embed)
+        await bot.pool.execute(
+            'DELETE FROM guild_config WHERE guild_id = $1;',
+            guild.id
+        )
+        await bot.guild_cache.refresh()
 
     @bot.event
     async def on_command_completion(ctx):
+        """Gets triggered everytime a bot command was successfully executed.
+
+        Parameters
+        ----------
+        ctx : Context
+            The custom context object.
+        """
         author = ctx.author.id
-        bot.command_usage += 1
+        bot.counter['command_usage'] += 1
         await bot.pool.execute('UPDATE bot_stats SET command_usage = command_usage + 1')
 
         if not await bot.pool.fetch('SELECT * FROM users WHERE user_id = $1', author):

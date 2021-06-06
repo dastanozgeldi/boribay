@@ -1,10 +1,9 @@
 from collections import Counter
 from glob import glob
-from time import perf_counter
 from typing import Optional
 
 from boribay import __version__
-from boribay.core import LOADING, PG, TYPING, Boribay, Cog, Context
+from boribay.core import LOADING, PG, Cog, Context
 from discord.ext import commands, flags
 from humanize import naturaldate, naturaltime
 
@@ -15,12 +14,10 @@ class Miscellaneous(Cog):
     Commands that do not match other categories will be inserted here.
     """
 
-    def __init__(self, bot: Boribay):
-        self.icon = '💫'
-        self.bot = bot
+    icon = '💫'
 
     @commands.command(aliases=['suggestion'])
-    async def suggest(self, ctx: Context, *, content: str):
+    async def suggest(self, ctx: Context, *, content: str) -> None:
         """Suggest an idea to the bot owner.
 
         Example:
@@ -31,11 +28,11 @@ class Miscellaneous(Cog):
         """
         query = 'INSERT INTO ideas(content, author_id) VALUES($1, $2);'
 
-        await self.bot.pool.execute(query, content, ctx.author.id)
+        await ctx.bot.pool.execute(query, content, ctx.author.id)
         await ctx.send('✅ Added your suggestion, you will be notified when it will be approved/rejected.')
 
     @commands.command(aliases=['codestats', 'cs'])
-    async def codestatistics(self, ctx: Context):
+    async def codestatistics(self, ctx: Context) -> None:
         """See the code statistics of the bot."""
         ctr = Counter()
 
@@ -54,9 +51,9 @@ class Miscellaneous(Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['modules'])
-    async def extensions(self, ctx: Context):
+    async def extensions(self, ctx: Context) -> None:
         """Get the list of modules that are currently loaded."""
-        exts = [str(ext) for ext in self.bot.cogs.values()]
+        exts = [str(ext) for ext in ctx.bot.cogs.values()]
         exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
         length = [len(element) for row in exts for element in row]
         rows = [''.join(e.ljust(max(length) + 2) for e in row) for row in exts]
@@ -68,20 +65,20 @@ class Miscellaneous(Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def uptime(self, ctx: Context):
+    async def uptime(self, ctx: Context) -> None:
         """Returns uptime: How long the bot is online."""
-        h, r = divmod((self.bot.uptime), 3600)
+        h, r = divmod((ctx.bot.uptime), 3600)
         (m, s), (d, h) = divmod(r, 60), divmod(h, 24)
 
-        embed = ctx.embed().add_field(name='How long I am online?',
-                                      value=f'{d}d {h}h {m}m {s}s')
+        embed = ctx.embed()
+        embed.add_field(name='How long I am online?', value=f'{d}d {h}h {m}m {s}s')
 
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['about'])
-    async def info(self, ctx: Context):
+    async def info(self, ctx: Context) -> None:
         """See some kind of information about me (such as command usage, links etc.)"""
-        me = self.bot
+        me = ctx.bot
         embed = ctx.embed().set_author(
             name=f'{me.user} - v{__version__}', icon_url=me.user.avatar_url
         )
@@ -95,8 +92,7 @@ class Miscellaneous(Cog):
             'General': {
                 ('Currently in', f'{len(me.guilds)} servers'),
                 ('Commands working', f'{len(me.commands)}'),
-                ('Commands usage (last restart)', me.command_usage),
-                ('Commands usage (last year)', ctx.config['command_usage'])
+                ('Commands usage (last restart)', me.counter['command_usage'])
             }
         }
 
@@ -111,7 +107,11 @@ class Miscellaneous(Cog):
 
     @commands.command(aliases=['memberinfo', 'ui', 'mi'])
     @commands.guild_only()
-    async def userinfo(self, ctx: Context, member: Optional[commands.MemberConverter]):
+    async def userinfo(
+        self,
+        ctx: Context,
+        member: Optional[commands.MemberConverter]
+    ) -> None:
         """See some general information about the mentioned user.
 
         Example:
@@ -137,7 +137,7 @@ class Miscellaneous(Cog):
 
     @commands.command(aliases=['guildinfo', 'si', 'gi'])
     @commands.guild_only()
-    async def serverinfo(self, ctx: Context):
+    async def serverinfo(self, ctx: Context) -> None:
         """See some general information about current guild."""
         g = ctx.guild
 
@@ -159,8 +159,8 @@ class Miscellaneous(Cog):
         await ctx.send(embed=embed)
 
     @flags.add_flag('--tts', action='store_true', help='Whether to send a tts message.')
-    @flags.command()
-    async def say(self, ctx: Context, message: str, **flags):
+    @flags.command(name='say')
+    async def command_say(self, ctx: Context, message: str, **flags) -> None:
         """Make the bot say what you want
 
         Example:
@@ -185,40 +185,34 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    async def _db_latency(self):
-        start = perf_counter()
-        await self.bot.pool.fetchval('SELECT 1;')
-        end = perf_counter()
-
-        return end - start
-
     @commands.command()
-    async def ping(self, ctx: Context):
+    async def ping(self, ctx: Context) -> None:
         """Check latency of the bot and its system."""
-        s = perf_counter()
-        msg = await ctx.send('Pong!')
-        e = perf_counter()
+        fields = (
+            (f'{LOADING} Websocket', ctx.bot.latency),
+            (f'{PG} Database', await ctx.db_latency)
+        )
 
-        elements = {
-            f'{LOADING} Websocket': self.bot.latency,
-            f'{TYPING} Typing': e - s,
-            f'{PG} Database': await self._db_latency()
-        }
-
-        embed = ctx.embed(description='\n'.join(f'**{n}:** ```{v * 1000:.2f} ms```' for n, v in elements.items()))
-        await msg.edit(embed=embed)
+        embed = ctx.embed()
+        for name, value in fields:
+            embed.add_field(
+                name=name,
+                value=f'```{value * 1000:.2f} ms```',
+                inline=False
+            )
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=['mrs'])
-    async def messagereactionstats(self, ctx: Context, *, message_link: str):
+    async def messagereactionstats(self, ctx: Context, *, link: str) -> None:
         """See what reactions are there in a message, i.e reaction statistics.
 
         Example:
             **{p}mrs https://discord.com/channels/12345/54321/32451**
 
         Args:
-            message_link (str): An URL of a message.
+            link (str): An URL of a message.
         """
-        ids = [int(i) for i in message_link.split('/')[5:]]
+        ids = [int(i) for i in link.split('/')[5:]]
         msg = await ctx.guild.get_channel(ids[0]).fetch_message(ids[1])
 
         await ctx.send({f'{i}': i.count for i in msg.reactions})

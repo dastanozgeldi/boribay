@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from boribay.core import Boribay, Cog, Context
+from boribay.core import Cog, Context
 from boribay.utils import Manip, make_image, make_image_url, polaroid_filter
 from discord.ext import commands
 
@@ -15,9 +15,7 @@ class Images(Cog):
 
     Has features like: filters, text-images and legendary memes."""
 
-    def __init__(self, bot: Boribay):
-        self.icon = '🖼'
-        self.bot = bot
+    icon = '🖼'
 
     @commands.command()
     async def invert(self, ctx: Context, image: Optional[str]) -> None:

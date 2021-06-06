@@ -28,8 +28,16 @@ class Context(commands.Context):
         self.loading = Loading(self)
 
     @property
+    async def db_latency(self) -> float:
+        start = perf_counter()
+        await self.bot.pool.fetchval('SELECT 1;')
+        end = perf_counter()
+
+        return end - start
+
+    @property
     def db(self):
-        return self.bot.pool
+        return self.bot.db
 
     @property
     def config(self):
@@ -51,7 +59,7 @@ class Context(commands.Context):
             await message.delete(**kwargs)
 
     # idea https://github.com/jay3332/ShrimpMaster/blob/master/core/bot.py#L320-L331
-    async def getch(self, method: str, object_id: int, obj: str = 'bot'):
+    async def getch(self, method: str, object_id: int, obj: str = 'bot') -> None:
         if not object_id:
             return None
 
@@ -90,7 +98,7 @@ class Timer(ContextDecorator):
 
     This class inherits from `contextlib.ContextDecorator`."""
 
-    def __init__(self, ctx):
+    def __init__(self, ctx: Context):
         self.ctx = ctx
 
     async def __aenter__(self):
@@ -104,12 +112,13 @@ class Timer(ContextDecorator):
 class Loading(ContextDecorator):
     """The Loading class made to take some time for users while the command is getting executed.
 
-    This class inherits from `contextlib.ContextDecorator`."""
+    This class inherits from `contextlib.ContextDecorator`.
+    """
 
-    def __init__(self, ctx, message='Loading...'):
+    def __init__(self, ctx: Context, content: str = 'Loading...'):
         self.ctx = ctx
         self.message = None
-        self.content = message
+        self.content = content
 
     async def __aenter__(self):
         self.message = await self.ctx.send(f'<a:loading:837049644462374935> {self.content}')

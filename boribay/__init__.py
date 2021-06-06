@@ -1,3 +1,9 @@
+"""
+Boribay
+=======
+
+A discord bot created to make people smile.
+"""
 from .core import *
 from .utils import *
 

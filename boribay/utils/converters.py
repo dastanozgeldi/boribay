@@ -111,9 +111,11 @@ def get_amount(_all: float, minimum: int, maximum: int, argument):
 def CasinoConverter(minimum: int = 100, maximum: int = 100_000):
     class _Wrapper(commands.Converter, int):
         async def convert(self, ctx, argument):
-            _all = await ctx.db.fetchval('SELECT wallet FROM users WHERE user_id = $1', ctx.author.id)
+            _all = await ctx.bot.pool.fetchval(
+                'SELECT wallet FROM users WHERE user_id = $1',
+                ctx.author.id
+            )
             amount = get_amount(_all, minimum, maximum, argument)
-
             return amount
 
     return _Wrapper

@@ -1,17 +1,37 @@
 import argparse
+import sys
 
-from boribay import Boribay
+from boribay import Boribay, __version__, parse_flags
 
-bot = Boribay(description='A Discord Bot created to make people smile.')
-parser = argparse.ArgumentParser(description='Put some arguments beforehand.')
-parser.add_argument('--exclude', nargs='+',
-                    help='Specify Cogs you don\'t want to include on startup!')
+description = 'A Discord Bot created to make people smile.'
+
+
+def parse_single_flags(flags: argparse.Namespace) -> None:
+    """Here we handle all flags that should be parsed as single.
+
+    Parameters
+    ----------
+    flags : argparse.Namespace
+        The given namespace of parsed arguments.
+    """
+    if flags.version:
+        print(f'Boribay is running on version: {__version__}')
+        sys.exit(0)
+
+    if flags.news:
+        with open('./data/news.md') as f:
+            print(f.read())
+        sys.exit(0)
+
+
+def main():
+    """The main function of the bot."""
+    args = parse_flags(sys.argv[1:])
+    parse_single_flags(args)
+
+    bot = Boribay(description=description, cli_flags=args)
+    bot.run()
+
 
 if __name__ == '__main__':
-    extensions = bot.config.main.exts
-
-    args = parser.parse_args()
-    if args.exclude:
-        extensions = set(bot.config.main.exts) - set(args.exclude)
-
-    bot.run(extensions)
+    main()

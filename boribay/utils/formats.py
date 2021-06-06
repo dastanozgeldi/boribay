@@ -32,13 +32,14 @@ class TabularData:
 
     def render(self):
         """Renders a table in rST format.
-        Example:
-        +-------+-----+
-        | Name  | Age |
-        +-------+-----+
-        | Alice | 24  |
-        |  Bob  | 19  |
-        +-------+-----+
+
+        Example
+        -------
+            +-------+-----+
+            | Name  | Age |
+            +-------+-----+
+            | Dosek | 14  |
+            +-------+-----+
         """
 
         sep = '+'.join('-' * w for w in self._widths)

@@ -5,11 +5,7 @@ title = 'Boribay bot configuration.'
 
 [bot]  # The bot configuration.
 exts = [  # I had to hardcode extensions, sorry for that...
-    # Kinda private extensions.
-    'boribay.extensions.jsk',
     'boribay.extensions.help',
-    'boribay.extensions.developer',
-    # General purpose extensions.
     'boribay.extensions.economy',
     'boribay.extensions.fun',
     'boribay.extensions.images',

@@ -1,12 +1,52 @@
+from collections import defaultdict
 from typing import Union
 
 import discord
 from asyncpg.pool import Pool
 
-__all__ = ('DatabaseManager',)
+__all__ = ('Cache', 'DatabaseManager')
+
+
+class Cache(defaultdict):
+    """Cache loader for Boribay created in order to use less DB calls.
+
+    Any kind of caching stuff is done by this class.
+
+    This class inherits from `collections.defaultdict`.
+    """
+
+    def __init__(self, query: str, key: str, db: Pool):
+        super().__init__(dict)
+        self.query = query
+        self.key = key
+        self.db = db
+
+    def __await__(self):  # await Cache(...
+        return self.cache_db().__await__()
+
+    async def cache_db(self):
+        """Cache database method."""
+        records = await self.db.fetch(self.query)
+
+        for record in records:
+            d = dict(record)
+            self[d.pop(self.key)] = d
+
+        return self
+
+    async def refresh(self):
+        """Refresh cache method."""
+        self.clear()
+        await self.cache_db()
+        return self
 
 
 class DatabaseManager(Pool):
+    """Database manager for Boribay created in order to ease up manipulation.
+
+    This class inherits from `asyncpg.pool.Pool`.
+    """
+
     def __init__(self, bot):
         self.bot = bot
         self.pool = bot.pool
@@ -29,12 +69,11 @@ class DatabaseManager(Pool):
         Returns:
             None: Means that the method returns nothing.
         """
-        query = f'''
-        UPDATE "users"
-        SET "{column}" = "{column}" {op} $1
-        WHERE "user_id" = $2;
-        '''
-        await self.pool.execute(query, amount, user.id)
+        await self.pool.execute(
+            f'UPDATE "users" SET "{column}" = "{column}" {op} $1 WHERE "user_id" = $2;',
+            amount,
+            user.id
+        )
         await self.bot.user_cache.refresh()
 
     async def add(self, *args) -> None:
@@ -63,9 +102,23 @@ class DatabaseManager(Pool):
         """
         await self._operate('-', *args)
 
+    async def push(self, query: str, *args, **kwargs):
+        """Just a method to save up 1 line in the code.
+
+        Parameters
+        ----------
+        query : str
+            A query to get executed.
+        """
+        await self.pool.execute(query, *args, **kwargs)
+        await self.bot.user_cache.refresh()
+
     async def double(
-        self, choice: str, amount: int,
-        reducer: discord.Member, adder: discord.Member
+        self,
+        choice: str,
+        amount: int,
+        reducer: discord.Member,
+        adder: discord.Member
     ) -> None:
         """The "double" method to ease up database manipulation.
 
@@ -85,7 +138,9 @@ class DatabaseManager(Pool):
         await self.pool.execute(adder_query, amount, adder.id)
         await self.bot.user_cache.refresh()
 
-    async def set(self, table: str, column: str, user: discord.Member, value: str) -> None:
+    async def set(
+        self, table: str, column: str, user: discord.Member, value: str
+    ) -> None:
         """Database Manager set method that is attainable for all tables.
 
         Args:

@@ -29,8 +29,9 @@ class Fun(Cog):
             discord.File: A done to send file.
         """
         alex = self.bot.config.api.alex
-        r = await self.bot.session.get(f'{alex[0]}{url}',
-                                       headers={'Authorization': alex[1]})
+        r = await self.bot.session.get(
+            f'{alex[0]}{url}', headers={'Authorization': alex[1]}
+        )
 
         fp = BytesIO(await r.read())
         return discord.File(fp, fn or 'alex.png')
@@ -46,8 +47,10 @@ class Fun(Cog):
             discord.File: A done to send file.
         """
         dagpi = self.bot.config.api.dagpi
-        r = await self.bot.session.get(f'{dagpi[0]}{url}',
-                                       headers={'Authorization': dagpi[1]})
+        r = await self.bot.session.get(
+            f'{dagpi[0]}{url}',
+            headers={'Authorization': dagpi[1]}
+        )
 
         fp = BytesIO(await r.read())
         return discord.File(fp, fn or 'dagpi.png')
