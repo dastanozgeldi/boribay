@@ -31,7 +31,6 @@ class ApiPart:
         self.weather = data.get('weather')
         self.dagpi = data.get('dagpi')
         self.alex = data.get('alex')
-        self.google_key = data.get('google_key')
 
 
 class Config:
