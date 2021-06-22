@@ -4,7 +4,7 @@ import re
 import zipfile
 from datetime import datetime
 from io import BytesIO
-from typing import List, Dict
+from typing import Dict, List
 
 import discord
 from boribay.core import Boribay, Cog, Context, constants, exceptions
@@ -473,15 +473,13 @@ class Useful(Cog):
 
             result = parser.parse(lexer.tokenize(expression))
 
-        except Exception as e:
-            if isinstance(e, exceptions.UndefinedVariable):
-                return await ctx.send(e.exc)
+        except exceptions.UndefinedVariable as e:
+            return await ctx.send(e.exc)
 
-            if isinstance(e, decimal.InvalidOperation):
-                return await ctx.send('Invalid expression given.')
+        except decimal.InvalidOperation:
+            return await ctx.send('Invalid expression provided.')
 
         res = '\n'.join(str(i) for i in result)
-
         embed = ctx.embed()
         for n, v in (('Input', expression), ('Output', res)):
             embed.add_field(name=n, value=f'```\n{v}\n```', inline=False)

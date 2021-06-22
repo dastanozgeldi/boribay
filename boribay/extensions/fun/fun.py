@@ -318,7 +318,7 @@ class Fun(Cog):
         """Among Us "ejected" meme maker.
 
         Example:
-            **{p}eject blue yes Dosek** - sends an ejected meme of blue impostor with nick "Dosek"
+            **{p}eject blue yes Dosek** - blue impostor with the nick "Dosek".
 
         Args:
             color (str.lower): Color of an ejected guy.

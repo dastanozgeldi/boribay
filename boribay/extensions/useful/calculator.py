@@ -161,9 +161,9 @@ class CalcParser(Parser):
         for letter in expression:
             if letter in o:
                 lis.append(mapping[letter])
-            elif letter in c:
-                if not lis or letter != lis.pop():
-                    return False
+            elif letter in c and (not lis or letter != lis.pop()):
+                return False
+
         return not lis
 
     def parse(self, expression):

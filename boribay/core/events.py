@@ -74,9 +74,8 @@ def set_events(bot):
     @bot.event
     async def on_message_edit(before: discord.Message, after: discord.Message) -> None:
         # making able to process commands on message edit only for owner.
-        if before.content != after.content:
-            if after.author.id in bot.owner_ids:
-                return await bot.process_commands(after)
+        if before.content != after.content and after.author.id in bot.owner_ids:
+            return await bot.process_commands(after)
 
         # on_message_edit gets tracked twice when a message gets edited, god knows why.
         if before.embeds:
