@@ -60,7 +60,7 @@ def get_amount(_all: float, minimum: int, maximum: int, argument):
     """Similar to the `get_number` method, but this one parses arguments like:
 
     `all`, `half` and `x%`.
-    As you could see it returns a piece of a number (bet) according to the parsed argument.
+    As you could see it returns a piece of a number according to the parsed argument.
     """
     argument = argument.lower().strip()
 

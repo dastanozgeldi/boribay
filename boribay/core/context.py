@@ -112,7 +112,7 @@ class Timer(ContextDecorator):
 
 
 class Loading(ContextDecorator):
-    """The Loading class made to take some time for users while the command is getting executed.
+    """The Loading class made to take some time while the command is getting executed.
 
     This class inherits from `contextlib.ContextDecorator`.
     """

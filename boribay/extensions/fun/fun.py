@@ -356,7 +356,7 @@ class Fun(Cog):
             **{p}pp @Dosek** - sends Dosek's pp size.
 
         Args:
-            member (Optional[discord.Member]): A member whose pp size you'd like to check.
+            member (Optional[discord.Member]): A member to check the pp size of.
             Takes you as the member if no one was mentioned.
         """
         member = member or ctx.author

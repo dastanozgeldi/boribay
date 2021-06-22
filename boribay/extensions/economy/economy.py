@@ -305,7 +305,7 @@ class Economics(Cog):
     async def _disable_bio(self, ctx: Context) -> None:
         """Disable bio feature in your profile.
 
-        This is useful when you want to remove the info about you without having to pay batyrs.
+        This is useful when you want just to remove your bio without paying.
         """
         # Avoiding useless database call.
         if not ctx.user_cache[ctx.author.id]['bio']:
