@@ -1,14 +1,28 @@
 import argparse
+import sys
 
-__all__ = ('parse_flags',)
+import boribay
 
 
-def parse_flags(args: list = None) -> argparse.Namespace:
+def parse_single_flags(flags: argparse.Namespace) -> None:
+    """Here we handle all flags that should be parsed as single.
+
+    Parameters
+    ----------
+    flags : argparse.Namespace
+        The given namespace of parsed arguments.
+    """
+    if flags.version:
+        print(f'Boribay is running on version: {boribay.__version__}')
+        sys.exit(0)
+
+
+def parse_flags(args: argparse.Namespace = None) -> argparse.Namespace:
     """CLI function, the place where all the CLI stuff gets handled.
 
     Parameters
     ----------
-    args : list, optional
+    args : argparse.Namespace, optional
         The list of arguments to parse from, by default None
 
     Returns
@@ -18,12 +32,12 @@ def parse_flags(args: list = None) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description='Boribay - Discord Bot',
-        usage='boribay <instance> [arguments]'
+        usage='boribay [arguments]'
     )
 
     parser.add_argument(
-        '--exclude',
         '-e',
+        '--exclude',
         nargs='+',
         help="Specify cogs you want to exclude on startup."
     )
@@ -35,28 +49,22 @@ def parse_flags(args: list = None) -> argparse.Namespace:
     )
 
     parser.add_argument(
+        '-v',
         '--version',
-        '-V',
         action='store_true',
         help="See Boribay's current version."
     )
 
     parser.add_argument(
-        '--news',
-        action='store_true',
-        help="See Boribay's news for the current version."
-    )
-
-    parser.add_argument(
-        '--no-cogs',
         '-nc',
+        '--no-cogs',
         action='store_true',
         help='Runs the bot with no cogs loaded, only the bot itself.'
     )
 
     parser.add_argument(
+        '-d',
         '--developer',
-        '-D',
         action='store_true',
         help='Turns on the developer mode.'
     )

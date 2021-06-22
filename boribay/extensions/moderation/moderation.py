@@ -3,7 +3,9 @@ from typing import Optional
 
 import discord
 from boribay.core import Cog, Context
-from boribay.utils import AuthorCheckConverter, ColorConverter, is_mod
+from boribay.core.checks import is_mod
+from boribay.core.commands.converters import (AuthorCheckConverter,
+                                              ColorConverter)
 from discord.ext import commands
 from humanize import naturaldate
 
@@ -163,7 +165,7 @@ class Moderation(Cog):
         """
         await ctx.send_help('channel')
 
-    @channel.command(name='clear', aliases=['purge'])
+    @channel.command(name='clear', aliases=('purge',))
     @commands.bot_has_guild_permissions(manage_messages=True)
     async def _clear_channel(self, ctx: Context, limit: int = 2) -> None:
         """Purges the given amount of messages.
@@ -215,7 +217,7 @@ class Moderation(Cog):
         await channel.delete(reason=reason or 'Reason not specified')
         await ctx.message.add_reaction('✅')
 
-    @channel.command(name='slowmode', aliases=['sm'])
+    @channel.command(name='slowmode', aliases=('sm',))
     async def _slowmode_channel(self, ctx: Context, time: int) -> None:
         """Enables slowmode for a given amount of seconds.
 

@@ -1,8 +1,6 @@
 from .fun import Fun
 
 
+# Setting up the cog.
 def setup(bot):
-    """
-    Fun extension setup method.
-    """
     bot.add_cog(Fun(bot))

@@ -1,8 +1,8 @@
 from .developer import Developer
+from .jishaku import Jishaku
 
 
+# Setting up developer extensions.
 def setup(bot):
-    """
-    Developer extension setup method.
-    """
-    bot.add_cog(Developer(bot))
+    bot.add_cog(Jishaku(bot=bot))
+    bot.add_cog(Developer())

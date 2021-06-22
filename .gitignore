@@ -1,7 +1,5 @@
 # Folders
-api/
-website/
 __pycache__/
 
 # Files
-data/config.toml
+data/config/config.toml

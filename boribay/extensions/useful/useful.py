@@ -4,58 +4,16 @@ import re
 import zipfile
 from datetime import datetime
 from io import BytesIO
-from typing import Optional
+from typing import List
 
 import discord
-from boribay.core import Boribay, Cog, Context, constants
-from boribay.utils import (calculator, converters, exceptions, make_image_url,
-                           paginators)
+from boribay.core import Boribay, Cog, Context, constants, exceptions
+from boribay.core.commands import converters, paginators
 from discord.ext import commands, flags
 from humanize import time
 
-
-class Poll:
-    def __init__(self, ctx: Context, options: list, **kwargs):
-        self.ctx = ctx
-        self.options = options
-        self.embed = ctx.embed(**kwargs)
-
-    def get_reactions(self) -> tuple:
-        if len(self.options) == 2 and ('y', 'n') == tuple(map(str.lower, self.options)):
-            return (
-                '<:thumbs_up:746352051717406740>',
-                '<:thumbs_down:746352095510265881>'
-            )
-
-        return (
-            '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'
-        )
-
-    async def start(self) -> None:
-        ctx = self.ctx
-        opt = len(self.options)
-        reactions = self.get_reactions()
-
-        if not 2 <= opt <= 10:
-            raise exceptions.OptionsNotInRange(
-                'Please keep poll options range (min 2 : max 10).'
-            )
-
-        # Adding reactions on an embed field.
-        self.embed.add_field(
-            name='📊 Options',
-            value='\n'.join(
-                f'{reactions[x]} {option}' for x, option in enumerate(self.options)
-            )
-        )
-
-        # Attempting to delete a message sent by user.
-        await ctx.try_delete(ctx.message)
-        message = await ctx.send(embed=self.embed)
-
-        # Adding some real reactions.
-        for emoji in reactions[:opt]:
-            await message.add_reaction(emoji)
+from . import calculator  # Lexer & Parser.
+from .utils import Poll, TodoPageSource, UrbanDictionaryPageSource
 
 
 class Useful(Cog):
@@ -68,28 +26,49 @@ class Useful(Cog):
         self.icon = '<:pickaxe:807534625785380904>'
         self.bot = bot
 
-    async def _youtube_search(self, query: str) -> list:
-        r = await self.bot.session.get(
+    async def search(self, query: str) -> List[str]:
+        """The youtube search method that fetches videos with a given query.
+
+        Parameters
+        ----------
+        query : str
+            Used to find videos a user is looking for.
+
+        Returns
+        -------
+        list
+            List of 10 most matching videos.
+        """
+        resp = await self.bot.session.get(
             'https://www.youtube.com/results',
             params={'search_query': query},
-            headers={'user-agent': 'Mozilla/3.0'}
+            headers={'user-agent': 'Boribay-Useful/3.0'}
         )
+        found = re.findall(r'{"videoId":"(.{11})', await resp.text())
+        return ['https://youtube.com/watch?v=' + res for res in found[:11]]
 
-        result = await r.text()
+    @commands.group()
+    async def youtube(self, ctx: Context):
+        ...
 
-        found = re.findall(r'{"videoId":"(.{11})', result)
-        return [f'https://youtube.com/watch?v={res}' for res in found[:11]]
+    @youtube.command(aliases=('yt',))
+    async def _youtube_search(self, ctx: Context, *, query: str) -> None:
+        """Search for a video from YouTube through Discord.
 
-    @commands.command(aliases=['yt'])
-    async def youtube(self, ctx: Context, *, query: str):
-        if not (results := await self._youtube_search(query)):
-            return await ctx.send(f'❌ Could not find videos for query: **{query}**')
+        Parameters
+        ----------
+        query : str
+            A query to search with.
+        """
+        # TODO: add pagination features.
+        if not (results := await self.search(query)):
+            return await ctx.send(f'❌ Could not find videos for query: {query}')
 
-        await ctx.send(results[0])
+        await ctx.send('The first video I have found: ' + results[0])
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.guild)
-    async def zipemojis(self, ctx: Context):
+    async def zipemojis(self, ctx: Context) -> None:
         """Zip all emojis of the current guild.
 
         Returns a .zip file with all emojis compressed.
@@ -150,8 +129,8 @@ class Useful(Cog):
         action='store_true',
         help='Whether to add special characters, like: $%^&'
     )
-    @flags.command(aliases=['pw'])
-    async def password(self, ctx: Context, length: int = 25, **flags):
+    @flags.command(aliases=('pw',))
+    async def password(self, ctx: Context, length: int = 25, **flags) -> None:
         """A password creator command. Get a safe password using this command.
 
         Example:
@@ -164,7 +143,9 @@ class Useful(Cog):
             commands.BadArgument: If too big length of the password was given.
         """
         if length > 50:
-            raise commands.BadArgument(f'Too big length was given ({length}) while the limit is 50 characters.')
+            raise commands.BadArgument(
+                f'Too big length was given ({length}) while the limit is 50 characters.'
+            )
 
         result = self._generate_password(length, flags)
         await ctx.reply('✅ Generated you the password.')
@@ -172,7 +153,7 @@ class Useful(Cog):
         await ctx.author.send(f'Here is your password: ```{result}```')
 
     @commands.command()
-    async def anime(self, ctx: Context, *, anime: str):
+    async def anime(self, ctx: Context, *, anime: str) -> None:
         """Anime search command. Get the detailed information about an anime.
 
         Example:
@@ -182,7 +163,7 @@ class Useful(Cog):
             anime (str): An anime that you want to get info about.
         """
         anime = anime.replace(' ', '%20')
-        r = await ctx.bot.session.get(f'{ctx.config.api.anime}/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
+        r = await ctx.bot.session.get(f'https://kitsu.io/api/edge/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
         js = await r.json()
         attributes = js['data'][0]['attributes']
 
@@ -216,7 +197,7 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def manga(self, ctx: Context, *, manga: str):
+    async def manga(self, ctx: Context, *, manga: str) -> None:
         """Manga search command. Get the detailed information about a manga.
 
         Example:
@@ -226,7 +207,7 @@ class Useful(Cog):
             manga (str): A manga that you want to get info about.
         """
         manga = manga.replace(' ', '%20')
-        r = await ctx.bot.session.get(f'{ctx.config.api.anime}/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
+        r = await ctx.bot.session.get(f'https://kitsu.io/api/edge/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
         js = await r.json()
         attributes = js['data'][0]['attributes']
 
@@ -258,16 +239,24 @@ class Useful(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.group(invoke_without_command=True, aliases=['to-do'])
-    async def todo(self, ctx: Context):
+    @commands.group(invoke_without_command=True, aliases=('to-do',))
+    async def todo(self, ctx: Context) -> None:
         """To-do commands parent. Sends help for its subcommands.
         Kind of pro-tip to use this instead of **{p}help todo**"""
         await ctx.send_help('todo')
 
-    @flags.add_flag('--count', action='store_true', help='Sends the count of todos.')
-    @flags.add_flag('--dm', action='store_true', help='Whether to DM you the todo list.')
-    @todo.command(cls=flags.FlagCommand, name='show', aliases=['list'])
-    async def _todo_show(self, ctx: Context, **flags):
+    @flags.add_flag(
+        '--count',
+        action='store_true',
+        help='Sends the count of todos.'
+    )
+    @flags.add_flag(
+        '--dm',
+        action='store_true',
+        help='Whether to DM you the todo list.'
+    )
+    @todo.command(cls=flags.FlagCommand, name='show', aliases=('list',))
+    async def _todo_show(self, ctx: Context, **flags) -> None:
         """To-do show command, a visual way to manipulate with your list.
 
         Example:
@@ -276,20 +265,21 @@ class Useful(Cog):
             Use them together to get both features.
         """
         query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
-        todos = [(todo['content'], todo['jump_url']) for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
+        todos = [(todo['content'], todo['jump_url'])
+                 for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
         dest = ctx.author if flags.pop('dm', False) else ctx.channel
 
         if flags.pop('count', False):
             return await dest.send(len(todos))
 
         await paginators.Paginate(
-            paginators.TodoPageSource(ctx, todos),
+            TodoPageSource(ctx, todos),
             clear_reactions_after=True,
             timeout=60.0
         ).start(ctx, channel=dest)
 
-    @todo.command(name='add', aliases=['append'])
-    async def _todo_add(self, ctx: Context, *, content: str):
+    @todo.command(name='add', aliases=('append',))
+    async def _todo_add(self, ctx: Context, *, content: str) -> None:
         """Add anything you think you have to-do to your list.
 
         Example:
@@ -298,12 +288,17 @@ class Useful(Cog):
         Args:
             content (str): A to-do content which is going to be added.
         """
-        query = 'INSERT INTO todos(user_id, content, added_at, jump_url) VALUES($1, $2, $3, $4)'
+        query = '''
+        INSERT INTO todos(user_id, content, added_at, jump_url)
+        VALUES($1, $2, $3, $4)
+        '''
         await ctx.bot.pool.execute(query, ctx.author.id, content, datetime.utcnow(), ctx.message.jump_url)
         await ctx.message.add_reaction('✅')
 
-    @todo.command(name='remove', aliases=['rm', 'delete'])
-    async def _todo_remove(self, ctx: Context, numbers: commands.Greedy[int]):
+    @todo.command(name='remove', aliases=('rm', 'delete'))
+    async def _todo_remove(
+        self, ctx: Context, numbers: commands.Greedy[int]
+    ) -> None:
         """Remove to-do's that you don't need from your list.
 
         Multiple numbers may be specified. Order does not matter.
@@ -326,7 +321,7 @@ class Useful(Cog):
         await ctx.message.add_reaction('✅')
 
     @todo.command(name='info')
-    async def _todo_info(self, ctx: Context, number: int):
+    async def _todo_info(self, ctx: Context, number: int) -> None:
         """Shows some useful information about the specified to-do.
         Returns the jump-url, the time to-do was added.
 
@@ -336,9 +331,11 @@ class Useful(Cog):
         Args:
             number (int): The index of to-do you want to see info about.
         """
-        query = '''WITH enumerated AS (SELECT todos.content, todos.added_at, todos.jump_url, row_number()
+        query = '''
+        WITH enumerated AS (SELECT todos.content, todos.added_at, todos.jump_url, row_number()
         OVER (ORDER BY added_at ASC) as count FROM todos WHERE user_id = $1)
-        SELECT * FROM enumerated WHERE enumerated.count = $2'''
+        SELECT * FROM enumerated WHERE enumerated.count = $2
+        '''
         row = await ctx.bot.pool.fetchrow(query, ctx.author.id, number)
 
         values = [
@@ -353,9 +350,10 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @todo.command(name='clear')
-    async def _todo_clear(self, ctx: Context):
+    async def _todo_clear(self, ctx: Context) -> None:
         """Clear your to-do list up using this command."""
         query = 'DELETE FROM todos WHERE user_id = $1'
+
         confirmation = await ctx.confirm('Are you sure? All to-do\'s will be dropped.')
         if confirmation:
             await ctx.bot.pool.execute(query, ctx.author.id)
@@ -381,7 +379,7 @@ class Useful(Cog):
         await Poll(ctx, options, description=description).start()
 
     @commands.command()
-    async def reddit(self, ctx: Context, subreddit: str):
+    async def reddit(self, ctx: Context, subreddit: str) -> None:
         """Get fresh posts from your favorite subreddit.
 
         Example:
@@ -395,12 +393,13 @@ class Useful(Cog):
             NSFWChannelRequired: If the post is NSFW and the channel isn't.
         """
         try:
-            r = await ctx.bot.session.get(f'https://www.reddit.com/r/{subreddit}/hot.json')
-            r = await r.json()
-            data = r['data']['children'][random.randint(0, 10)]['data']
+            url = f'https://www.reddit.com/r/{subreddit}/hot.json'
+            r = await ctx.bot.session.get(url)
+            js = await r.json()
+            data = js['data']['children'][random.randint(0, 10)]['data']
 
         except IndexError:
-            raise commands.BadArgument(f'There is no subreddit called **{subreddit}**.')
+            raise commands.BadArgument(f'There is no subreddit called: {subreddit}.')
 
         if not ctx.channel.is_nsfw() and data['over_18']:  # no need in "is True"
             raise commands.NSFWChannelRequired(ctx.channel)
@@ -412,8 +411,8 @@ class Useful(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['ud', 'urban'])
-    async def urbandictionary(self, ctx: Context, *, word: str):
+    @commands.command(aliases=('ud', 'urban'))
+    async def urbandictionary(self, ctx: Context, *, word: str) -> None:
         """Search for word definitions from urban dictionary.
 
         Example:
@@ -422,8 +421,9 @@ class Useful(Cog):
         Args:
             word (str): Your word to search for.
         """
-        r = await ctx.bot.session.get(f'{ctx.config.api.ud}?term={word}')
-
+        r = await ctx.bot.session.get(
+            'http://api.urbandictionary.com/v0/define?term=' + word
+        )
         if (stat := r.status) != 200:
             return await ctx.send(f'Facing some issues: {stat} {r.reason}')
 
@@ -433,11 +433,11 @@ class Useful(Cog):
 
         # Everything is done, paginating...
         await paginators.Paginate(
-            paginators.UrbanDictionaryPageSource(ctx, source)
+            UrbanDictionaryPageSource(ctx, source)
         ).start(ctx)
 
-    @commands.command(aliases=['calc'])
-    async def calculate(self, ctx: Context, *, expression: str):
+    @commands.command(aliases=('calc',))
+    async def calculate(self, ctx: Context, *, expression: str) -> None:
         """A simple calculator command that supports useful features.
 
         Features:
@@ -463,26 +463,16 @@ class Useful(Cog):
         try:
             if not parser.match(reg):
                 raise exceptions.UnclosedBrackets()
+
             for i in range(len(expression) - 1):
                 if expression[i] == '(' and expression[i + 1] == ')':
                     raise exceptions.EmptyBrackets()
+
             result = parser.parse(lexer.tokenize(expression))
 
         except Exception as e:
-            if isinstance(e, exceptions.Overflow):
-                return await ctx.send('Too big number was given.')
-
             if isinstance(e, exceptions.UndefinedVariable):
                 return await ctx.send(e.exc)
-
-            if isinstance(e, exceptions.KeywordAlreadyTaken):
-                return await ctx.send('The given variable name is shadowing a reserved keyword argument.')
-
-            if isinstance(e, exceptions.UnclosedBrackets):
-                return await ctx.send('Given expression has unclosed brackets.')
-
-            if isinstance(e, exceptions.EmptyBrackets):
-                return await ctx.send('Given expression has empty brackets.')
 
             if isinstance(e, decimal.InvalidOperation):
                 return await ctx.send('Invalid expression given.')
@@ -490,13 +480,15 @@ class Useful(Cog):
         res = '\n'.join(str(i) for i in result)
 
         embed = ctx.embed()
-        embed.add_field(name='Input', value=f'```\n{expression}\n```', inline=False)
-        embed.add_field(name='Output', value=f'```\n{res}\n```', inline=False)
+        for n, v in (('Input', expression), ('Output', res)):
+            embed.add_field(name=n, value=f'```\n{v}\n```', inline=False)
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['colour'])
-    async def color(self, ctx: Context, *, color: converters.ColorConverter):
+    @commands.command(aliases=('colour',))
+    async def color(
+        self, ctx: Context, *, color: converters.ColorConverter
+    ) -> None:
         """Color visualizer command. Get HEX & RHB values of a color.
 
         Argument can be either RGB, HEX, or even a human-friendly word.
@@ -519,8 +511,8 @@ class Useful(Cog):
 
     @flags.add_flag('--continent', type=str, help='Search through continents.')
     @flags.add_flag('--country', type=str, help='Search through countries.')
-    @flags.command(aliases=['ncov', 'coronavirus'])
-    async def covid(self, ctx: Context, **flags):
+    @flags.command(aliases=('ncov', 'coronavirus'))
+    async def covid(self, ctx: Context, **flags) -> None:
         """Get coronavirus statistics with this command.
         Returns current world statistics if no country was specified.
 
@@ -532,10 +524,10 @@ class Useful(Cog):
             **{p}covid --country Kazakhstan** - sends Kazakhstan statistics.
         """
         cs = ctx.bot.session
-        api = ctx.config.api.covid
+        api = 'https://disease.sh/v3/covid-19/'
 
         if bool(flags):
-            r = await cs.get(f'{api}all')
+            r = await cs.get(api + 'all')
             js = await r.json()
             title = 'Covid-19 World Statistics'
             field = ('Affected Countries', js['affectedCountries'])
@@ -573,8 +565,8 @@ class Useful(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['temp', 'temperature'])
-    async def weather(self, ctx: Context, *, city: str.capitalize):
+    @commands.command(aliases=('temp', 'temperature'))
+    async def weather(self, ctx: Context, *, city: str.capitalize) -> None:
         """Simply gets the weather statistics for a city | region.
         Returns: description, temperature, humidity%, atmospheric pressure.
 
@@ -584,8 +576,8 @@ class Useful(Cog):
         Args:
             city: The city you want to get weather data of.
         """
-        conf = ctx.config.api.weather
-        r = await ctx.bot.session.get(f'{conf[0]}appid={conf[1]}&q={city}')
+        key = ctx.config.api.weather
+        r = await ctx.bot.session.get(f'http://api.openweathermap.org/data/2.5/weather?appid={key}&q={city}')
         x = await r.json()
 
         if x['cod'] != '404':
@@ -605,19 +597,3 @@ class Useful(Cog):
             return await ctx.send(embed=embed)
 
         await ctx.send(f'City `{city}` not found.')
-
-    @commands.command()
-    async def qr(self, ctx: Context, url: Optional[str]):
-        """Make QR-code from a given URL.
-        URL can be atttachment or a user avatar.
-
-        Args:
-            url (Optional[str]): URL to make the QR-code from.
-
-        Example:
-            **{p}qr @Dosek** - sends the QR code using Dosek's avatar.
-        """
-        url = await make_image_url(ctx, url)
-        r = await ctx.bot.session.get(ctx.config.api.qr + url)
-        io = BytesIO(await r.read())
-        await ctx.send(file=discord.File(io, 'qr.png'))

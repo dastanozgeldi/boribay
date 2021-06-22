@@ -4,8 +4,8 @@ import random
 from typing import Optional
 
 import discord
-from boribay.core import BATYR, Cog, Context
-from boribay.utils import checks, converters, exceptions
+from boribay.core import BATYR, Cog, Context, checks, exceptions
+from boribay.core.commands import converters
 from discord.ext import commands, flags
 
 from .games import Trivia, Work
@@ -48,7 +48,7 @@ class Economics(Cog):
         default=5,
         help='Set the limit of users you want to see.'
     )
-    @flags.command(aliases=['lb'])
+    @flags.command(aliases=('lb',))
     async def leaderboard(self, ctx: Context, **flags) -> None:
         """Boribay economics leaderboard. Defaults to 5 users,
         however you can specify the limitation of the leaderboard.
@@ -134,7 +134,7 @@ class Economics(Cog):
         await ctx.db.push(query, amount, member.id)
         await ctx.send(f'✅ Successfully removed **{amount} {BATYR}** from **{member}**.')
 
-    @commands.command(aliases=['card'])
+    @commands.command(aliases=('card',))
     async def profile(
         self, ctx: Context, member: Optional[discord.Member]
     ) -> None:
@@ -170,7 +170,7 @@ class Economics(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['dep'])
+    @commands.command(aliases=('dep',))
     async def deposit(self, ctx: Context, amount: int = None) -> None:
         """Deposit given amount of money into your bank.
         By not specifying the amount of money you deposit them all.
@@ -199,7 +199,7 @@ class Economics(Cog):
         await ctx.db.push(query, amount, ctx.author.id)
         await ctx.send(f'Successfully transfered **{amount}** {BATYR} into your bank!')
 
-    @commands.command(aliases=['wd'])
+    @commands.command(aliases=('wd',))
     async def withdraw(self, ctx: Context, amount: int = None) -> None:
         """Withdraw given amount of money from your bank.
         By not specifying the amount of money you withdraw them all.
@@ -324,7 +324,7 @@ class Economics(Cog):
             )
             await ctx.send('✅ Disabled your bio successfully.')
 
-    @commands.command(aliases=['rob'])
+    @commands.command(aliases=('rob',))
     @commands.cooldown(1, 10.0, commands.BucketType.user)
     async def attack(
         self,
@@ -371,7 +371,7 @@ class Economics(Cog):
         await ctx.db.double('bank', fine, member, ctx.author)
         await ctx.send(f'✅ Stole **{amount}** {BATYR} from **{member}**')
 
-    @commands.command(aliases=['slots'])
+    @commands.command(aliases=('slots',))
     async def slot(
         self,
         ctx: Context,
@@ -415,7 +415,7 @@ class Economics(Cog):
         """
         await Work(ctx).start()
 
-    @commands.command(aliases=['hnt'])
+    @commands.command(aliases=('hnt',))
     @commands.cooldown(1, 60.0, commands.BucketType.user)
     async def headsandtails(self, ctx: Context) -> None:
         """Try your luck playing heads and tails!

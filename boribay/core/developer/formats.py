@@ -1,6 +1,6 @@
 
 class TabularData:
-    """TabularData is stolen from R. Danny.
+    """Taken from RoboDanny.
 
     https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/utils/formats.py
 

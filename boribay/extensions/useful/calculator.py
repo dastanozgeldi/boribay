@@ -2,7 +2,7 @@ import decimal
 import math
 from functools import lru_cache
 
-from boribay.utils import exceptions
+from boribay.core import exceptions
 from sly import Lexer, Parser
 
 __all__ = ('CalcLexer', 'CalcParser')
@@ -74,7 +74,7 @@ class CalcParser(Parser):
     @_('NAME "=" expression')
     def statement(self, p):
         if p.NAME in self.funcs or p.NAME in self.constants:
-            raise exceptions.KeywordAlreadyTaken()
+            raise exceptions.KeywordAlreadyTaken
 
         self.variables[p.NAME] = p.expression
         return f'{p.NAME} = {p.expression}'
@@ -106,13 +106,13 @@ class CalcParser(Parser):
     @_('expression "^" expression')
     def expression(self, p):
         if p.expression0 > 200 or p.expression1 > 200:
-            raise exceptions.Overflow()
+            raise exceptions.Overflow
         return p.expression0 ** p.expression1
 
     @_('expression "!"')
     def expression(self, p):
         if p.expression > 50:
-            raise exceptions.Overflow()
+            raise exceptions.Overflow
         return decimal.Decimal(math.gamma(p.expression + decimal.Decimal("1.0")))
 
     @_('"-" expression %prec UMINUS')

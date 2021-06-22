@@ -4,7 +4,7 @@ from typing import Optional
 
 import discord
 from boribay.core import Cog, Context
-from boribay.utils import Manip, make_image, make_image_url, polaroid_filter
+from boribay.core.manipulation import Manip, make_image, polaroid_filter
 from discord.ext import commands
 
 
@@ -13,7 +13,8 @@ class Images(Cog):
 
     A module that is created to work with images.
 
-    Has features like: filters, text-images and legendary memes."""
+    Has features like: filters, text-images and legendary memes.
+    """
 
     icon = '🖼'
 
@@ -158,36 +159,6 @@ class Images(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def spawn(
-        self,
-        ctx: Context,
-        member: Optional[discord.Member],
-        top_text: Optional[str],
-        bottom_text: Optional[str]
-    ) -> None:
-        """Welcoming image maker command.
-
-        Example:
-            **{p}spawn @Dosek "Member #69" "Welcome to us!"** - spawns Dosek.
-
-        Args:
-            member (Optional[discord.Member]): A member you want to "spawn".
-            top_text (Optional[str]): Text that will be displayed at the top.
-            bottom_text (Optional[str]): Text to put to the bottom.
-        """
-        member = member or ctx.author
-
-        bottom_text = bottom_text or f'{member} just spawned in the server.'
-        top_text = top_text or f'Member #{member.guild.member_count}'
-
-        async with ctx.loading:
-            image = await member.avatar_url.read()
-            buffer = await Manip.welcome(BytesIO(image), top_text, bottom_text)
-
-        file = discord.File(buffer, 'newbie.png')
-        await ctx.send(file=file)
-
-    @commands.command()
     async def jail(self, ctx: Context, image: Optional[str]) -> None:
         """Put someone into jail.
 
@@ -222,7 +193,7 @@ class Images(Cog):
         message = await ctx.send(file=file)
         await message.add_reaction('<:press_f:796264575065653248>')
 
-    @commands.command(aliases=['5g1g', 'fivegoneg'])
+    @commands.command(aliases=('5g1g', 'fivegoneg'))
     async def fiveguysonegirl(self, ctx: Context, member: Optional[str]) -> None:
         """Legendary "5 guys 1 girl" meme maker.
 
@@ -240,7 +211,7 @@ class Images(Cog):
         file = discord.File(buffer, '5g1g.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=['ko'])
+    @commands.command(aliases=('ko',))
     async def fight(self, ctx: Context, member: str) -> None:
         """Fight someone!
 
@@ -299,7 +270,7 @@ class Images(Cog):
         file = discord.File(buffer, 'communist.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=['gay', 'gayize'])
+    @commands.command(aliases=('gay', 'gayize'))
     async def rainbow(self, ctx: Context, image: Optional[str]) -> None:
         """Put the rainbow filter on a user.
 
@@ -316,7 +287,7 @@ class Images(Cog):
         file = discord.File(buffer, 'rainbow.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=['wayg'])
+    @commands.command(aliases=('wayg',))
     async def whyareyougay(self, ctx: Context, member: Optional[str]) -> None:
         """The legendary "WhY aRe YoU gAy?" meme maker.
 
@@ -377,23 +348,3 @@ class Images(Cog):
 
         file = discord.File(buffer, 'clyde.png')
         await ctx.send(file=file)
-
-    @commands.command()
-    async def caption(self, ctx: Context, image: Optional[str]) -> None:
-        """Get caption for an image.
-
-        Example:
-            **{p}caption @Dosek** - sends caption for Dosek's avatar.
-
-        Args:
-            image (Optional[str]): An image you want to get caption for.
-        """
-        image = await make_image_url(ctx, image)
-
-        r = await ctx.bot.session.post(
-            ctx.config.api.caption,
-            json={'Content': image, 'Type': 'CaptionRequest'}
-        )
-
-        embed = ctx.embed(title=await r.text())
-        await ctx.send(embed=embed.set_image(url=image))

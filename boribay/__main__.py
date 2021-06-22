@@ -1,35 +1,25 @@
-import argparse
+import logging
 import sys
 
-from boribay import Boribay, __version__, parse_flags
+from boribay.cli import parse_flags, parse_single_flags
+from boribay.core.bot import Boribay
+from boribay.log import init_logging
 
-description = 'A Discord Bot created to make people smile.'
-
-
-def parse_single_flags(flags: argparse.Namespace) -> None:
-    """Here we handle all flags that should be parsed as single.
-
-    Parameters
-    ----------
-    flags : argparse.Namespace
-        The given namespace of parsed arguments.
-    """
-    if flags.version:
-        print(f'Boribay is running on version: {__version__}')
-        sys.exit(0)
-
-    if flags.news:
-        with open('./data/news.md') as f:
-            print(f.read())
-        sys.exit(0)
+log = logging.getLogger('bot.main')
 
 
-def main():
+def main() -> None:
     """The main function of the bot."""
+    # Setting up logging features.
+    init_logging(level=logging.INFO)
+
+    # Beforehand flag-parsing.
     args = parse_flags(sys.argv[1:])
     parse_single_flags(args)
 
-    bot = Boribay(description=description, cli_flags=args)
+    # Initializing the bot class, starting.
+    # data_manager.load_basic_config('Boribay')
+    bot = Boribay(cli_flags=args)
     bot.run()
 
 

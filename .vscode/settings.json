@@ -3,7 +3,7 @@
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
         "--ignore=W191, E501, E731",
-        "--exclude=boribay/utils/calculator.py __init__.py"
+        "--exclude=calculator.py"
     ],
     "files.exclude": {
         "**/__pycache__": true

@@ -1,161 +1,92 @@
+import asyncio
+import functools
 import textwrap
 from io import BytesIO
+from typing import Union
 
-from boribay.utils import ImageConverter, ImageURLConverter
-from discord import File
-from jishaku.functools import executor_function
-from PIL import Image, ImageDraw, ImageFont
+import discord
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 from polaroid import Image as PI
 from wand.image import Image as WI
 
-BASE_PATH = './data/layouts'
+from .converters import ImageConverter
+
+IMAGE_PATH = './data/layouts'
 FONT_PATH = './data/fonts'
 
 
-async def make_image_url(ctx, argument: str):
-    converter = ImageURLConverter()
-    image = await converter.convert(ctx, argument)
+def executor(func):
+    """Wraps a sync function into an async function.
 
-    if not image:
-        if ctx.message.attachments:
-            image = ctx.message.attachments[0].url
-        else:
-            image = str(ctx.author.avatar_url_as(static_format='png', format='png', size=512))
+    This provides us non-blocking wrapped functions.
+    """
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        """Sync function wrapper."""
+        loop = asyncio.get_event_loop()
+        partial_function = functools.partial(func, *args, **kwargs)
+        return await loop.run_in_executor(None, partial_function)
 
-    return image
+    return wrapper
 
 
-async def make_image(ctx, argument: str):
+def color_exists(color: str) -> bool:
+    """Checking whether the given color exists is important in some commands.
+
+    This is done by using `ImageColor.getrgb` method and try/catch.
+
+    Args:
+        color (str): The color to check existence of.
+
+    Returns:
+        bool: The boolean according to the color value.
+    """
+    try:
+        ImageColor.getrgb(color)
+        return True
+    except ValueError:
+        return False
+
+
+async def make_image(
+    ctx,
+    argument: str,
+    *,
+    return_url: bool = False
+) -> Union[bytes, str]:
     converter = ImageConverter()
-    image = await converter.convert(ctx, argument)
+    image = await converter.convert(ctx, argument, return_url=return_url)
 
     if not image:
         if ctx.message.attachments:
-            layout = ctx.message.attachments[0]
+            attachment = ctx.message.attachments[0]
+            image = attachment.url if return_url else await attachment.read()
         else:
-            layout = ctx.author.avatar_url_as(static_format='png', format='png', size=256)
-
-        image = await layout.read()
+            avatar = ctx.author.avatar_url_as(static_format='png', format='png', size=512)
+            image = str(avatar) if return_url else await avatar.read()
 
     return image
 
 
-def polaroid_filter(image: bytes, *, method: str, args: list = None, kwargs: dict = None):
-    args = args or []
-    kwargs = kwargs or {}
-    img = PI(image)
-    filt = getattr(img, method)
-    filt(*args, **kwargs)
-
-    return File(BytesIO(img.save_bytes()), f'{method}.png')
+def polaroid_filter(
+    image: bytes,
+    *,
+    method: str,
+    args: list = [],
+    kwargs: dict = {}
+) -> discord.File:
+    image = PI(image)
+    func = getattr(image, method)
+    func(*args, **kwargs)
+    byt = image.save_bytes()
+    return discord.File(byt, f'{method}.png')
 
 
 class Manip:
+    """A set of static methods used in the Image extension."""
 
     @staticmethod
-    @executor_function
-    def pixelate(image: BytesIO):
-        with Image.open(image) as im:
-            small = im.resize((32, 32), resample=Image.BILINEAR)
-            result = small.resize(im.size, Image.NEAREST)
-            buffer = BytesIO()
-            result.save(buffer, 'png')
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
-    def welcome(member: BytesIO, top_text, bottom_text):
-        font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=20)
-        join_w, member_w = font.getsize(bottom_text)[0], font.getsize(top_text)[0]
-
-        with Image.new('RGB', (600, 400)) as card:
-            card.paste(Image.open(member).resize((263, 263)), (170, 32))
-            draw = ImageDraw.Draw(card)
-            draw.text(((600 - join_w) / 2, 309), bottom_text, (255, 255, 255), font=font)
-            draw.text(((600 - member_w) / 2, 1), top_text, (169, 169, 169), font=font)
-            buffer = BytesIO()
-            card.save(buffer, 'png', optimize=True)
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
-    def whyareyougae(author: BytesIO, member: BytesIO):
-        author = Image.open(author)
-
-        with Image.open(f'{BASE_PATH}/wayg.jpg') as img:
-            img.paste(author, (507, 103))
-            img.paste(Image.open(member).resize((128, 128)), (77, 120))
-            buffer = BytesIO()
-            img.save(buffer, 'png', optimize=True)
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
-    def fiveguysonegirl(author: BytesIO, member: BytesIO):
-        author = Image.open(author)
-
-        with Image.open(f'{BASE_PATH}/5g1g.png') as img:
-            img.paste(Image.open(member).resize((128, 128)), (500, 275))
-
-            for i in [(31, 120), (243, 53), (438, 85), (637, 90), (815, 20)]:
-                img.paste(author, i)
-
-            buffer = BytesIO()
-            img.save(buffer, 'png', optimize=True)
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
-    def wanted(image: BytesIO):
-        image = Image.open(image).resize((189, 205))
-
-        with Image.open(f'{BASE_PATH}/wanted.png') as img:
-            img.paste(image, (73, 185))
-            buffer = BytesIO()
-            img.save(buffer, 'png')
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function  # 395, 206 - knocked out; 236, 50 - winner
-    def fight(winner: BytesIO, knocked_out: BytesIO):
-        winner = Image.open(winner).resize((40, 40))
-        knocked_out = Image.open(knocked_out).resize((60, 60))
-
-        with Image.open(f'{BASE_PATH}/fight.jpg') as img:
-            img.paste(winner, (236, 50))
-            img.paste(knocked_out.rotate(-90), (395, 206))
-            buffer = BytesIO()
-            img.save(buffer, 'png')
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
-    def clyde(txt: str):
-        font = ImageFont.truetype(f'{FONT_PATH}/whitneybook.otf', 18)
-
-        with Image.open(f'{BASE_PATH}/clyde.png') as img:
-            draw = ImageDraw.Draw(img)
-            draw.text((72, 33), txt, (255, 255, 255), font=font)
-            buffer = BytesIO()
-            img.save(buffer, 'png')
-
-        buffer.seek(0)
-        return buffer
-
-    @staticmethod
-    @executor_function
+    @executor
     def typeracer(txt: str):
         font = ImageFont.truetype(f'{FONT_PATH}/monoid.ttf', size=30)
         w, h = font.getsize_multiline(txt)
@@ -170,13 +101,116 @@ class Manip:
         return buffer
 
     @staticmethod
-    @executor_function
+    @executor
+    def welcome(*args, member_avatar: BytesIO):
+        top_text, bottom_text = *args
+        font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=20)
+        join_w, member_w = font.getsize(bottom_text)[0], font.getsize(top_text)[0]
+
+        with Image.new('RGB', (600, 400)) as card:
+            card.paste(Image.open(member_avatar).resize((263, 263)), (170, 32))
+            draw = ImageDraw.Draw(card)
+            draw.text(((600 - join_w) / 2, 309), bottom_text, (255, 255, 255), font=font)
+            draw.text(((600 - member_w) / 2, 1), top_text, (169, 169, 169), font=font)
+            buffer = BytesIO()
+            card.save(buffer, 'png', optimize=True)
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor
+    def pixelate(image: BytesIO):
+        with Image.open(image) as im:
+            small = im.resize((32, 32), resample=Image.BILINEAR)
+            result = small.resize(im.size, Image.NEAREST)
+            buffer = BytesIO()
+            result.save(buffer, 'png')
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor
+    def whyareyougae(author: BytesIO, member: BytesIO):
+        author = Image.open(author)
+
+        with Image.open(f'{IMAGE_PATH}/wayg.jpg') as img:
+            img.paste(author, (507, 103))
+            img.paste(Image.open(member).resize((128, 128)), (77, 120))
+            buffer = BytesIO()
+            img.save(buffer, 'png', optimize=True)
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor
+    def fiveguysonegirl(author: BytesIO, member: BytesIO):
+        author = Image.open(author)
+
+        with Image.open(f'{IMAGE_PATH}/5g1g.png') as img:
+            img.paste(Image.open(member).resize((128, 128)), (500, 275))
+
+            for i in [(31, 120), (243, 53), (438, 85), (637, 90), (815, 20)]:
+                img.paste(author, i)
+
+            buffer = BytesIO()
+            img.save(buffer, 'png', optimize=True)
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor
+    def wanted(image: BytesIO):
+        image = Image.open(image).resize((189, 205))
+
+        with Image.open(f'{IMAGE_PATH}/wanted.png') as img:
+            img.paste(image, (73, 185))
+            buffer = BytesIO()
+            img.save(buffer, 'png')
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor  # 395, 206 - knocked out; 236, 50 - winner
+    def fight(winner: BytesIO, knocked_out: BytesIO):
+        winner = Image.open(winner).resize((40, 40))
+        knocked_out = Image.open(knocked_out).resize((60, 60))
+
+        with Image.open(f'{IMAGE_PATH}/fight.jpg') as img:
+            img.paste(winner, (236, 50))
+            img.paste(knocked_out.rotate(-90), (395, 206))
+            buffer = BytesIO()
+            img.save(buffer, 'png')
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor
+    def clyde(txt: str):
+        font = ImageFont.truetype(f'{FONT_PATH}/whitneybook.otf', 18)
+
+        with Image.open(f'{IMAGE_PATH}/clyde.png') as img:
+            draw = ImageDraw.Draw(img)
+            draw.text((72, 33), txt, (255, 255, 255), font=font)
+            buffer = BytesIO()
+            img.save(buffer, 'png')
+
+        buffer.seek(0)
+        return buffer
+
+    @staticmethod
+    @executor
     def drake(no: str, yes: str):
         no_wrapped = textwrap.wrap(text=no, width=13)
         yes_wrapped = textwrap.wrap(text=yes, width=13)
         font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=28)
 
-        with Image.open(f'{BASE_PATH}/drake.jpg') as img:
+        with Image.open(f'{IMAGE_PATH}/drake.jpg') as img:
             draw = ImageDraw.Draw(img)
             draw.text((270, 10), '\n'.join(no_wrapped), (0, 0, 0), font=font)
             draw.text((270, 267), '\n'.join(yes_wrapped), (0, 0, 0), font=font)
@@ -187,9 +221,9 @@ class Manip:
         return buffer
 
     @staticmethod
-    @executor_function
+    @executor
     def jail(image: BytesIO):
-        layout = WI(filename=f'{BASE_PATH}/jailbars.png')
+        layout = WI(filename=f'{IMAGE_PATH}/jailbars.png')
 
         with WI(file=image) as img:
             w, h = img.size
@@ -202,9 +236,9 @@ class Manip:
         return buffer
 
     @staticmethod
-    @executor_function
+    @executor
     def press_f(image: BytesIO):
-        layout = WI(filename=f'{BASE_PATH}/f.png')
+        layout = WI(filename=f'{IMAGE_PATH}/f.png')
 
         with WI(file=image) as img:
             img.resize(52, 87)
@@ -217,9 +251,9 @@ class Manip:
         return buffer
 
     @staticmethod
-    @executor_function
+    @executor
     def rainbow(image: BytesIO):
-        layout = WI(filename=f'{BASE_PATH}/rainbow.png')
+        layout = WI(filename=f'{IMAGE_PATH}/rainbow.png')
 
         with WI(file=image) as img:
             w, h = img.size
@@ -232,9 +266,9 @@ class Manip:
         return buffer
 
     @staticmethod
-    @executor_function
+    @executor
     def communist(image: BytesIO):
-        layout = WI(filename=f'{BASE_PATH}/communist-flag.jpg')
+        layout = WI(filename=f'{IMAGE_PATH}/communist-flag.jpg')
 
         with WI(file=image) as img:
             w, h = img.size
@@ -247,7 +281,7 @@ class Manip:
         return buffer
 
     @staticmethod
-    @executor_function
+    @executor
     def swirl(degree: int, image: BytesIO):
         if degree > 360:
             degree = 360

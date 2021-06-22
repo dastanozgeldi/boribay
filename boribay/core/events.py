@@ -1,35 +1,78 @@
-import json
+import logging
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING
 
+import boribay
 import discord
-import prettify_exceptions
-from boribay.utils import Manip, exceptions
+from boribay.core import exceptions, utils
 from discord.ext import commands, flags
-
-from .constants import PATH
-from .logger import create_logger
-
-if TYPE_CHECKING:
-    from .bot import Boribay
+from rich import box, get_console
+from rich.columns import Columns
+from rich.panel import Panel
+from rich.table import Table
 
 __all__ = ('set_events',)
 
-log = create_logger('events')
-with open(f'{PATH}/rr.json', 'r') as f:
-    local_reaction_roles = json.load(f)
+logger = logging.getLogger('bot')
+
+welcoming_text = r'''
+ ____             _  _
+| __ )  ___  _ __(_)| |__   __ _ _   _
+|  _ \ / _ \| '__| || '_ \ / _` | | | |
+| |_) | (_) | |  | || |_) | (_| | |_| |
+|____/ \___/|_|  |_||_.__/ \__,_ \__, |
+                                 |___/
+            by Dositan
+'''
 
 
-def set_events(bot: 'Boribay'):
-    """
-    Initializing bot events required to live.
-    """
+def set_events(bot):
+    """Initializing bot events required to live."""
 
     # Bot-related events.
+    @bot.event
+    async def on_connect():
+        logger.info('Connected to Discord successfully.')
 
     @bot.event
-    async def on_message_edit(before, after):
+    async def on_ready():
+        """The bot is ready, telling the developer."""
+        guilds = len(bot.guilds)
+        users = len(set([m for m in bot.get_all_members()]))
+
+        general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+        # general_info.add_row('Prefixes', ', '.join(bot.command_prefix))
+        # general_info.add_row('Language', await bot._config.locale())
+        general_info.add_row('Boribay version', boribay.__version__)
+        general_info.add_row('Library version', discord.__version__)
+
+        counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+        # String conversion is needed as Rich doesn't deal with ints
+        counts.add_row('Servers', str(guilds))
+        if bot.intents.members:  # Avoiding 0 users
+            counts.add_row('Cached Users', str(users))
+
+        console = get_console()
+        console.print(welcoming_text, style='blue', markup=False, highlight=False)
+        if guilds:
+            console.print(
+                Columns(
+                    [
+                        Panel(general_info, title=str(bot.user.name)),
+                        Panel(counts)
+                    ],
+                    equal=True,
+                    align='center',
+                )
+            )
+        else:
+            console.print(Columns([Panel(general_info, title=str(bot.user.name))]))
+
+        console.print(f'Loaded {len(bot.cogs)} cogs with {len(bot.commands)} commands')
+        console.print(f'Client latency: {bot.latency * 1000:.2f} ms')
+
+    @bot.event
+    async def on_message_edit(before: discord.Message, after: discord.Message) -> None:
         # making able to process commands on message edit only for owner.
         if before.content != after.content:
             if after.author.id in bot.owner_ids:
@@ -40,25 +83,8 @@ def set_events(bot: 'Boribay'):
             return
 
     # Guild logging.
-    async def _log_guild(guild: discord.Guild, **kwargs):
-        """A general guild-logging method since both events are pretty similar.
-
-        Args:
-            guild (discord.Guild): The guild object produced by the event.
-        """
-        embed = bot.embed(
-            title=kwargs.pop('text').format(guild),
-            description=f'Member count: {guild.member_count}'
-            f'Guild ID: {guild.id}\nNow in {len(bot.guilds)} guilds.',
-            color=kwargs.pop('color')
-        ).set_thumbnail(url=guild.icon_url)
-
-        await bot.webhook.send(embed=embed)
-        await bot.pool.execute(kwargs.pop('query'), guild.id)
-        await bot.guild_cache.refresh()
-
     @bot.event
-    async def on_guild_join(guild: discord.Guild):
+    async def on_guild_join(guild: discord.Guild) -> None:
         """Gets triggered whenever the bot joins a guild.
 
         Parameters
@@ -82,7 +108,7 @@ def set_events(bot: 'Boribay'):
         await bot.guild_cache.refresh()
 
     @bot.event
-    async def on_guild_remove(guild: discord.Guild):
+    async def on_guild_remove(guild: discord.Guild) -> None:
         """Gets triggered whenever the bot loses a guild.
 
         Parameters
@@ -106,7 +132,7 @@ def set_events(bot: 'Boribay'):
         await bot.guild_cache.refresh()
 
     @bot.event
-    async def on_command_completion(ctx):
+    async def on_command_completion(ctx) -> None:
         """Gets triggered everytime a bot command was successfully executed.
 
         Parameters
@@ -125,43 +151,25 @@ def set_events(bot: 'Boribay'):
 
     # Member-logging.
     @bot.event
-    async def on_member_join(member: discord.Member):
-        g = member.guild
-
+    async def on_member_join(member: discord.Member) -> None:
+        g: discord.Guild = member.guild
+        # Member-logging feature.
         if wc := bot.guild_cache[g.id].get('welcome_channel', False):
-            await g.get_channel(wc).send(file=discord.File(fp=await Manip.welcome(
-                BytesIO(await member.avatar_url.read()),
+            image = await utils.Manip.welcome(
                 f'Member #{g.member_count}',
                 f'{member} just spawned in the server.',
-            ), filename=f'{member}.png'))
+                member_avatar=BytesIO(await member.avatar_url.read())
+            )
+            channel = g.get_channel(wc)
+            file = discord.File(image, f'{member}.png')
+            await channel.send(file=file)
 
+        # Autorole feature may get triggered according to the guild settings.
         if role_id := bot.guild_cache[g.id].get('autorole', False):
             await member.add_roles(g.get_role(role_id), reason='Autorole')
 
-    @bot.event
-    async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
-        if (m_id := str(payload.message_id)) in local_reaction_roles.keys():
-            guild = discord.utils.find(lambda g: g.id == payload.guild_id, bot.guilds)
-            for emoji, name in local_reaction_roles[m_id].items():
-                if payload.emoji.name == emoji:
-                    role = discord.utils.get(guild.roles, name=name)
-
-            await payload.member.add_roles(role)
-
-    @bot.event
-    async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
-        if (m_id := str(payload.message_id)) in local_reaction_roles.keys():
-            guild = discord.utils.find(lambda g: g.id == payload.guild_id, bot.guilds)
-            for emoji, name in local_reaction_roles[m_id].items():
-                if payload.emoji.name == emoji:
-                    role = discord.utils.get(guild.roles, name=name)
-
-            with suppress(AttributeError):
-                member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
-                await member.remove_roles(role)
-
     # And finally, error handling.
-    async def send(ctx, exc: str = None, *args, **kwargs):
+    async def send(ctx, exc: str = None, *args, **kwargs) -> None:
         try:
             return await ctx.reply(exc, *args, **kwargs)
 
@@ -172,49 +180,16 @@ def set_events(bot: 'Boribay'):
         except discord.NotFound:
             pass
 
-        return None
-
-    async def send_error(ctx, exc: str):
-        me = ctx.bot
-        channel = me.get_channel(me.config.main.errors_channel)
-        embed = me.embed(ctx, description=f'```py\nError:\n{exc}\n```', color=0xff0000)
-        embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
-
-        if g := ctx.guild:
-            command = 'None' if not ctx.command else str(ctx.command)
-            embed.set_thumbnail(url=g.icon_url)
-            embed.add_field(
-                name='Information',
-                value=f'Channel: {ctx.channel.mention}\n'
-                f'Guild: {g} | {g.id}\n'
-                f'Command: {command}\n'
-                f'Message: {ctx.message.content}'
-            )
-
-        await channel.send(embed=embed)
-
     @bot.event
-    async def on_command_error(ctx, error: str):
+    async def on_command_error(ctx, error: str) -> None:
         error = getattr(error, 'original', error)
         embed = ctx.embed(title='⚠ Error!', color=0xff0000)
-        CUSTOM = (
-            exceptions.DefaultError,
-            exceptions.NotAnInteger,
-            exceptions.NotEnough,
-            exceptions.PastMinimum,
-            exceptions.CalcError,
-            exceptions.UndefinedVariable,
-            exceptions.KeywordAlreadyTaken,
-            exceptions.Overflow,
-            exceptions.UnclosedBrackets,
-            exceptions.EmptyBrackets,
-            exceptions.OptionsNotInRange
-        )
 
         if isinstance(error, commands.CommandNotFound):
             return
 
-        setattr(ctx, 'original_author_id', getattr(ctx, 'original_author_id', ctx.author.id))
+        original_author = getattr(ctx, 'original_author_id', ctx.author.id)
+        setattr(ctx, 'original_author_id', original_author)
 
         if isinstance(
             error,
@@ -226,11 +201,13 @@ def set_events(bot: 'Boribay'):
                 commands.MissingPermissions
             )
         ) and ctx.original_author_id in ctx.bot.owner_ids:
+            # Those errors need to be reinvoked.
             return await ctx.reinvoke()
 
         elif isinstance(
             error,
             (
+                # discord-py.
                 commands.NotOwner,
                 commands.BadArgument,
                 commands.RoleNotFound,
@@ -239,9 +216,11 @@ def set_events(bot: 'Boribay'):
                 commands.CommandOnCooldown,
                 commands.NSFWChannelRequired,
                 commands.MaxConcurrencyReached,
-                flags._parser.ArgumentParsingError,
                 commands.PartialEmojiConversionFailure,
-                *CUSTOM
+                # discord-ext-flags.
+                flags._parser.ArgumentParsingError,
+                # boribay.
+                exceptions.UserError
             )
         ):
             embed.description = str(error)
@@ -250,23 +229,5 @@ def set_events(bot: 'Boribay'):
         elif isinstance(error, commands.MissingRequiredArgument):
             return await ctx.send_help(ctx.command)
 
-        try:
-            prettify_exceptions.DefaultFormatter().theme['_ansi_enabled'] = False
-            exc = ''.join(prettify_exceptions.DefaultFormatter().format_exception(type(error), error, error.__traceback__))
-
-        except AttributeError:
-            return
-
-        if len(exc) > 1000:
-            await ctx.send('An error occured. Sending the traceback to the logging channel...')
-            await send_error(ctx, error)
-
         else:
-            embed = ctx.embed(description=f'Details: ```py\n{exc}\n```', color=0xff0000)
-            await send(ctx, embed=embed)
-            await send_error(ctx, exc)
-
-        # log.error(error)
-        # It's always better to get the original traceback instead of
-        # simple logging that does not provide any details.
-        raise error
+            logger.exception(type(error).__name__, exc_info=error)

@@ -25,20 +25,13 @@ class LinksPart:
 
 
 class ApiPart:
-    __slots__ = {'anime', 'ud', 'qr', 'screenshot', 'quote', 'caption',
-                 'weather', 'covid', 'dagpi', 'alex'}
+    __slots__ = {'weather', 'dagpi', 'alex'}
 
     def __init__(self, data: dict):
-        self.anime = data.get('anime')
-        self.ud = data.get('ud')
-        self.qr = data.get('qr')
-        self.screenshot = data.get('screenshot')
-        self.quote = data.get('quote')
-        self.caption = data.get('caption')
-        self.weather = data.get('weather', [])  # A list which is like [url, id]
-        self.covid = data.get('covid')
-        self.dagpi = data.get('dagpi', [])  # A list which is like [url, token]
-        self.alex = data.get('alex', [])  # A list which is like [url, token]
+        self.weather = data.get('weather')
+        self.dagpi = data.get('dagpi')
+        self.alex = data.get('alex')
+        self.google_key = data.get('google_key')
 
 
 class Config:
@@ -46,7 +39,7 @@ class Config:
 
     All file-configuration stuff is controlled here using `.toml` files.
     """
-    __slots__ = {'config', 'values', 'main', 'database', 'links', 'api', 'ipc'}
+    __slots__ = {'config', 'values', 'main', 'database', 'links', 'api'}
 
     def __init__(self, path: str):
         self.config = path

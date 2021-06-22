@@ -1,8 +1,6 @@
 from .images import Images
 
 
+# Setting up the cog.
 def setup(bot):
-    """
-    Images extension setup method.
-    """
     bot.add_cog(Images())

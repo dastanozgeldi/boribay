@@ -1,0 +1,34 @@
+{
+	"Create a new Cog": {
+		"prefix": "newcog",
+		"scope": "python",
+		"body": [
+			"from boribay.core import Boribay, Cog\n\n",
+			"class NewCog(Cog):",
+			"    \"\"\"A useful docstring\"\"\"\n",
+			"    def __init__(self, bot: Boribay):",
+			"        self.bot = bot"
+		],
+		"description": [
+			"Initialize a new commands.Cog object.",
+			"May be useful in case when you have just created a new cog file."
+		]
+	},
+	"Create a new command": {
+		"prefix": "newcmd",
+		"body": [
+			"@commands.command()",
+			"async def newcmd(self, ctx):",
+			"    ..."
+		],
+		"description": "Create a new command inside your cog."
+	},
+	"Set up a cog": {
+		"prefix": "setup",
+		"body": [
+			"def setup(bot: Boribay):",
+			"    bot.add_cog(MyCog(bot))"
+		],
+		"description": "Create a setup function for the cog."
+	}
+}

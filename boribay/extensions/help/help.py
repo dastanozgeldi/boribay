@@ -1,9 +1,9 @@
 from difflib import get_close_matches
-from typing import Union
+from typing import List, Union
 
 import discord
 from boribay.core import Boribay, Cog, Context
-from boribay.utils import Paginate
+from boribay.core.commands.paginators import Paginate
 from discord.ext import commands, menus
 
 __all__ = ('HelpCommand', 'Help')
@@ -139,7 +139,7 @@ class HelpCommand(commands.HelpCommand):
 
         embed.add_field(name='Modules:', value='\n'.join(cats))
 
-        with open('./data/news.md', 'r') as f:
+        with open('./data/config/news.md', 'r') as f:
             news = f.readlines()
 
         embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
@@ -157,7 +157,7 @@ class HelpCommand(commands.HelpCommand):
             clear_reactions_after=True
         ).start(ctx)
 
-    def get_flags(self, command: commands.Command) -> list:
+    def get_flags(self, command: commands.Command) -> List[str]:
         """Get all available flags for the command.
 
         Parameters

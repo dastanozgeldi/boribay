@@ -14,8 +14,8 @@ exts = [  # I had to hardcode extensions, sorry for that...
     'boribay.extensions.settings',
     'boribay.extensions.useful'
 ]
-beta = false
-errors_channel = 'Replace with a channel ID where you would like to log errors in.'
+beta = false  # Whether to enable the beta mode.
+errors_channel =  # Put the channel ID where you'd like to log all errors.
 token = 'Put your token here.'
 
 [database]  # Database credentials to be able to log with.
@@ -31,17 +31,7 @@ github_url = 'https://github.com/Dositan/Boribay/'
 support_url = 'https://discord.gg/ZAzTFTCerM/'
 topgg_url = 'https://top.gg/bot/735397931355471893#/'
 
-[API]  # Array variables mean that the token must be the second element there.
-# Looks like I'm such in a good mood to leak all the API URL's I've been using :^)
-anime = 'https://kitsu.io/api/edge'
-ud = 'http://api.urbandictionary.com/v0/define'
-qr = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='
-screenshot = 'https://image.thum.io/get/width/1920/crop/675/maxAge/1/noanimate/'
-quote = 'https://api.quotable.io/random'
-caption = 'https://captionbot.azurewebsites.net/api/messages'
-covid = 'https://disease.sh/v3/covid-19/'
-
-# API's that require a token ↓
-weather = ['http://api.openweathermap.org/data/2.5/weather?', 'Token of this API.']
-dagpi = ['https://beta.dagpi.xyz/image/', 'Token of this API.']
-alex = ['https://api.alexflipnote.dev/', 'Token of this API.']
+[API]
+weather = 'Token for http://api.openweathermap.org/.'
+dagpi = 'Token for https://beta.dagpi.xyz/'
+alex = 'Token for https://api.alexflipnote.dev/'

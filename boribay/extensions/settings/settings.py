@@ -1,6 +1,7 @@
 import discord
 from boribay.core import Cog, Context, constants
-from boribay.utils import ColorConverter, SettingsConverter, is_mod
+from boribay.core.checks import is_mod
+from boribay.core.commands.converters import ColorConverter, SettingsConverter
 from discord.ext import commands
 
 
@@ -63,7 +64,7 @@ class Settings(Cog):
 
         return constants.TICK
 
-    @commands.command(aliases=['gs', 'settings'])
+    @commands.command(aliases=('gs', 'settings'))
     async def guildsettings(self, ctx: Context):
         """The settings command. Shows the settings of the current server.
 
@@ -91,7 +92,7 @@ class Settings(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.group(invoke_without_command=True, aliases=['wc'])
+    @commands.group(invoke_without_command=True, aliases=('wc',))
     async def welcomechannel(self, ctx: Context) -> None:
         """
         The welcome channel setting parent command.
@@ -144,7 +145,7 @@ class Settings(Cog):
         await self._update(ctx, 'prefix', new_prefix)
         await ctx.send(f'✅ Prefix has been changed to: `{new_prefix}`')
 
-    @prefix.command(name='default', aliases=['disable'])
+    @prefix.command(name='default', aliases=('disable',))
     async def _default_prefix(self, ctx: Context) -> None:
         """
         Bring back the default bot prefix with this command.
@@ -152,7 +153,7 @@ class Settings(Cog):
         await self._update(ctx, 'prefix', '.')
         await ctx.send('✅ Prefix has been set to the default one.')
 
-    @commands.group(invoke_without_command=True, aliases=['embedcolour', 'ec'])
+    @commands.group(invoke_without_command=True, aliases=('embedcolour', 'ec'))
     async def embedcolor(self, ctx: Context) -> None:
         """
         The color setting parent command.
@@ -177,7 +178,7 @@ class Settings(Cog):
         embed = ctx.embed(description='✅ As of now, the embed color will look like this.')
         await ctx.send(embed=embed)
 
-    @embedcolor.command(name='default', aliases=['disable'])
+    @embedcolor.command(name='default', aliases=('disable',))
     async def _default_color(self, ctx: Context) -> None:
         """
         Bring back the default color for your guild with this command.

@@ -7,7 +7,7 @@ from typing import Optional
 
 import discord
 from boribay.core import Boribay, Cog, Context
-from boribay.utils import Manip, color_exists, make_image_url
+from boribay.core.manipulation import Manip, color_exists, make_image
 from discord.ext import commands, flags
 
 
@@ -28,11 +28,11 @@ class Fun(Cog):
         Returns:
             discord.File: A done to send file.
         """
-        alex = self.bot.config.api.alex
+        key = self.bot.config.api.alex
         r = await self.bot.session.get(
-            f'{alex[0]}{url}', headers={'Authorization': alex[1]}
+            'https://api.alexflipnote.dev/' + url,
+            headers={'Authorization': key}
         )
-
         fp = BytesIO(await r.read())
         return discord.File(fp, fn or 'alex.png')
 
@@ -46,16 +46,15 @@ class Fun(Cog):
         Returns:
             discord.File: A done to send file.
         """
-        dagpi = self.bot.config.api.dagpi
+        key = self.bot.config.api.dagpi
         r = await self.bot.session.get(
-            f'{dagpi[0]}{url}',
-            headers={'Authorization': dagpi[1]}
+            'https://beta.dagpi.xyz/image/' + url,
+            headers={'Authorization': key}
         )
-
         fp = BytesIO(await r.read())
         return discord.File(fp, fn or 'dagpi.png')
 
-    @commands.command(aliases=['ph'])
+    @commands.command(aliases=('ph',))
     async def pornhub(self, ctx: Context, text_1: str, text_2: str = 'Hub') -> None:
         """PornHub logo maker.
 
@@ -73,7 +72,44 @@ class Fun(Cog):
         file = await self.alex_image(f'pornhub?text={text_1}&text2={text_2}')
         await ctx.send(file=file)
 
-    @commands.command(aliases=['dym'])
+    @commands.command()
+    async def qr(self, ctx: Context, url: Optional[str]) -> None:
+        """Make QR-code from a given URL.
+        URL can be an atttachment or a user avatar.
+
+        Args:
+            url (Optional[str]): URL to make the QR-code from.
+
+        Example:
+            **{p}qr @Dosek** - sends the QR code using Dosek's avatar.
+        """
+        url = await make_image(ctx, url, return_url=True)
+        r = await ctx.bot.session.get(
+            'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + url
+        )
+        io = BytesIO(await r.read())
+        await ctx.send(file=discord.File(io, 'qr.png'))
+
+    @commands.command()
+    async def caption(self, ctx: Context, image: Optional[str]) -> None:
+        """Get caption for an image.
+
+        Example:
+            **{p}caption @Dosek** - sends caption for Dosek's avatar.
+
+        Args:
+            image (Optional[str]): An image you want to get caption for.
+        """
+        image = await make_image(ctx, image, return_url=True)
+
+        r = await ctx.bot.session.post(
+            'https://captionbot.azurewebsites.net/api/messages',
+            json={'Content': image, 'Type': 'CaptionRequest'}
+        )
+        embed = ctx.embed(title=await r.text())
+        await ctx.send(embed=embed.set_image(url=image))
+
+    @commands.command(aliases=('dym',))
     async def didyoumean(self, ctx: Context, search: str, did_you_mean: str) -> None:
         """Google search "Did you mean" meme.
 
@@ -129,8 +165,7 @@ class Fun(Cog):
         Args:
             image (Optional[str]): An image you want to get "triggered".
         """
-        image = await make_image_url(ctx, image)
-
+        image = await make_image(ctx, image, return_url=True)
         file = await self.dagpi_image(f'triggered?url={image}', 'triggered.gif')
         await ctx.send(file=file)
 
@@ -144,8 +179,7 @@ class Fun(Cog):
         Args:
             image (Optional[str]): An image you want to ASCII'ize.
         """
-        image = await make_image_url(ctx, image)
-
+        image = await make_image(ctx, image, return_url=True)
         file = await self.dagpi_image(f'ascii?url={image}', 'ascii.png')
         await ctx.send(file=file)
 
@@ -174,7 +208,7 @@ class Fun(Cog):
         default=60.0,
         help='Set your own timeout! Defaults to 60 seconds.'
     )
-    @flags.command(aliases=['tr', 'typerace'])
+    @flags.command(aliases=('tr', 'typerace'))
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def typeracer(self, ctx: Context, **flags) -> None:
         """Typeracer game. Compete with others and find out the best typist.
@@ -193,14 +227,15 @@ class Fun(Cog):
             raise commands.BadArgument('Timeout limit has been reached. Specify between 10 and 120.')
 
         async with ctx.loading:
-            r = await (await self.bot.session.get(ctx.config.api.quote)).json()
-            content = r['content']
+            r = await self.bot.session.get('https://api.quotable.io/random')
+            quote = await r.json()
+            content = quote['content']
             buffer = await Manip.typeracer('\n'.join(textwrap.wrap(content, 30)))
 
         embed = ctx.embed(
             title='Typeracer', description='see who is the fastest at typing.'
         ).set_image(url='attachment://typeracer.png')
-        embed.set_footer(text=f'© {r["author"]}')
+        embed.set_footer(text=f'© {quote["author"]}')
 
         race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
         await race.add_reaction('🗑')
@@ -228,7 +263,7 @@ class Fun(Cog):
             embed = ctx.embed(
                 title=f'{stuff.author} won!',
                 description=f'**Done in**: {final}s\n'
-                f'**Average WPM**: {r["length"] / 5 / (final / 60):.0f} words\n'
+                f'**Average WPM**: {quote["length"] / 5 / (final / 60):.0f} words\n'
                 f'**Original text:**```diff\n+ {content}```',
             )
             await ctx.send(embed=embed)
@@ -236,7 +271,7 @@ class Fun(Cog):
         except asyncio.TimeoutError:
             await ctx.try_delete(race)
 
-    @commands.command(aliases=['rps'])
+    @commands.command(aliases=('rps',))
     async def rockpaperscissors(self, ctx: Context) -> None:
         """The Rock-Paper-Scissors game.
 
@@ -253,7 +288,7 @@ class Fun(Cog):
         embed = ctx.embed(description='**Choose one 👇**')
         msg = await ctx.send(embed=embed.set_footer(text='10 seconds left⏰'))
 
-        for r in rps_dict.keys():
+        for r in rps_dict:
             await msg.add_reaction(r)
 
         try:
@@ -311,8 +346,10 @@ class Fun(Cog):
         # Sending to the contextual channel.
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
-    @commands.command(aliases=['pp', 'penis'])
-    async def peepee(self, ctx: Context, member: Optional[discord.Member]) -> None:
+    @commands.command(name='pp', aliases=('peepee',))
+    async def command_pp(
+        self, ctx: Context, member: Optional[discord.Member]
+    ) -> None:
         """Get the random size of your PP.
 
         Example:
@@ -324,4 +361,4 @@ class Fun(Cog):
         """
         member = member or ctx.author
         sz = 100 if member.id in self.bot.owner_ids else random.randint(1, 10)
-        await ctx.send('{}\'s pp size is:\n3{}D'.format(member, '=' * sz))
+        await ctx.send(f"{member}'s pp size is:\n3{'=' * sz}D")

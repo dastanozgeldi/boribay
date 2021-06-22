@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import asyncio
+import logging
 import os
 import re
 from collections import Counter, namedtuple
@@ -9,32 +12,35 @@ import asyncpg
 import discord
 from discord.ext import commands
 
+from .checks import is_beta, is_blacklisted
 from .config import Config
 from .context import Context
 from .database import Cache, DatabaseManager
 from .events import set_events
-from .logger import create_logger
 
 __all__ = ('Boribay',)
-logger = create_logger('bot')
+
+logger = logging.getLogger('bot')
 Output = namedtuple('Output', 'stdout stderr returncode')
 
 
-def get_prefix(bot: 'Boribay', msg: discord.Message) -> str:
+def get_prefix(bot: Boribay, msg: discord.Message) -> str:
+    """Get the right prefix using this method.
+
+    Parameters
+    ----------
+    bot : Boribay
+        The bot instance.
+    msg : discord.Message
+        A message to parse a prefix from.
+
+    Returns
+    -------
+    str
+        The parsed prefix the bot gets called with.
+    """
     prefix = '.' if not msg.guild else bot.guild_cache[msg.guild.id]['prefix']
     return commands.when_mentioned_or(prefix)(bot, msg)
-
-
-async def is_blacklisted(ctx: Context) -> bool:
-    user = ctx.user_cache[ctx.author.id]
-    return not user.get('blacklisted', False)
-
-
-async def is_beta(ctx: Context) -> bool:
-    if ctx.config.main.beta and ctx.author.id not in ctx.bot.owner_ids:
-        raise commands.CheckFailure('❌ The bot is currently in the maintenance mode.')
-
-    return True
 
 
 class Boribay(commands.Bot):
@@ -48,6 +54,7 @@ class Boribay(commands.Bot):
         intents.members = True
         super().__init__(
             get_prefix,
+            description='A Discord Bot created to make people smile.',
             intents=intents,
             max_messages=1000,
             case_insensitive=True,
@@ -64,7 +71,7 @@ class Boribay(commands.Bot):
         self.cli = cli_flags
         self.start_time = datetime.now()
         self.counter = Counter()
-        self.config = Config('./data/config.toml')
+        self.config = Config('./data/config/config.toml')
 
         self.setup()
 
@@ -100,6 +107,11 @@ class Boribay(commands.Bot):
         return self.get_user(682950658671902730)
 
     @property
+    async def invite_url(self) -> str:
+        app_info = await self.application_info()
+        return discord.utils.oauth_url(app_info.id)
+
+    @property
     def uptime(self) -> int:
         return int((datetime.now() - self.start_time).total_seconds())
 
@@ -112,11 +124,6 @@ class Boribay(commands.Bot):
         ----------
         command : str
             The command to put inside terminal, e.g `git add .`
-
-        Returns
-        -------
-        namedtuple
-            The output terminal returned us.
         """
         process = await asyncio.create_subprocess_shell(
             command,
@@ -144,7 +151,7 @@ class Boribay(commands.Bot):
 
         return discord.Embed(**kwargs)
 
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message) -> None:
         if not self.is_ready():
             return
 
@@ -169,11 +176,7 @@ class Boribay(commands.Bot):
         """
         return await super().get_context(message, cls=cls)
 
-    async def on_ready(self):
-        """The bot is ready, telling the developer."""
-        logger.info('Logged in as -> {0} | ID: {0.id}'.format(self.user))
-
-    async def close(self):
+    async def close(self) -> None:
         await super().close()
         await self.session.close()
 
@@ -200,26 +203,10 @@ class Boribay(commands.Bot):
         # Check for flags.
         if self.cli.developer or self.config.main.beta:
             logger.info('Developer mode enabled.')
-            dev_extensions = ('boribay.core.jsk', 'boribay.core.developer')
+            self.load_extension('boribay.core.developer')
 
-            for ext in dev_extensions:
-                self.load_extension(ext)
-                logger.info(f'[MODULE] {ext} loaded.')
-
-    def list_extensions(self):
-        """
-        List all extensions of the bot's extensions directory.
-        """
-        # We should also avoid folders, like __pycache__.
-        return [ext for ext in os.listdir('./boribay/extensions')
-                if not ext.startswith('_')]
-
-    def run(self):
-        """An overridden run method to make the launcher file smaller.
-
-        Args:
-            extensions (Union[list, set]): Extensions (cogs) to get loaded.
-        """
+    def run(self) -> None:
+        """An overridden run method to make the launcher file smaller."""
         if self.cli.no_cogs:
             logger.info('Booting up with no extensions loaded.')
 
@@ -231,7 +218,8 @@ class Boribay(commands.Bot):
             for ext in extensions:
                 # loading all extensions before running the bot.
                 self.load_extension(ext)
-                logger.info(f'[MODULE] {ext} loaded.')
+
+            logger.info('Loaded extensions: ' + ', '.join(self.cogs.keys()))
 
         set_events(self)  # Setting up the events.
 
