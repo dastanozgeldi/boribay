@@ -78,7 +78,7 @@ class Context(commands.Context):
         msg = await self.send(message)
         emojis = {'✅': True, '❌': False}
 
-        for e in emojis.keys():
+        for e in emojis:
             await msg.add_reaction(e)
 
         payload = await self.bot.wait_for(

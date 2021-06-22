@@ -71,18 +71,12 @@ class UndefinedVariable(CalcError):
 class KeywordAlreadyTaken(CalcError):
     """Raised when the keyword that is created by user is already taken."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def __str__(self):
         return 'The given variable name is shadowing a reserved keyword argument.'
 
 
 class Overflow(CalcError):
     """Raised when the given expression output was too big."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def __str__(self):
         return 'Too big number was given.'
@@ -91,18 +85,12 @@ class Overflow(CalcError):
 class UnclosedBrackets(CalcError):
     """Raised when the given expression has unclosed brackets."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def __str__(self):
         return 'Given expression has unclosed brackets.'
 
 
 class EmptyBrackets(CalcError):
     """Raised when the given expression has empty or unused brackets."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def __str__(self):
         return 'Given expression has empty brackets.'
