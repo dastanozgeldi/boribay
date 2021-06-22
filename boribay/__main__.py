@@ -18,7 +18,6 @@ def main() -> None:
     parse_single_flags(args)
 
     # Initializing the bot class, starting.
-    # data_manager.load_basic_config('Boribay')
     bot = Boribay(cli_flags=args)
     bot.run()
 

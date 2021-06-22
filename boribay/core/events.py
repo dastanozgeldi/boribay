@@ -38,18 +38,14 @@ def set_events(bot):
     async def on_ready():
         """The bot is ready, telling the developer."""
         guilds = len(bot.guilds)
-        users = len(set(bot.get_all_members()))
-
         general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        # general_info.add_row('Prefixes', ', '.join(bot.command_prefix))
-        # general_info.add_row('Language', await bot._config.locale())
         general_info.add_row('Boribay version', boribay.__version__)
         general_info.add_row('Library version', discord.__version__)
 
         counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        # String conversion is needed as Rich doesn't deal with ints
         counts.add_row('Servers', str(guilds))
         if bot.intents.members:  # Avoiding 0 users
+            users = len(set(bot.get_all_members()))
             counts.add_row('Cached Users', str(users))
 
         console = get_console()

@@ -18,8 +18,7 @@ class CalcLexer(Lexer):
         raise exceptions.CalcError(t.value[0])
 
     @_(r'(\d+(?:\.\d+)?)')
-    @staticmethod
-    def NUMBER(t):
+    def NUMBER(self, t):
         t.value = decimal.Decimal(t.value)
         return t
 
@@ -80,57 +79,47 @@ class CalcParser(Parser):
         return f'{p.NAME} = {p.expression}'
 
     @_('expression')
-    @staticmethod
-    def statement(p):
+    def statement(self, p):
         return p.expression
 
     @_('expression "+" expression')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return p.expression0 + p.expression1
 
     @_('expression "-" expression')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return p.expression0 - p.expression1
 
     @_('expression "*" expression')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return p.expression0 * p.expression1
 
     @_('expression "/" expression')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return p.expression0 / p.expression1
 
     @_('expression "%" expression')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return p.expression0 % p.expression1
 
     @_('expression "^" expression')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         if p.expression0 > 200 or p.expression1 > 200:
             raise exceptions.Overflow
         return p.expression0 ** p.expression1
 
     @_('expression "!"')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         if p.expression > 50:
             raise exceptions.Overflow
         return decimal.Decimal(math.gamma(p.expression + decimal.Decimal("1.0")))
 
     @_('"-" expression %prec UMINUS')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return -p.expression
 
     @_('"(" expression ")"')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return p.expression
 
     @_('NAME "(" expression ")"')
@@ -141,8 +130,7 @@ class CalcParser(Parser):
             raise exceptions.UndefinedVariable(p.NAME)
 
     @_('NUMBER')
-    @staticmethod
-    def expression(p):
+    def expression(self, p):
         return p.NUMBER
 
     @_('NAME')
@@ -163,8 +151,7 @@ class CalcParser(Parser):
         self.result = []
         super().__init__()
 
-    @staticmethod
-    def match(expression):
+    def match(self, expression):
         o, c = tuple('({['), tuple(')}]')
         mapping = dict(zip(o, c))
         lis = []

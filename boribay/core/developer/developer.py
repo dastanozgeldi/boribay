@@ -1,6 +1,7 @@
 import copy
 import inspect
 import os.path
+from contextlib import redirect_stdout
 from io import BytesIO, StringIO
 from textwrap import indent
 from typing import Optional
@@ -10,7 +11,6 @@ from boribay.core import utils
 from discord.ext import commands, flags
 
 from jishaku.codeblocks import codeblock_converter
-from utils.Contextlib import redirect_stdout
 
 from .formats import TabularData
 from .utils import IdeaPageSource
@@ -365,8 +365,8 @@ class Developer(utils.Cog):
         message._update({'channel': ctx.channel, 'content': ctx.prefix + command})
         message.author = member
 
-        new_utils.Context = await ctx.bot.get_utils.Context(message)
-        await ctx.bot.invoke(new_utils.Context)
+        new_context = await ctx.bot.get_context(message)
+        await ctx.bot.invoke(new_context)
 
     @commands.group(invoke_without_command=True)
     async def refresh(self, ctx: utils.Context) -> None:

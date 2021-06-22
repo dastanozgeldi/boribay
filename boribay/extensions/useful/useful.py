@@ -87,12 +87,12 @@ class Useful(utils.Cog):
         )
 
     @staticmethod
-    def _generate_password(length: int, flags: Dict[bool]) -> str:
+    def _generate_password(length: int, flags: Dict[str, bool]) -> str:
         """The core of this module, generates a random password for you.
 
         Args:
             length (int, optional): Length of the password. Defaults to 25.
-            flags (Dict[bool]): A dictionary of flags we use in passwordgen.
+            flags (Dict[str, bool]): A dictionary of flags we use in passwordgen.
 
         Returns:
             str: Randomly generated password due to your parameters.
@@ -475,7 +475,7 @@ class Useful(utils.Cog):
         except exceptions.UndefinedVariable as e:
             return await ctx.send(e.exc)
 
-        except decimal.InvalidOperation:
+        except (decimal.InvalidOperation, decimal.DivisionByZero):
             return await ctx.send('Invalid expression provided.')
 
         res = '\n'.join(str(i) for i in result)

@@ -9,7 +9,7 @@ import twemoji_parser
 from discord.ext import commands
 from PIL import ImageColor
 
-__all__ = ('AuthorCheckConverter', 'TimeConverter', 'ImageConverter')
+__all__ = ('AuthorCheckConverter', 'TimeConverter', 'ImageConverter', 'ColorConverter')
 
 
 class Regex(Enum):
