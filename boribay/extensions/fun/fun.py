@@ -253,7 +253,7 @@ class Fun(Cog):
         embed = ctx.embed(description='**Choose one 👇**')
         msg = await ctx.send(embed=embed.set_footer(text='10 seconds left⏰'))
 
-        for r in rps_dict.keys():
+        for r in rps_dict:
             await msg.add_reaction(r)
 
         try:
