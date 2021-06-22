@@ -38,7 +38,7 @@ def set_events(bot):
     async def on_ready():
         """The bot is ready, telling the developer."""
         guilds = len(bot.guilds)
-        users = len(set([m for m in bot.get_all_members()]))
+        users = len(set(bot.get_all_members()))
 
         general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         # general_info.add_row('Prefixes', ', '.join(bot.command_prefix))

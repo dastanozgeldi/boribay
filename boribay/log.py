@@ -194,7 +194,7 @@ class CustomRichHandler(RichHandler):
             )
             message = record.getMessage()
 
-        use_markup = getattr(record, 'markup') if hasattr(record, 'markup') else self.markup
+        use_markup = record.markup if hasattr(record, 'markup') else self.markup
         if use_markup:
             message_text = Text.from_markup(message)
         else:

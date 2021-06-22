@@ -64,10 +64,10 @@ def get_amount(_all: float, minimum: int, maximum: int, argument):
     """
     argument = argument.lower().strip()
 
-    if argument in ('all'):
+    if argument == 'all':
         amount = round(_all)
 
-    elif argument in ('half'):
+    elif argument == 'half':
         amount = round(_all / 2)
 
     elif argument.endswith('%'):

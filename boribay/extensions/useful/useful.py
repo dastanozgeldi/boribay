@@ -4,7 +4,7 @@ import re
 import zipfile
 from datetime import datetime
 from io import BytesIO
-from typing import List
+from typing import List, Dict
 
 import discord
 from boribay.core import Boribay, Cog, Context, constants, exceptions
@@ -87,14 +87,17 @@ class Useful(Cog):
             file=discord.File(buffer, filename='emojis.zip')
         )
 
-    def _generate_password(self, length: int, **flags) -> str:
+    @staticmethod
+    def _generate_password(length: int, flags: Dict[bool]) -> str:
         """The core of this module, generates a random password for you.
 
         Args:
             length (int, optional): Length of the password. Defaults to 25.
+            flags (Dict[bool]): A dictionary of flags we use in passwordgen.
 
         Returns:
-            str: Randomly generated password due to your parameters."""
+            str: Randomly generated password due to your parameters.
+        """
         BASE = 'qwertyuiopasdfghjklzxcvbnm'
         NUMBERS = '1234567890'
         UPPERCASE = 'QWERTYUIOPASDFGHJKLZXCVBNM'

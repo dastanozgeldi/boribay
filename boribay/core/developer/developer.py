@@ -151,7 +151,8 @@ class Developer(Cog):
 
         await ctx.bot.close()
 
-    def grab_code(self, code: str) -> str:
+    @staticmethod
+    def grab_code(code: str) -> str:
         """Commonly, we use ```py to help ourselves seeing the code properly.
 
         This function is to grab the actual code and ignore this formatting.
