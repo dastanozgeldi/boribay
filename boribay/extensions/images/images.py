@@ -3,8 +3,7 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from boribay.core import Cog, Context
-from boribay.core.manipulation import Manip, make_image, polaroid_filter
+from boribay.core.utils import Cog, Context, Manip, make_image, polaroid_filter
 from discord.ext import commands
 
 

@@ -2,8 +2,7 @@ from difflib import get_close_matches
 from typing import List, Union
 
 import discord
-from boribay.core import Boribay, Cog, Context
-from boribay.core.commands.paginators import Paginate
+from boribay.core import Boribay, utils
 from discord.ext import commands, menus
 
 __all__ = ('HelpCommand', 'Help')
@@ -16,7 +15,9 @@ class HelpPages(menus.Menu):
         super().__init__(timeout=60.0, clear_reactions_after=True, **kwargs)
         self.embed = embed
 
-    async def send_initial_message(self, ctx: Context, channel: discord.TextChannel):
+    async def send_initial_message(
+        self, ctx: utils.Context, channel: discord.TextChannel
+    ) -> None:
         return await channel.send(embed=self.embed)
 
     @menus.button('<:left:814725888653918229>')
@@ -76,7 +77,7 @@ class HelpPages(menus.Menu):
 class GroupHelp(menus.ListPageSource):
     """Sends help for group-commands."""
 
-    def __init__(self, ctx: Context, group: Union[Cog, commands.Group], cmds, prefix: str):
+    def __init__(self, ctx: utils.Context, group: Union[commands.Cog, commands.Group], cmds, prefix: str):
         super().__init__(entries=cmds, per_page=3)
         self.ctx = ctx
         self.group = group
@@ -86,7 +87,7 @@ class GroupHelp(menus.ListPageSource):
     async def format_page(self, menu: menus.Menu, cmds) -> discord.Embed:
         g = self.group
 
-        if isinstance(g, Cog):
+        if isinstance(g, commands.Cog):
             doc = g.__doc__
         else:
             doc = (g.help or 'Help not provided.').split('\n')[0]
@@ -124,7 +125,7 @@ class HelpCommand(commands.HelpCommand):
         return f'Send {self.clean_prefix}{self.invoked_with} [Category] to get a category help.'
 
     async def send_bot_help(self, mapping):
-        ctx = self.context
+        ctx = self.utils.Context
         links = ctx.config.links
         cats = []
 
@@ -147,11 +148,11 @@ class HelpCommand(commands.HelpCommand):
 
         await HelpPages(embed).start(ctx)
 
-    async def send_cog_help(self, cog: Cog):
-        ctx = self.context
+    async def send_cog_help(self, cog: commands.Cog):
+        ctx = self.utils.Context
         entries = await self.filter_commands(cog.get_commands(), sort=True)
 
-        await Paginate(
+        await utils.Paginate(
             GroupHelp(ctx, cog, entries, self.clean_prefix),
             timeout=30.0,
             clear_reactions_after=True
@@ -175,7 +176,7 @@ class HelpCommand(commands.HelpCommand):
                 if lambda x: '_OPTIONAL' not in a.dest]
 
     async def send_command_help(self, command: commands.Command):
-        ctx = self.context
+        ctx = self.utils.Context
         description = command.help or 'Help not found.'
 
         embed = ctx.embed(
@@ -202,13 +203,13 @@ class HelpCommand(commands.HelpCommand):
         if len(subcommands := group.commands) == 0 or len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
             return await self.send_command_help(group)
 
-        await Paginate(
-            GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0
-        ).start(self.context)
+        await utils.Paginate(
+            GroupHelp(self.utils.Context, group, cmds, self.clean_prefix), timeout=30.0
+        ).start(self.utils.Context)
 
     async def command_not_found(self, string: str):
         message = f'Could not find the command `{string}`. '
-        commands_list = [str(cmd) for cmd in self.context.bot.walk_commands()]
+        commands_list = [str(cmd) for cmd in self.utils.Context.bot.walk_commands()]
 
         if dym := '\n'.join(get_close_matches(string, commands_list)):
             message += f'Did you mean...\n{dym}'
@@ -219,7 +220,7 @@ class HelpCommand(commands.HelpCommand):
         return f'{self.clean_prefix}{command} {command.signature}'
 
 
-class Help(Cog):
+class Help(utils.Cog):
     """
     The help command extension.
     """

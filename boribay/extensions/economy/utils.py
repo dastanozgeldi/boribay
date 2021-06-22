@@ -4,6 +4,8 @@ from typing import Union
 from boribay.core.exceptions import NotAnInteger, NotEnough, PastMinimum
 from discord.ext import commands
 
+__all__ = ('CasinoConverter',)
+
 
 def get_number(
     argument: str.lower,

@@ -102,8 +102,7 @@ class Manip:
 
     @staticmethod
     @executor
-    def welcome(*args, member_avatar: BytesIO):
-        top_text, bottom_text = *args
+    def welcome(top_text: str, bottom_text: str, member_avatar: BytesIO):
         font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=20)
         join_w, member_w = font.getsize(bottom_text)[0], font.getsize(top_text)[0]
 

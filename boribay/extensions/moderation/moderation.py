@@ -2,15 +2,12 @@ import asyncio
 from typing import Optional
 
 import discord
-from boribay.core import Cog, Context
-from boribay.core.checks import is_mod
-from boribay.core.commands.converters import (AuthorCheckConverter,
-                                              ColorConverter)
+from boribay.core import checks, utils
 from discord.ext import commands
 from humanize import naturaldate
 
 
-class Moderation(Cog):
+class Moderation(utils.Cog):
     """The moderation extension.
 
     `Manage guild` permission is required for the user.
@@ -18,11 +15,11 @@ class Moderation(Cog):
 
     icon = '🛡'
 
-    async def cog_check(self, ctx: Context) -> bool:
-        return await is_mod().predicate(ctx)
+    async def cog_check(self, ctx: utils.Context) -> bool:
+        return await checks.is_mod().predicate(ctx)
 
     @commands.group(invoke_without_command=True)
-    async def member(self, ctx: Context) -> None:
+    async def member(self, ctx: utils.Context) -> None:
         """
         Guild members managing commands parent.
         """
@@ -31,7 +28,7 @@ class Moderation(Cog):
     @member.command(name='nick')
     @commands.bot_has_guild_permissions(manage_nicknames=True)
     async def _member_nick(
-        self, ctx: Context, member: discord.Member, *, new_nick: str
+        self, ctx: utils.Context, member: discord.Member, *, new_nick: str
     ) -> None:
         """Changes the member's nickname in the current server.
 
@@ -44,12 +41,12 @@ class Moderation(Cog):
 
     @member.command(name='kick')
     async def _member_kick(
-        self, ctx: Context, member: AuthorCheckConverter, *, reason: Optional[str]
+        self, ctx: utils.Context, member: utils.AuthorCheckConverter, *, reason: Optional[str]
     ) -> None:
         """Kicks the member.
 
         Args:
-            member (AuthorCheckConverter): A member you want to kick.
+            member (utils.AuthorCheckConverter): A member you want to kick.
             reason (str, optional): The reason of kicking.
         """
         reason = reason or 'Reason not specified.'
@@ -60,12 +57,12 @@ class Moderation(Cog):
 
     @member.command(name='ban')
     async def _member_ban(
-        self, ctx: Context, member: AuthorCheckConverter, *, reason: Optional[str]
+        self, ctx: utils.Context, member: utils.AuthorCheckConverter, *, reason: Optional[str]
     ) -> None:
         """Ban the member.
 
         Args:
-            member (AuthorCheckConverter): A member you want to ban.
+            member (utils.AuthorCheckConverter): A member you want to ban.
             reason (Optional[str]): The reason of banning.
         """
         reason = reason or 'Reason not specified.'
@@ -76,12 +73,12 @@ class Moderation(Cog):
 
     @member.command(name='unban')
     async def _member_unban(
-        self, ctx: Context, member: AuthorCheckConverter, *, reason: Optional[str]
+        self, ctx: utils.Context, member: utils.AuthorCheckConverter, *, reason: Optional[str]
     ) -> None:
         """Unban the user - remove them from the guild blacklist.
 
         Args:
-            member (AuthorCheckConverter): A member you want to unban.
+            member (utils.AuthorCheckConverter): A member you want to unban.
             reason (str, optional): The reason of unbanning.
         """
         reason = reason or 'Reason not specified.'
@@ -90,7 +87,7 @@ class Moderation(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.group(invoke_without_command=True)
-    async def category(self, ctx: Context) -> None:
+    async def category(self, ctx: utils.Context) -> None:
         """
         The category-managing commands parent.
         """
@@ -98,7 +95,7 @@ class Moderation(Cog):
 
     @category.command(name='info')
     async def _category_info(
-        self, ctx: Context, *, category: Optional[discord.CategoryChannel]
+        self, ctx: utils.Context, *, category: Optional[discord.CategoryChannel]
     ) -> None:
         """Get some information about the specified category.
 
@@ -125,7 +122,7 @@ class Moderation(Cog):
 
     @category.command(name='create')
     async def _create_category(
-        self, ctx: Context, role: discord.Role, *, name: str
+        self, ctx: utils.Context, role: discord.Role, *, name: str
     ) -> None:
         """Add a category for the current guild.
 
@@ -144,7 +141,7 @@ class Moderation(Cog):
     @category.command(name='delete')
     async def _delete_category(
         self,
-        ctx: Context,
+        ctx: utils.Context,
         category: discord.CategoryChannel,
         *,
         reason: Optional[str]
@@ -159,7 +156,7 @@ class Moderation(Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.group(invoke_without_command=True)
-    async def channel(self, ctx: Context) -> None:
+    async def channel(self, ctx: utils.Context) -> None:
         """
         The channel-managing commands parent.
         """
@@ -167,7 +164,7 @@ class Moderation(Cog):
 
     @channel.command(name='clear', aliases=('purge',))
     @commands.bot_has_guild_permissions(manage_messages=True)
-    async def _clear_channel(self, ctx: Context, limit: int = 2) -> None:
+    async def _clear_channel(self, ctx: utils.Context, limit: int = 2) -> None:
         """Purges the given amount of messages.
 
         Keep in mind that the limit is 100 messages.
@@ -187,7 +184,7 @@ class Moderation(Cog):
 
     @channel.command(name='create')
     async def _create_channel(
-        self, ctx: Context, role: discord.Role, *, name: str
+        self, ctx: utils.Context, role: discord.Role, *, name: str
     ) -> None:
         """Add a category for the current guild.
 
@@ -206,7 +203,7 @@ class Moderation(Cog):
 
     @channel.command(name='delete')
     async def _delete_channel(
-        self, ctx: Context, channel: discord.TextChannel, *, reason: str
+        self, ctx: utils.Context, channel: discord.TextChannel, *, reason: str
     ) -> None:
         """Deletes the specified channel.
 
@@ -218,7 +215,7 @@ class Moderation(Cog):
         await ctx.message.add_reaction('✅')
 
     @channel.command(name='slowmode', aliases=('sm',))
-    async def _slowmode_channel(self, ctx: Context, time: int) -> None:
+    async def _slowmode_channel(self, ctx: utils.Context, time: int) -> None:
         """Enables slowmode for a given amount of seconds.
 
         Args:
@@ -228,7 +225,7 @@ class Moderation(Cog):
         await ctx.send(f'✅ Slowmode has set to **{time}** seconds.')
 
     @commands.group(invoke_without_command=True)
-    async def role(self, ctx: Context) -> None:
+    async def role(self, ctx: utils.Context) -> None:
         """
         The role-managing commands parent.
         """
@@ -236,7 +233,7 @@ class Moderation(Cog):
 
     @staticmethod
     async def _wait_wizard(
-        ctx: Context,
+        ctx: utils.Context,
         content: str,
         timeout: float = 20.0,
         message: discord.Message = None
@@ -245,8 +242,8 @@ class Moderation(Cog):
 
         Parameters
         ----------
-        ctx : Context
-            The context instance to get the bot.
+        ctx : utils.Context
+            The utils.Context instance to get the bot.
         content : str
             Content of a message that is sent beforehand.
         timeout : float, optional
@@ -283,7 +280,7 @@ class Moderation(Cog):
 
     @role.command(name='create')
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def _create_role(self, ctx: Context) -> None:
+    async def _create_role(self, ctx: utils.Context) -> None:
         """Create a role with the interactive way.
 
         The bot will ask you to provide:
@@ -291,7 +288,7 @@ class Moderation(Cog):
             reason why are you creating it (will be displayed on Audit Logs).
         """
         try:
-            cc = ColorConverter()
+            cc = utils.ColorConverter()
 
             role_name = await self._wait_wizard(ctx, 'What shall we call the new role?')
 
@@ -312,7 +309,7 @@ class Moderation(Cog):
 
     @role.command(name='give')
     async def _give_role(
-        self, ctx: Context, role: discord.Role, user: discord.Member
+        self, ctx: utils.Context, role: discord.Role, user: discord.Member
     ) -> None:
         """Give the specified role to a user.
 
@@ -332,7 +329,7 @@ class Moderation(Cog):
 
     @role.command(name='take')
     async def _take_role(
-        self, ctx: Context, role: discord.Role, user: discord.Member
+        self, ctx: utils.Context, role: discord.Role, user: discord.Member
     ) -> None:
         """Take the specified role from a user.
 
@@ -353,7 +350,7 @@ class Moderation(Cog):
     @role.command(name='delete')
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def _delete_role(
-        self, ctx: Context, role: discord.Role, *, reason: str
+        self, ctx: utils.Context, role: discord.Role, *, reason: str
     ) -> None:
         """Delete a guild role through this command.
 

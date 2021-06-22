@@ -1,4 +1,4 @@
-from boribay.core import Context
+from boribay.core import utils
 from discord.ext import menus
 
 
@@ -8,7 +8,7 @@ class IdeaPageSource(menus.ListPageSource):
     Takes the list of data, enumerates, then paginates through.
     """
 
-    def __init__(self, ctx: Context, data: list):
+    def __init__(self, ctx: utils.Context, data: list):
         super().__init__(data, per_page=10)
         self.ctx = ctx
 

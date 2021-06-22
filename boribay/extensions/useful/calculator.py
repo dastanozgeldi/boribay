@@ -30,11 +30,10 @@ class CalcLexer(Lexer):
 
 @lru_cache(5)
 def fib(n):
+    if n <= 1:
+        return n
     if n > 400:
         raise exceptions.Overflow()
-
-    elif n <= 1:
-        return n
 
     return fib(n - 1) + fib(n - 2)
 

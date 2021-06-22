@@ -7,8 +7,7 @@ from io import BytesIO
 from typing import Dict, List
 
 import discord
-from boribay.core import Boribay, Cog, Context, constants, exceptions
-from boribay.core.commands import converters, paginators
+from boribay.core import Boribay, constants, exceptions, utils
 from discord.ext import commands, flags
 from humanize import time
 
@@ -16,7 +15,7 @@ from . import calculator  # Lexer & Parser.
 from .utils import Poll, TodoPageSource, UrbanDictionaryPageSource
 
 
-class Useful(Cog):
+class Useful(utils.Cog):
     """The useful commands extension.
 
     Made to help people in specific situations, such as solving math expressions.
@@ -48,11 +47,11 @@ class Useful(Cog):
         return ['https://youtube.com/watch?v=' + res for res in found[:11]]
 
     @commands.group()
-    async def youtube(self, ctx: Context):
+    async def youtube(self, ctx: utils.Context):
         ...
 
     @youtube.command(aliases=('yt',))
-    async def _youtube_search(self, ctx: Context, *, query: str) -> None:
+    async def _youtube_search(self, ctx: utils.Context, *, query: str) -> None:
         """Search for a video from YouTube through Discord.
 
         Parameters
@@ -68,7 +67,7 @@ class Useful(Cog):
 
     @commands.command()
     @commands.cooldown(1, 60.0, commands.BucketType.guild)
-    async def zipemojis(self, ctx: Context) -> None:
+    async def zipemojis(self, ctx: utils.Context) -> None:
         """Zip all emojis of the current guild.
 
         Returns a .zip file with all emojis compressed.
@@ -133,7 +132,7 @@ class Useful(Cog):
         help='Whether to add special characters, like: $%^&'
     )
     @flags.command(aliases=('pw',))
-    async def password(self, ctx: Context, length: int = 25, **flags) -> None:
+    async def password(self, ctx: utils.Context, length: int = 25, **flags) -> None:
         """A password creator command. Get a safe password using this command.
 
         Example:
@@ -156,7 +155,7 @@ class Useful(Cog):
         await ctx.author.send(f'Here is your password: ```{result}```')
 
     @commands.command()
-    async def anime(self, ctx: Context, *, anime: str) -> None:
+    async def anime(self, ctx: utils.Context, *, anime: str) -> None:
         """Anime search command. Get the detailed information about an anime.
 
         Example:
@@ -200,7 +199,7 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def manga(self, ctx: Context, *, manga: str) -> None:
+    async def manga(self, ctx: utils.Context, *, manga: str) -> None:
         """Manga search command. Get the detailed information about a manga.
 
         Example:
@@ -243,7 +242,7 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True, aliases=('to-do',))
-    async def todo(self, ctx: Context) -> None:
+    async def todo(self, ctx: utils.Context) -> None:
         """To-do commands parent. Sends help for its subcommands.
         Kind of pro-tip to use this instead of **{p}help todo**"""
         await ctx.send_help('todo')
@@ -259,7 +258,7 @@ class Useful(Cog):
         help='Whether to DM you the todo list.'
     )
     @todo.command(cls=flags.FlagCommand, name='show', aliases=('list',))
-    async def _todo_show(self, ctx: Context, **flags) -> None:
+    async def _todo_show(self, ctx: utils.Context, **flags) -> None:
         """To-do show command, a visual way to manipulate with your list.
 
         Example:
@@ -275,14 +274,14 @@ class Useful(Cog):
         if flags.pop('count', False):
             return await dest.send(len(todos))
 
-        await paginators.Paginate(
+        await utils.Paginate(
             TodoPageSource(ctx, todos),
             clear_reactions_after=True,
             timeout=60.0
         ).start(ctx, channel=dest)
 
     @todo.command(name='add', aliases=('append',))
-    async def _todo_add(self, ctx: Context, *, content: str) -> None:
+    async def _todo_add(self, ctx: utils.Context, *, content: str) -> None:
         """Add anything you think you have to-do to your list.
 
         Example:
@@ -300,7 +299,7 @@ class Useful(Cog):
 
     @todo.command(name='remove', aliases=('rm', 'delete'))
     async def _todo_remove(
-        self, ctx: Context, numbers: commands.Greedy[int]
+        self, ctx: utils.Context, numbers: commands.Greedy[int]
     ) -> None:
         """Remove to-do's that you don't need from your list.
 
@@ -324,7 +323,7 @@ class Useful(Cog):
         await ctx.message.add_reaction('✅')
 
     @todo.command(name='info')
-    async def _todo_info(self, ctx: Context, number: int) -> None:
+    async def _todo_info(self, ctx: utils.Context, number: int) -> None:
         """Shows some useful information about the specified to-do.
         Returns the jump-url, the time to-do was added.
 
@@ -353,7 +352,7 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @todo.command(name='clear')
-    async def _todo_clear(self, ctx: Context) -> None:
+    async def _todo_clear(self, ctx: utils.Context) -> None:
         """Clear your to-do list up using this command."""
         query = 'DELETE FROM todos WHERE user_id = $1'
 
@@ -363,7 +362,7 @@ class Useful(Cog):
             return await ctx.message.add_reaction('✅')
 
     @commands.command(name='poll')
-    async def command_poll(self, ctx: Context, *, options: str) -> None:
+    async def command_poll(self, ctx: utils.Context, *, options: str) -> None:
         """Make a simple poll in your server using this command.
         You can add an image so it will be added as the main image.
 
@@ -382,7 +381,7 @@ class Useful(Cog):
         await Poll(ctx, options, description=description).start()
 
     @commands.command()
-    async def reddit(self, ctx: Context, subreddit: str) -> None:
+    async def reddit(self, ctx: utils.Context, subreddit: str) -> None:
         """Get fresh posts from your favorite subreddit.
 
         Example:
@@ -415,7 +414,7 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=('ud', 'urban'))
-    async def urbandictionary(self, ctx: Context, *, word: str) -> None:
+    async def urbandictionary(self, ctx: utils.Context, *, word: str) -> None:
         """Search for word definitions from urban dictionary.
 
         Example:
@@ -435,12 +434,12 @@ class Useful(Cog):
             return await ctx.send(f'No definitions found for `{word}`.')
 
         # Everything is done, paginating...
-        await paginators.Paginate(
+        await utils.Paginate(
             UrbanDictionaryPageSource(ctx, source)
         ).start(ctx)
 
     @commands.command(aliases=('calc',))
-    async def calculate(self, ctx: Context, *, expression: str) -> None:
+    async def calculate(self, ctx: utils.Context, *, expression: str) -> None:
         """A simple calculator command that supports useful features.
 
         Features:
@@ -488,7 +487,7 @@ class Useful(Cog):
 
     @commands.command(aliases=('colour',))
     async def color(
-        self, ctx: Context, *, color: converters.ColorConverter
+        self, ctx: utils.Context, *, color: utils.ColorConverter
     ) -> None:
         """Color visualizer command. Get HEX & RHB values of a color.
 
@@ -513,7 +512,7 @@ class Useful(Cog):
     @flags.add_flag('--continent', type=str, help='Search through continents.')
     @flags.add_flag('--country', type=str, help='Search through countries.')
     @flags.command(aliases=('ncov', 'coronavirus'))
-    async def covid(self, ctx: Context, **flags) -> None:
+    async def covid(self, ctx: utils.Context, **flags) -> None:
         """Get coronavirus statistics with this command.
         Returns current world statistics if no country was specified.
 
@@ -567,7 +566,7 @@ class Useful(Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=('temp', 'temperature'))
-    async def weather(self, ctx: Context, *, city: str.capitalize) -> None:
+    async def weather(self, ctx: utils.Context, *, city: str.capitalize) -> None:
         """Simply gets the weather statistics for a city | region.
         Returns: description, temperature, humidity%, atmospheric pressure.
 

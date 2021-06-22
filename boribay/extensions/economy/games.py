@@ -3,12 +3,12 @@ import random
 from html import unescape
 
 import discord
-from boribay.core import BATYR, Context
+from boribay.core.constants import BATYR
 from discord.ext import commands
 
 
 class Work:
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx):
         self.ctx = ctx
 
     async def start(self):
@@ -49,7 +49,7 @@ class Work:
 
 
 class Trivia:
-    def __init__(self, ctx: Context, entries: list = None, title: str = None):
+    def __init__(self, ctx, entries: list = None, title: str = None):
         self.ctx = ctx
         self.entries = entries
         self.title = title

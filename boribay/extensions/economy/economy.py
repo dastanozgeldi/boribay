@@ -4,25 +4,25 @@ import random
 from typing import Optional
 
 import discord
-from boribay.core import BATYR, Cog, Context, checks, exceptions
-from boribay.core.commands import converters
+from boribay.core import BATYR, checks, exceptions, utils
 from discord.ext import commands, flags
 
 from .games import Trivia, Work
+from .utils import CasinoConverter
 
 
-class Economics(Cog):
+class Economics(utils.Cog):
     """The Economics extension."""
 
     icon = '💵'
 
-    async def cog_check(self, ctx: Context):
+    async def cog_check(self, ctx: utils.Context):
         return await commands.guild_only().predicate(ctx)
 
     @commands.command()
     @commands.max_concurrency(1, commands.BucketType.channel)
     async def trivia(
-        self, ctx: Context, difficulty: str.lower = 'medium'
+        self, ctx: utils.Context, difficulty: str.lower = 'medium'
     ) -> None:
         """Play the trivia game to make some money.
 
@@ -49,7 +49,7 @@ class Economics(Cog):
         help='Set the limit of users you want to see.'
     )
     @flags.command(aliases=('lb',))
-    async def leaderboard(self, ctx: Context, **flags) -> None:
+    async def leaderboard(self, ctx: utils.Context, **flags) -> None:
         """Boribay economics leaderboard. Defaults to 5 users,
         however you can specify the limitation of the leaderboard.
 
@@ -69,14 +69,14 @@ class Economics(Cog):
         await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True)
-    async def balance(self, ctx: Context) -> None:
+    async def balance(self, ctx: utils.Context) -> None:
         """The moderator-only user balance management command."""
         await ctx.send_help('balance')
 
     @balance.command(name='add')
     @checks.is_mod()
     async def _add_balance(
-        self, ctx: Context, member: discord.Member, amount: int
+        self, ctx: utils.Context, member: discord.Member, amount: int
     ) -> None:
         """Increase someone's balance for being well behaved.
 
@@ -107,7 +107,7 @@ class Economics(Cog):
     @balance.command(name='remove')
     @checks.is_mod()
     async def _remove_balance(
-        self, ctx: Context, member: discord.Member, amount: int
+        self, ctx: utils.Context, member: discord.Member, amount: int
     ) -> None:
         """Decrease someone's balance for being bad behaved.
 
@@ -136,7 +136,7 @@ class Economics(Cog):
 
     @commands.command(aliases=('card',))
     async def profile(
-        self, ctx: Context, member: Optional[discord.Member]
+        self, ctx: utils.Context, member: Optional[discord.Member]
     ) -> None:
         """Check the profile card of a user in Economics system.
         If you don't specify anyone you get your own card information.
@@ -171,7 +171,7 @@ class Economics(Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=('dep',))
-    async def deposit(self, ctx: Context, amount: int = None) -> None:
+    async def deposit(self, ctx: utils.Context, amount: int = None) -> None:
         """Deposit given amount of money into your bank.
         By not specifying the amount of money you deposit them all.
 
@@ -200,7 +200,7 @@ class Economics(Cog):
         await ctx.send(f'Successfully transfered **{amount}** {BATYR} into your bank!')
 
     @commands.command(aliases=('wd',))
-    async def withdraw(self, ctx: Context, amount: int = None) -> None:
+    async def withdraw(self, ctx: utils.Context, amount: int = None) -> None:
         """Withdraw given amount of money from your bank.
         By not specifying the amount of money you withdraw them all.
 
@@ -235,8 +235,8 @@ class Economics(Cog):
     @commands.command()
     async def transfer(
         self,
-        ctx: Context,
-        member: converters.AuthorCheckConverter,
+        ctx: utils.Context,
+        member: utils.AuthorCheckConverter,
         amount: int
     ) -> None:
         """Transfer someone Batyrs whoever they would be.
@@ -245,7 +245,7 @@ class Economics(Cog):
             **{p}transfer @Dosek 1000** - gives Dosek 1000 Batyrs.
 
         Args:
-            member (discord.Member): Member you'd like to transfer money to.
+            member (utils.AuthorCheckConverter): Member you'd like to transfer money to.
             amount (int): Amount of Batyrs to transfer.
 
         Raises:
@@ -270,14 +270,14 @@ class Economics(Cog):
         await ctx.send(f'Transfered **{amount}** {BATYR} to **{member}**')
 
     @commands.group(invoke_without_command=True)
-    async def bio(self, ctx: Context) -> None:
+    async def bio(self, ctx: utils.Context) -> None:
         """
         Set your bio that will be displayed on your profile.
         """
         await ctx.send_help('bio')
 
     @bio.command(name='set')
-    async def _set_bio(self, ctx: Context, *, information: str) -> None:
+    async def _set_bio(self, ctx: utils.Context, *, information: str) -> None:
         """Set your bio that will be shown on your profile card.
         Requires to pay 1000 batyrs from your bank.
 
@@ -302,7 +302,7 @@ class Economics(Cog):
         await ctx.send('✅ Set your bio successfully.')
 
     @bio.command(name='disable')
-    async def _disable_bio(self, ctx: Context) -> None:
+    async def _disable_bio(self, ctx: utils.Context) -> None:
         """Disable bio feature in your profile.
 
         This is useful when you want just to remove your bio without paying.
@@ -328,8 +328,8 @@ class Economics(Cog):
     @commands.cooldown(1, 10.0, commands.BucketType.user)
     async def attack(
         self,
-        ctx: Context,
-        member: converters.AuthorCheckConverter
+        ctx: utils.Context,
+        member: utils.AuthorCheckConverter
     ) -> None:
         """Rob someone whoever they would be.
 
@@ -342,7 +342,7 @@ class Economics(Cog):
             **{p}attack @Dosek** - tries to rob Dosek's batyrs.
 
         Args:
-            member (discord.Member): The victim you want to rob.
+            member (utils.AuthorCheckConverter): The victim you want to rob.
 
         Raises:
             DefaultError: When a user tries to be funny (rob themself).
@@ -374,8 +374,8 @@ class Economics(Cog):
     @commands.command(aliases=('slots',))
     async def slot(
         self,
-        ctx: Context,
-        bet: converters.CasinoConverter(50)
+        ctx: utils.Context,
+        bet: CasinoConverter(50)
     ) -> None:
         """Play the game on a slot machine!
 
@@ -408,7 +408,7 @@ class Economics(Cog):
         await ctx.db.push(query, result, ctx.author.id)
 
     @commands.command()
-    async def work(self, ctx: Context) -> None:
+    async def work(self, ctx: utils.Context) -> None:
         """Working is the most legal way to get batyrs.
 
         Reverse numbers, guess their lengths, more later.
@@ -417,7 +417,7 @@ class Economics(Cog):
 
     @commands.command(aliases=('hnt',))
     @commands.cooldown(1, 60.0, commands.BucketType.user)
-    async def headsandtails(self, ctx: Context) -> None:
+    async def headsandtails(self, ctx: utils.Context) -> None:
         """Try your luck playing heads and tails!
 
         If your choice equals the random one, this means you won.

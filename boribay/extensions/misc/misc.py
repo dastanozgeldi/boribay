@@ -3,7 +3,7 @@ from glob import glob
 from typing import Optional
 
 import boribay
-from boribay.core import Cog, Context
+from boribay.core.utils import Cog, Context
 from discord.ext import commands, flags
 from humanize import naturaldate, naturaltime
 

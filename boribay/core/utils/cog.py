@@ -9,8 +9,5 @@ class Cog(commands.Cog, metaclass=commands.CogMeta):
     This class inherits from `discord.ext.commands.Cog`.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def __str__(self):
         return f'{self.icon} {self.__class__.__name__}'

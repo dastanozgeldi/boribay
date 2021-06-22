@@ -155,8 +155,8 @@ def set_events(bot):
         # Member-logging feature.
         if wc := bot.guild_cache[g.id].get('welcome_channel', False):
             image = await utils.Manip.welcome(
-                f'Member #{g.member_count}',
-                f'{member} just spawned in the server.',
+                top_text=f'Member #{g.member_count}',
+                bottom_text=f'{member} just spawned in the server.',
                 member_avatar=BytesIO(await member.avatar_url.read())
             )
             channel = g.get_channel(wc)

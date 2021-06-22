@@ -1,17 +1,16 @@
 import copy
 import inspect
 import os.path
-from contextlib import redirect_stdout
 from io import BytesIO, StringIO
 from textwrap import indent
 from typing import Optional
 
 import discord
-from boribay.core import Cog, Context
-from boribay.core.commands import paginators
+from boribay.core import utils
 from discord.ext import commands, flags
 
 from jishaku.codeblocks import codeblock_converter
+from utils.Contextlib import redirect_stdout
 
 from .formats import TabularData
 from .utils import IdeaPageSource
@@ -19,7 +18,7 @@ from .utils import IdeaPageSource
 __all__ = ('Developer',)
 
 
-class Developer(Cog):
+class Developer(utils.Cog):
     """The owner extension.
 
     Commands that help owner to manage the bot itself.
@@ -29,7 +28,7 @@ class Developer(Cog):
 
     icon = '👑'
 
-    async def cog_check(self, ctx: Context) -> bool:
+    async def cog_check(self, ctx: utils.Context) -> bool:
         return await ctx.bot.is_owner(ctx.author)
 
     @commands.command()
@@ -60,13 +59,13 @@ class Developer(Cog):
         await ctx.send(file=file)
 
     @commands.group(invoke_without_command=True)
-    async def blacklist(self, ctx: Context) -> None:
+    async def blacklist(self, ctx: utils.Context) -> None:
         """Blacklists parent command."""
         await ctx.send_help('blacklist')
 
     @blacklist.command(name='add')
     async def _blacklist_add(
-        self, ctx: Context, users: commands.Greedy[discord.Member]
+        self, ctx: utils.Context, users: commands.Greedy[discord.Member]
     ) -> None:
         """Blacklist a user.
 
@@ -88,7 +87,7 @@ class Developer(Cog):
 
     @blacklist.command(name='remove')
     async def _blacklist_remove(
-        self, ctx: Context, users: commands.Greedy[discord.Member]
+        self, ctx: utils.Context, users: commands.Greedy[discord.Member]
     ) -> None:
         """Remove a user from blacklist.
 
@@ -109,7 +108,7 @@ class Developer(Cog):
         await ctx.user_cache.refresh()
 
     @commands.command()
-    async def leave(self, ctx: Context, guild: Optional[discord.Guild]) -> None:
+    async def leave(self, ctx: utils.Context, guild: Optional[discord.Guild]) -> None:
         """Make the bot leave a specific guild.
 
         This takes the current guild if ID was not given.
@@ -138,7 +137,7 @@ class Developer(Cog):
         help='Whether to logout silently.'
     )
     @flags.command()
-    async def shutdown(self, ctx: Context, **flags) -> None:
+    async def shutdown(self, ctx: utils.Context, **flags) -> None:
         """A shutdown command.
 
         This makes the bot close all its instances in order to log out from discord.
@@ -166,7 +165,7 @@ class Developer(Cog):
         return code.strip('` \n')
 
     @commands.command(name='run')
-    async def _run_code(self, ctx: Context, *, code: str) -> None:
+    async def _run_code(self, ctx: utils.Context, *, code: str) -> None:
         """Evaluate the given code.
 
         Has some useful globals to work with.
@@ -214,7 +213,7 @@ class Developer(Cog):
                 return await ctx.send(repr(result))
 
     @commands.command()
-    async def sql(self, ctx: Context, *, query: codeblock_converter) -> None:
+    async def sql(self, ctx: utils.Context, *, query: codeblock_converter) -> None:
         """Do some SQL queries.
 
         Example:
@@ -246,7 +245,7 @@ class Developer(Cog):
             await ctx.send(results)
 
     @commands.command(name='tableinfo')
-    async def _table_info(self, ctx: Context, table_name: str) -> None:
+    async def _table_info(self, ctx: utils.Context, table_name: str) -> None:
         """Get some information about the given table.
 
         Example:
@@ -270,7 +269,7 @@ class Developer(Cog):
         await ctx.send(f'```py\n{render}\n```')
 
     @commands.group(name='git', invoke_without_command=True)
-    async def _git_commands(self, ctx: Context) -> None:
+    async def _git_commands(self, ctx: utils.Context) -> None:
         """A set of git command-line features to work with."""
         await ctx.send_help('git')
 
@@ -351,7 +350,7 @@ class Developer(Cog):
 
     @commands.command(name='as')
     async def _run_as(
-        self, ctx: Context, member: discord.Member, *, command: str
+        self, ctx: utils.Context, member: discord.Member, *, command: str
     ) -> None:
         """Execute commands as someone else.
 
@@ -359,27 +358,27 @@ class Developer(Cog):
             **{p}as @Yerassyl ping** - runs the ping command as Yerassyl.
 
         Args:
-            member (discord.Member): A member to get the context from.
+            member (discord.Member): A member to get the utils.Context from.
             command (str): A command to execute.
         """
         message = copy.copy(ctx.message)
         message._update({'channel': ctx.channel, 'content': ctx.prefix + command})
         message.author = member
 
-        new_context = await ctx.bot.get_context(message)
-        await ctx.bot.invoke(new_context)
+        new_utils.Context = await ctx.bot.get_utils.Context(message)
+        await ctx.bot.invoke(new_utils.Context)
 
     @commands.group(invoke_without_command=True)
-    async def refresh(self, ctx: Context) -> None:
+    async def refresh(self, ctx: utils.Context) -> None:
         """The refresh commands group."""
         await ctx.send_help('refresh')
 
     @refresh.command(name='config')
-    async def _refresh_config(self, ctx: Context) -> None:
+    async def _refresh_config(self, ctx: utils.Context) -> None:
         """Refresh the bot config which is stored in the config.toml file.
 
         Args:
-            ctx (Context): Automatically passed context argument.
+            ctx (utils.Context): Automatically passed utils.Context argument.
         """
         ctx.config.reload()
         await ctx.send('✅ Reloaded the configuration file values.')
@@ -395,11 +394,11 @@ class Developer(Cog):
         help='Whether to refresh all cache categories.'
     )
     @refresh.command(cls=flags.FlagCommand, name='cache')
-    async def _refresh_cache(self, ctx: Context, **flags) -> None:
+    async def _refresh_cache(self, ctx: utils.Context, **flags) -> None:
         """Refresh the bot cache through this command.
 
         Args:
-            ctx (Context): Automatically passed context argument.
+            ctx (utils.Context): Automatically passed utils.Context argument.
 
         Raises:
             commands.BadArgument: If an invalid mode was given.
@@ -416,11 +415,11 @@ class Developer(Cog):
         await ctx.send(f'✅ Refreshed `{mode}` cache.')
 
     @commands.group(invoke_without_command=True)
-    async def idea(self, ctx: Context) -> None:
+    async def idea(self, ctx: utils.Context) -> None:
         await ctx.send_help('idea')
 
     async def _get_information(
-        self, ctx: Context, element_id: int, *, return_author: bool = False
+        self, ctx: utils.Context, element_id: int, *, return_author: bool = False
     ) -> discord.Embed:
         try:
             data = dict(await ctx.bot.pool.fetchrow(
@@ -448,7 +447,7 @@ class Developer(Cog):
 
     @idea.command()
     @commands.is_owner()
-    async def approve(self, ctx: Context, suggestion_id: int) -> None:
+    async def approve(self, ctx: utils.Context, suggestion_id: int) -> None:
         """Approve the suggestion by its ID.
 
         Example:
@@ -467,7 +466,7 @@ class Developer(Cog):
 
     @idea.command()
     @commands.is_owner()
-    async def reject(self, ctx: Context, suggestion_id: int) -> None:
+    async def reject(self, ctx: utils.Context, suggestion_id: int) -> None:
         """Reject the suggestion by its ID.
 
         Example:
@@ -496,7 +495,7 @@ class Developer(Cog):
     )
     @idea.command(cls=flags.FlagCommand)
     @commands.is_owner()
-    async def pending(self, ctx: Context, **flags) -> None:
+    async def pending(self, ctx: utils.Context, **flags) -> None:
         """Check out all pending suggestions.
 
         Example:
@@ -515,12 +514,12 @@ class Developer(Cog):
             await ctx.send(answers[additional])
             return
 
-        menu = paginators.Paginate(source=IdeaPageSource(ctx, data))
+        menu = utils.Paginate(source=IdeaPageSource(ctx, data))
         await menu.start(ctx)
 
     @idea.command()
     @commands.is_owner()
-    async def info(self, ctx: Context, suggestion_id: int) -> None:
+    async def info(self, ctx: utils.Context, suggestion_id: int) -> None:
         """Get some detailed information about the suggestion.
 
         Example:

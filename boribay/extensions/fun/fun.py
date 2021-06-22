@@ -6,12 +6,11 @@ from time import time
 from typing import Optional
 
 import discord
-from boribay.core import Boribay, Cog, Context
-from boribay.core.manipulation import Manip, color_exists, make_image
+from boribay.core import Boribay, utils
 from discord.ext import commands, flags
 
 
-class Fun(Cog):
+class Fun(utils.Cog):
     """The fun commands extension."""
 
     def __init__(self, bot: Boribay):
@@ -55,7 +54,9 @@ class Fun(Cog):
         return discord.File(fp, fn or 'dagpi.png')
 
     @commands.command(aliases=('ph',))
-    async def pornhub(self, ctx: Context, text_1: str, text_2: str = 'Hub') -> None:
+    async def pornhub(
+        self, ctx: utils.Context, text_1: str, text_2: str = 'Hub'
+    ) -> None:
         """PornHub logo maker.
 
         Example:
@@ -73,7 +74,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def qr(self, ctx: Context, url: Optional[str]) -> None:
+    async def qr(self, ctx: utils.Context, url: Optional[str]) -> None:
         """Make QR-code from a given URL.
         URL can be an atttachment or a user avatar.
 
@@ -83,7 +84,7 @@ class Fun(Cog):
         Example:
             **{p}qr @Dosek** - sends the QR code using Dosek's avatar.
         """
-        url = await make_image(ctx, url, return_url=True)
+        url = await utils.make_image(ctx, url, return_url=True)
         r = await ctx.bot.session.get(
             'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + url
         )
@@ -91,7 +92,7 @@ class Fun(Cog):
         await ctx.send(file=discord.File(io, 'qr.png'))
 
     @commands.command()
-    async def caption(self, ctx: Context, image: Optional[str]) -> None:
+    async def caption(self, ctx: utils.Context, image: Optional[str]) -> None:
         """Get caption for an image.
 
         Example:
@@ -100,7 +101,7 @@ class Fun(Cog):
         Args:
             image (Optional[str]): An image you want to get caption for.
         """
-        image = await make_image(ctx, image, return_url=True)
+        image = await utils.make_image(ctx, image, return_url=True)
 
         r = await ctx.bot.session.post(
             'https://captionbot.azurewebsites.net/api/messages',
@@ -110,7 +111,7 @@ class Fun(Cog):
         await ctx.send(embed=embed.set_image(url=image))
 
     @commands.command(aliases=('dym',))
-    async def didyoumean(self, ctx: Context, search: str, did_you_mean: str) -> None:
+    async def didyoumean(self, ctx: utils.Context, search: str, did_you_mean: str) -> None:
         """Google search "Did you mean" meme.
 
         Example:
@@ -124,7 +125,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def achieve(self, ctx: Context, *, text: str) -> None:
+    async def achieve(self, ctx: utils.Context, *, text: str) -> None:
         """Minecraft "Achievement Get!" meme maker.
 
         Example:
@@ -140,7 +141,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def challenge(self, ctx: Context, *, text: str) -> None:
+    async def challenge(self, ctx: utils.Context, *, text: str) -> None:
         """Minecraft "Challenge Complete!" meme maker.
 
         Example:
@@ -156,7 +157,7 @@ class Fun(Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def triggered(self, ctx: Context, image: Optional[str]) -> None:
+    async def triggered(self, ctx: utils.Context, image: Optional[str]) -> None:
         """Make the "TrIgGeReD" meme.
 
         Example:
@@ -165,12 +166,12 @@ class Fun(Cog):
         Args:
             image (Optional[str]): An image you want to get "triggered".
         """
-        image = await make_image(ctx, image, return_url=True)
+        image = await utils.make_image(ctx, image, return_url=True)
         file = await self.dagpi_image(f'triggered?url={image}', 'triggered.gif')
         await ctx.send(file=file)
 
     @commands.command(name='ascii')
-    async def ascii_command(self, ctx: Context, image: Optional[str]) -> None:
+    async def ascii_command(self, ctx: utils.Context, image: Optional[str]) -> None:
         """Get the ASCII version of an image.
 
         Example:
@@ -179,12 +180,12 @@ class Fun(Cog):
         Args:
             image (Optional[str]): An image you want to ASCII'ize.
         """
-        image = await make_image(ctx, image, return_url=True)
+        image = await utils.make_image(ctx, image, return_url=True)
         file = await self.dagpi_image(f'ascii?url={image}', 'ascii.png')
         await ctx.send(file=file)
 
     @commands.command()
-    async def coinflip(self, ctx: Context) -> None:
+    async def coinflip(self, ctx: utils.Context) -> None:
         """Play the simple coinflip game.
 
         Chances:
@@ -210,7 +211,7 @@ class Fun(Cog):
     )
     @flags.command(aliases=('tr', 'typerace'))
     @commands.max_concurrency(1, per=commands.BucketType.channel)
-    async def typeracer(self, ctx: Context, **flags) -> None:
+    async def typeracer(self, ctx: utils.Context, **flags) -> None:
         """Typeracer game. Compete with others and find out the best typist.
 
         If you don't like the given quote, react with a wastebasket to close the game.
@@ -230,7 +231,7 @@ class Fun(Cog):
             r = await self.bot.session.get('https://api.quotable.io/random')
             quote = await r.json()
             content = quote['content']
-            buffer = await Manip.typeracer('\n'.join(textwrap.wrap(content, 30)))
+            buffer = await utils.Manip.typeracer('\n'.join(textwrap.wrap(content, 30)))
 
         embed = ctx.embed(
             title='Typeracer', description='see who is the fastest at typing.'
@@ -272,7 +273,7 @@ class Fun(Cog):
             await ctx.try_delete(race)
 
     @commands.command(aliases=('rps',))
-    async def rockpaperscissors(self, ctx: Context) -> None:
+    async def rockpaperscissors(self, ctx: utils.Context) -> None:
         """The Rock-Paper-Scissors game.
 
         There are three different reactions:
@@ -310,7 +311,7 @@ class Fun(Cog):
     @commands.command()
     async def eject(
         self,
-        ctx: Context,
+        ctx: utils.Context,
         color: str.lower,
         *,
         name: Optional[str]
@@ -330,7 +331,7 @@ class Fun(Cog):
         """
         # This check is still bad since the API colors are limited
         # and ImageColor.getrgb supports more colors.
-        if not color_exists(color):
+        if not utils.color_exists(color):
             raise commands.BadArgument(
                 f'Color {color} does not exist. '
                 f'Choose one from `{ctx.prefix}help {ctx.command}`'
@@ -343,12 +344,12 @@ class Fun(Cog):
         # Bufferizing the fetched image.
         io = BytesIO(await r.read())
 
-        # Sending to the contextual channel.
+        # Sending to the utils.Contextual channel.
         await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
     @commands.command(name='pp', aliases=('peepee',))
     async def command_pp(
-        self, ctx: Context, member: Optional[discord.Member]
+        self, ctx: utils.Context, member: Optional[discord.Member]
     ) -> None:
         """Get the random size of your PP.
 

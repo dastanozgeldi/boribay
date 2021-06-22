@@ -1,11 +1,9 @@
 import discord
-from boribay.core import Cog, Context, constants
-from boribay.core.checks import is_mod
-from boribay.core.commands.converters import ColorConverter, SettingsConverter
+from boribay.core import checks, constants, utils
 from discord.ext import commands
 
 
-class Settings(Cog):
+class Settings(utils.Cog):
     """The settings extension.
 
     type `[p]guildsettings` to see current guild settings.
@@ -20,19 +18,19 @@ class Settings(Cog):
             'autorole': None
         }
 
-    async def cog_check(self, ctx: Context) -> bool:
+    async def cog_check(self, ctx: utils.Context) -> bool:
         """
         Making sure that only Mods are trying to run those commands.
         """
-        return await is_mod().predicate(ctx)
+        return await checks.is_mod().predicate(ctx)
 
     async def _update(
-        self, ctx: Context, key: str, value: str
+        self, ctx: utils.Context, key: str, value: str
     ) -> None:
         """A function to simply update changed values in the DB + cache.
 
         Args:
-            ctx (Context): To get the bot, guild instances.
+            ctx (utils.Context): To get the bot, guild instances.
             key (str): A key going to be updated.
             value (str): The new value to replace the previous.
         """
@@ -44,15 +42,15 @@ class Settings(Cog):
         await ctx.bot.pool.execute(query, value, guild)
         ctx.bot.guild_cache[guild][key] = value
 
-    async def _disable(self, ctx: Context, key: str) -> None:
+    async def _disable(self, ctx: utils.Context, key: str) -> None:
         # Here by passing `None` we kind of disable the feature.
         await self._update(ctx, key, None)
 
-    def on_or_off(self, ctx: Context, key: str) -> str:
+    def on_or_off(self, ctx: utils.Context, key: str) -> str:
         """A function to check whether the setting is set or not.
 
         Args:
-            ctx (Context): To get the bot instance.
+            ctx (utils.Context): To get the bot instance.
             key (str): A key from cache to check.
 
         Returns:
@@ -65,7 +63,7 @@ class Settings(Cog):
         return constants.TICK
 
     @commands.command(aliases=('gs', 'settings'))
-    async def guildsettings(self, ctx: Context):
+    async def guildsettings(self, ctx: utils.Context):
         """The settings command. Shows the settings of the current server.
 
         FAQ
@@ -80,7 +78,7 @@ class Settings(Cog):
             Tick represents whether the category is set.
         """
         g = ctx.guild
-        sc = SettingsConverter()
+        sc = utils.SettingsConverter()
 
         creds = await sc.convert(g, ctx.guild_cache)
         embed = ctx.embed(
@@ -93,7 +91,7 @@ class Settings(Cog):
         await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True, aliases=('wc',))
-    async def welcomechannel(self, ctx: Context) -> None:
+    async def welcomechannel(self, ctx: utils.Context) -> None:
         """
         The welcome channel setting parent command.
         """
@@ -101,7 +99,7 @@ class Settings(Cog):
 
     @welcomechannel.command(name='set')
     async def _set_welcome_channel(
-        self, ctx: Context, channel: discord.TextChannel
+        self, ctx: utils.Context, channel: discord.TextChannel
     ) -> None:
         """Set the welcome channel to your server.
 
@@ -115,7 +113,7 @@ class Settings(Cog):
         await ctx.send(f'✅ Set {channel} as a welcoming channel.')
 
     @welcomechannel.command(name='disable')
-    async def _disable_welcome_channel(self, ctx: Context) -> None:
+    async def _disable_welcome_channel(self, ctx: utils.Context) -> None:
         """
         Disable the welcoming channel with this command.
         """
@@ -123,7 +121,7 @@ class Settings(Cog):
         await ctx.send('✅ Disabled the welcoming channel.')
 
     @commands.group(invoke_without_command=True)
-    async def prefix(self, ctx: Context):
+    async def prefix(self, ctx: utils.Context):
         """The prefix setting parent command.
 
         Simply shows the current prefix if nothing was specified.
@@ -133,7 +131,7 @@ class Settings(Cog):
         await ctx.send_help('prefix')
 
     @prefix.command(name='set')
-    async def _set_prefix(self, ctx: Context, new_prefix: str) -> None:
+    async def _set_prefix(self, ctx: utils.Context, new_prefix: str) -> None:
         """Set the custom prefix to your server.
 
         Example:
@@ -146,7 +144,7 @@ class Settings(Cog):
         await ctx.send(f'✅ Prefix has been changed to: `{new_prefix}`')
 
     @prefix.command(name='default', aliases=('disable',))
-    async def _default_prefix(self, ctx: Context) -> None:
+    async def _default_prefix(self, ctx: utils.Context) -> None:
         """
         Bring back the default bot prefix with this command.
         """
@@ -154,14 +152,16 @@ class Settings(Cog):
         await ctx.send('✅ Prefix has been set to the default one.')
 
     @commands.group(invoke_without_command=True, aliases=('embedcolour', 'ec'))
-    async def embedcolor(self, ctx: Context) -> None:
+    async def embedcolor(self, ctx: utils.Context) -> None:
         """
         The color setting parent command.
         """
         await ctx.send_help('embedcolor')
 
     @embedcolor.command(name='set')
-    async def _set_color(self, ctx: Context, color: ColorConverter) -> None:
+    async def _set_color(
+        self, ctx: utils.Context, color: utils.ColorConverter
+    ) -> None:
         """Set the custom color to your server.
 
         Example:
@@ -179,7 +179,7 @@ class Settings(Cog):
         await ctx.send(embed=embed)
 
     @embedcolor.command(name='default', aliases=('disable',))
-    async def _default_color(self, ctx: Context) -> None:
+    async def _default_color(self, ctx: utils.Context) -> None:
         """
         Bring back the default color for your guild with this command.
         """
@@ -191,14 +191,14 @@ class Settings(Cog):
 
     # Autorole Settings Part
     @commands.group(invoke_without_command=True)
-    async def autorole(self, ctx: Context):
+    async def autorole(self, ctx: utils.Context):
         """
         The autorole setting parent command.
         """
         await ctx.send_help('autorole')
 
     @autorole.command(name='set')
-    async def _set_autorole(self, ctx: Context, role: discord.Role) -> None:
+    async def _set_autorole(self, ctx: utils.Context, role: discord.Role) -> None:
         """Set the autorole feature in your server.
 
         Example:
@@ -211,7 +211,7 @@ class Settings(Cog):
         await ctx.send(f'✅ Set {role.mention} as an autorole.')
 
     @autorole.command(name='disable')
-    async def _disable_autorole(self, ctx: Context) -> None:
+    async def _disable_autorole(self, ctx: utils.Context) -> None:
         """
         Disable the autorole feature for your guild.
         """
