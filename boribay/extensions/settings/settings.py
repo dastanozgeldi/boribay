@@ -1,5 +1,5 @@
 import discord
-from boribay.core import checks, constants, utils
+from boribay.core import checks, utils
 from discord.ext import commands
 
 
@@ -58,9 +58,9 @@ class Settings(utils.Cog):
         """
         for check in self.default_settings.values():
             if ctx.guild_cache[ctx.guild.id][key] == check:
-                return constants.CROSSMARK
+                return '<:crossmark:814742130190712842>'
 
-        return constants.TICK
+        return '<:tick:814838692459446293>'
 
     @commands.command(aliases=('gs', 'settings'))
     async def guildsettings(self, ctx: utils.Context):

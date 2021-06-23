@@ -14,9 +14,9 @@ from discord.ext import commands
 
 from .checks import is_beta, is_blacklisted
 from .config import Config
-from .context import Context
 from .database import Cache, DatabaseManager
 from .events import set_events
+from .utils import Context
 
 __all__ = ('Boribay',)
 

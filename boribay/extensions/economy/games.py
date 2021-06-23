@@ -3,7 +3,6 @@ import random
 from html import unescape
 
 import discord
-from boribay.core.constants import BATYR
 from discord.ext import commands
 
 
@@ -76,7 +75,7 @@ class Trivia:
         answer = await Trivia(ctx, entries, question['question']).start()
 
         if answer == question['correct_answer']:
-            await ctx.reply(f'**Correct! (+50 {BATYR})** The answer was: **{correct}**')
+            await ctx.reply(f'**Correct! (+50)** The answer was: **{correct}**')
             return await self.ctx.bot.db.add('wallet', ctx.author, 50)
 
         return await ctx.reply(f'**Wrong!** The answer was: **{correct}**.')

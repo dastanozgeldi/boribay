@@ -3,10 +3,10 @@ from contextlib import suppress
 from typing import Any, List, Tuple
 
 import discord
-from boribay.core.constants import URBAN_DICTIONARY_ICON_URL
-from boribay.core.context import Context
 from boribay.core.exceptions import UserError
 from discord.ext import menus
+
+URBAN_DICTIONARY_ICON = 'https://is4-ssl.mzstatic.com/image/thumb/Purple111/v4/7e/49/85/7e498571-a905-d7dc-26c5-33dcc0dc04a8/source/512x512bb.jpg'
 
 
 class OptionsNotInRange(UserError):
@@ -20,7 +20,7 @@ class OptionsNotInRange(UserError):
 
 
 class Poll:
-    def __init__(self, ctx: Context, options: List[str], **kwargs: Any):
+    def __init__(self, ctx, options: List[str], **kwargs: Any):
         self.ctx = ctx
         self.options = options
         self.embed = ctx.embed(**kwargs)
@@ -74,7 +74,7 @@ class TodoPageSource(menus.ListPageSource):
     """TodoPageSource, a special paginator created for the todo commands parent.
     Takes the list of data, enumerates, then paginates through."""
 
-    def __init__(self, ctx: Context, data):
+    def __init__(self, ctx, data):
         super().__init__(data, per_page=10)
         self.ctx = ctx
 
@@ -103,7 +103,7 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
     Takes the list of data, does formatting, then paginates through.
     """
 
-    def __init__(self, ctx: Context, entries, *, per_page: int = 1):
+    def __init__(self, ctx, entries, *, per_page: int = 1):
         super().__init__(entries=entries, per_page=per_page)
         self.ctx = ctx
 
@@ -142,7 +142,7 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
         embed.set_author(
             name=f'{entry["word"]} ({menu.current_page + 1} of {mx})' if mx else entry['word'],
             url=entry['permalink'],
-            icon_url=URBAN_DICTIONARY_ICON_URL
+            icon_url=URBAN_DICTIONARY_ICON
         )
 
         embed.add_field(

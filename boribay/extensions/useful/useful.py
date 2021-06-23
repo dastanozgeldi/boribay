@@ -11,8 +11,10 @@ from boribay.core import Boribay, constants, exceptions, utils
 from discord.ext import commands, flags
 from humanize import time
 
-from . import calculator  # Lexer & Parser.
+from .calculator import CalcLexer, CalcParser
 from .utils import Poll, TodoPageSource, UrbanDictionaryPageSource
+
+REDDIT_ICON = 'https://icons.iconarchive.com/icons/papirus-team/papirus-apps/96/reddit-icon.png'
 
 
 class Useful(utils.Cog):
@@ -408,7 +410,7 @@ class Useful(utils.Cog):
 
         embed = ctx.embed().set_image(url=data['url'])
 
-        embed.set_author(name=data['title'], icon_url=constants.REDDIT_ICON_URL)
+        embed.set_author(name=data['title'], icon_url=REDDIT_ICON)
         embed.set_footer(text=f'from {data["subreddit_name_prefixed"]}')
 
         await ctx.send(embed=embed)
@@ -458,8 +460,8 @@ class Useful(utils.Cog):
             UnclosedBrackets: If an expression has unclosed brackets.
             EmptyBrackets: If an expression has empty-useless brackets.
         """
-        lexer = calculator.CalcLexer()
-        parser = calculator.CalcParser()
+        lexer = CalcLexer()
+        parser = CalcParser()
         reg = ''.join(i for i in expression if i in '()')
 
         try:

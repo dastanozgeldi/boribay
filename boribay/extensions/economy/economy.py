@@ -4,11 +4,13 @@ import random
 from typing import Optional
 
 import discord
-from boribay.core import BATYR, checks, exceptions, utils
+from boribay.core import checks, exceptions, utils
 from discord.ext import commands, flags
 
 from .games import Trivia, Work
 from .utils import CasinoConverter
+
+BATYR = '<:batyr:822488889020121118>'
 
 
 class Economics(utils.Cog):
