@@ -3,16 +3,16 @@ import random
 import zipfile
 from datetime import datetime
 from io import BytesIO
-from typing import Dict
+import string
 
 import discord
 from boribay.core import exceptions, utils
 from boribay.core.bot import Boribay
-from discord.ext import commands, flags
+from discord.ext import commands
 from humanize import time
 
 from .calculator import CalcLexer, CalcParser
-from .utils import Poll, TodoPageSource, UrbanDictionaryPageSource
+from .utils import Poll, UrbanDictionaryPageSource  # , TodoPageSource
 
 
 class Useful(utils.Cog):
@@ -47,69 +47,78 @@ class Useful(utils.Cog):
         )
 
     @staticmethod
-    def _generate_password(length: int, flags: Dict[str, bool]) -> str:
-        """The core of this module, generates a random password for you.
+    def _generate_password(
+        length: int, numbers: bool, uppercase: bool, special: bool
+    ) -> str:
+        """Generates a random password using given parameters.
 
-        Args:
-            length (int, optional): Length of the password. Defaults to 25.
-            flags (Dict[str, bool]): A dictionary of flags we use in passwordgen.
+        Parameters
+        ----------
+        length : int
+            Length of the password.
+        numbers : bool
+            Include numbers.
+        uppercase : bool
+            Include uppercase characters.
+        special : bool
+            Include special characters.
 
-        Returns:
-            str: Randomly generated password due to your parameters.
+        Returns
+        -------
+        str
+            Randomly generated password.
         """
-        BASE = 'qwertyuiopasdfghjklzxcvbnm'
-        NUMBERS = '1234567890'
-        UPPERCASE = 'QWERTYUIOPASDFGHJKLZXCVBNM'
-        SPECIAL = '!@#$%^&*()'
+        RESULT = string.ascii_lowercase
 
-        if flags.pop('numbers'):
-            BASE += NUMBERS
+        if numbers:
+            RESULT += string.digits
+        if uppercase:
+            RESULT += string.ascii_uppercase
+        if special:
+            RESULT += string.punctuation
 
-        if flags.pop('uppercase'):
-            BASE += UPPERCASE
-
-        if flags.pop('special_characters'):
-            BASE += SPECIAL
-
-        result = random.choices(BASE, k=length)
+        result = random.choices(RESULT, k=length)
         return ''.join(result)
 
-    @flags.add_flag(
-        '--numbers',
-        '-n',
-        action='store_true',
-        help='Whether to add numbers.'
-    )
-    @flags.add_flag(
-        '--uppercase', '-u',
-        action='store_true',
-        help='Whether to add Uppercased Characters.'
-    )
-    @flags.add_flag(
-        '--special-characters',
-        '-sc',
-        action='store_true',
-        help='Whether to add special characters, like: $%^&'
-    )
-    @flags.command(aliases=('pw',))
-    async def password(self, ctx: utils.Context, length: int = 25, **flags) -> None:
-        """A password creator command. Get a safe password using this command.
+    @utils.command(aliases=('pw',))
+    async def password(
+        self,
+        ctx: utils.Context,
+        length: int = 25,
+        numbers: bool = False,
+        uppercase: bool = False,
+        special: bool = False
+    ) -> None:
+        """The password creator. Get a safe password using this command.
 
-        Example:
+        Examples
+        --------
             **{p}password 40** - sends the generated password 40 characters long.
+            **{p}password 25 y y y - 25 character-long password
+            within numbers, uppercase and special characters included.
 
-        Args:
-            length (int): Length of the password. Defaults to 25.
+        Parameters
+        ----------
+        length : int, optional
+            Length of the password, by default 25
+        numbers : bool, optional
+            Include numbers in the password, by default False
+        uppercase : bool, optional
+            Include uppercase characters, by default False
+        special : bool, optional
+            Include special characters, by default False
 
-        Raises:
-            commands.BadArgument: If too big length of the password was given.
+        Raises
+        ------
+        commands.BadArgument
+            If too big password length was provided, like why would you need it?
         """
         if length > 50:
             raise commands.BadArgument(
                 f'Too big length was given ({length}) while the limit is 50 characters.'
             )
 
-        result = self._generate_password(length, flags)
+        result = self._generate_password(length, numbers, uppercase, special)
         await ctx.reply('✅ Generated you the password.')
         # To make people sure this is working. ↑
         await ctx.author.send(f'Here is your password: ```{result}```')
@@ -207,38 +216,39 @@ class Useful(utils.Cog):
         Kind of pro-tip to use this instead of **{p}help todo**"""
         await ctx.send_help('todo')
 
-    @flags.add_flag(
-        '--count',
-        action='store_true',
-        help='Sends the count of todos.'
-    )
-    @flags.add_flag(
-        '--dm',
-        action='store_true',
-        help='Whether to DM you the todo list.'
-    )
-    @todo.command(cls=flags.FlagCommand, name='show', aliases=('list',))
-    async def _todo_show(self, ctx: utils.Context, **flags) -> None:
-        """To-do show command, a visual way to manipulate with your list.
+    # TODO: Rewrite later.
+    # @flags.add_flag(
+    #     '--count',
+    #     action='store_true',
+    #     help='Sends the count of todos.'
+    # )
+    # @flags.add_flag(
+    #     '--dm',
+    #     action='store_true',
+    #     help='Whether to DM you the todo list.'
+    # )
+    # @todo.command(cls=flags.FlagCommand, name='show', aliases=('list',))
+    # async def _todo_show(self, ctx: utils.Context, **flags) -> None:
+    #     """To-do show command, a visual way to manipulate with your list.
 
-        Example:
-            **{p}todo show --dm** - DM's you the to-do list.
-            **{p}todo show --count** - sends the current count of to-do's.
-            Use them together to get both features.
-        """
-        query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
-        todos = [(todo['content'], todo['jump_url'])
-                 for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
-        dest = ctx.author if flags.pop('dm', False) else ctx.channel
+    #     Example:
+    #         **{p}todo show --dm** - DM's you the to-do list.
+    #         **{p}todo show --count** - sends the current count of to-do's.
+    #         Use them together to get both features.
+    #     """
+    #     query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
+    #     todos = [(todo['content'], todo['jump_url'])
+    #              for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
+    #     dest = ctx.author if flags.pop('dm', False) else ctx.channel
 
-        if flags.pop('count', False):
-            return await dest.send(len(todos))
+    #     if flags.pop('count', False):
+    #         return await dest.send(len(todos))
 
-        await utils.Paginate(
-            TodoPageSource(ctx, todos),
-            clear_reactions_after=True,
-            timeout=60.0
-        ).start(ctx, channel=dest)
+    #     await utils.Paginate(
+    #         TodoPageSource(ctx, todos),
+    #         clear_reactions_after=True,
+    #         timeout=60.0
+    #     ).start(ctx, channel=dest)
 
     @todo.command(name='add')
     async def _todo_add(self, ctx: utils.Context, *, content: str) -> None:
@@ -468,61 +478,62 @@ class Useful(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @flags.add_flag('--continent', type=str, help='Search through continents.')
-    @flags.add_flag('--country', type=str, help='Search through countries.')
-    @flags.command(aliases=('ncov', 'coronavirus'))
-    async def covid(self, ctx: utils.Context, **flags) -> None:
-        """Get coronavirus statistics with this command.
-        Returns current world statistics if no country was specified.
+    # TODO: Rewrite later.
+    # @flags.add_flag('--continent', type=str, help='Search through continents.')
+    # @flags.add_flag('--country', type=str, help='Search through countries.')
+    # @flags.command(aliases=('ncov', 'coronavirus'))
+    # async def covid(self, ctx: utils.Context, **flags) -> None:
+    #     """Get coronavirus statistics with this command.
+    #     Returns current world statistics if no country was specified.
 
-        Cases, deaths, recovers, active and critical cases will be sent.
+    #     Cases, deaths, recovers, active and critical cases will be sent.
 
-        Example:
-            **{p}covid** - sends world statistics.
-            **{p}covid --continent Europe** - sends Europe statistics.
-            **{p}covid --country Kazakhstan** - sends Kazakhstan statistics.
-        """
-        cs = ctx.bot.session
-        api = 'https://disease.sh/v3/covid-19/'
+    #     Example:
+    #         **{p}covid** - sends world statistics.
+    #         **{p}covid --continent Europe** - sends Europe statistics.
+    #         **{p}covid --country Kazakhstan** - sends Kazakhstan statistics.
+    #     """
+    #     cs = ctx.bot.session
+    #     api = 'https://disease.sh/v3/covid-19/'
 
-        if bool(flags):
-            r = await cs.get(api + 'all')
-            js = await r.json()
-            title = 'Covid-19 World Statistics'
-            field = ('Affected Countries', js['affectedCountries'])
-            url = 'https://www.freepngimg.com/thumb/globe/40561-7-earth-globe-png-download-free.png'
+    #     if bool(flags):
+    #         r = await cs.get(api + 'all')
+    #         js = await r.json()
+    #         title = 'Covid-19 World Statistics'
+    #         field = ('Affected Countries', js['affectedCountries'])
+    #         url = 'https://www.freepngimg.com/thumb/globe/40561-7-earth-globe-png-download-free.png'
 
-        if continent := flags.pop('continent', False):
-            r = await cs.get(f'{api}continents/{continent}?strict=true')
-            js = await r.json()
-            title = f'Covid-19 Statistics for {continent.title()}'
-            field = ('Tests', js['tests'])
-            url = ctx.guild.icon_url
+    #     if continent := flags.pop('continent', False):
+    #         r = await cs.get(f'{api}continents/{continent}?strict=true')
+    #         js = await r.json()
+    #         title = f'Covid-19 Statistics for {continent.title()}'
+    #         field = ('Tests', js['tests'])
+    #         url = ctx.guild.icon_url
 
-        if country := flags.pop('country', False):
-            r = await cs.get(f'{api}countries/{country}?strict=true')
-            js = await r.json()
-            title = f'Covid-19 Statistics for {country.title()}'
-            field = ('Continent', js['continent'])
-            url = js['countryInfo']['flag']
+    #     if country := flags.pop('country', False):
+    #         r = await cs.get(f'{api}countries/{country}?strict=true')
+    #         js = await r.json()
+    #         title = f'Covid-19 Statistics for {country.title()}'
+    #         field = ('Continent', js['continent'])
+    #         url = js['countryInfo']['flag']
 
-        embed = ctx.embed(title=title).set_thumbnail(url=url)
-        fields = [
-            ('Total Cases', js['cases']),
-            ('Today Cases', js['todayCases']),
-            ('Deaths', js['deaths']),
-            ('Today Deaths', js['todayDeaths']),
-            ('Recovered', js['recovered']),
-            ('Today Recov', js['todayRecovered']),
-            ('Active Cases', js['active']),
-            ('Critical', js['critical']),
-            field
-        ]
+    #     embed = ctx.embed(title=title).set_thumbnail(url=url)
+    #     fields = [
+    #         ('Total Cases', js['cases']),
+    #         ('Today Cases', js['todayCases']),
+    #         ('Deaths', js['deaths']),
+    #         ('Today Deaths', js['todayDeaths']),
+    #         ('Recovered', js['recovered']),
+    #         ('Today Recov', js['todayRecovered']),
+    #         ('Active Cases', js['active']),
+    #         ('Critical', js['critical']),
+    #         field
+    #     ]
 
-        for name, value in fields:
-            embed.add_field(name=name, value=str(value))
+    #     for name, value in fields:
+    #         embed.add_field(name=name, value=str(value))
 
-        await ctx.send(embed=embed)
+    #     await ctx.send(embed=embed)
 
     @utils.command(aliases=('temp', 'temperature'))
     async def weather(self, ctx: utils.Context, *, city: str.capitalize) -> None:

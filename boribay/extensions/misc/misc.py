@@ -4,7 +4,7 @@ from typing import Optional
 
 import boribay
 from boribay.core import utils
-from discord.ext import commands, flags
+from discord.ext import commands
 from humanize import naturaldate, naturaltime
 
 LOADING = '<a:loading:837049644462374935>'
@@ -50,20 +50,6 @@ class Miscellaneous(utils.Cog):
                     ctr['docstrings'] += line.startswith('"""')
 
         embed = ctx.embed(description='\n'.join(f'**{k.capitalize()}:** {v}' for k, v in ctr.items()))
-        await ctx.send(embed=embed)
-
-    @utils.command(aliases=('modules',))
-    async def extensions(self, ctx: utils.Context) -> None:
-        """Get the list of modules that are currently loaded."""
-        exts = [str(ext) for ext in ctx.bot.cogs.values()]
-        exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
-        length = [len(element) for row in exts for element in row]
-        rows = [''.join(e.ljust(max(length) + 2) for e in row) for row in exts]
-
-        embed = ctx.embed(
-            title='Currently working modules.',
-            description='```%s```' % '\n'.join(rows)
-        )
         await ctx.send(embed=embed)
 
     @utils.command()
@@ -159,22 +145,17 @@ class Miscellaneous(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @flags.add_flag(
-        '--tts', action='store_true', help='Whether to send a tts message.'
-    )
-    @flags.command(name='say')
-    async def command_say(self, ctx: utils.Context, message: str, **flags) -> None:
-        """Make the bot say what you want
+    @utils.command()
+    async def say(self, ctx: utils.Context, message: str, tts: bool = False) -> None:
+        """Make the bot say what you want.
 
-        Example:
-            **{p}say "Achievement Completed" --tts**
-
-        Args:
-            message (str): A message that is going to be sent.
-            Make sure to put your message in "double quotes".
+        Parameters
+        ----------
+        message : str
+            A message that is going to be sent, make sure to put in "double quotes".
+        tts : bool, optional
+            Whether to enable TTS, by default False
         """
-        tts = flags.pop('tts', False)
-
         await ctx.try_delete(ctx.message)
         await ctx.send(message, tts=tts)
 

@@ -307,20 +307,30 @@ class Developer(utils.Cog):
         final_url = f'<{base}/blob/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>'
         await ctx.send(final_url)
 
-    @utils.group(invoke_without_command=True)
-    async def ext(self, ctx: utils.Context) -> None:
+    @utils.group(aliases=('ext', 'cogs'), invoke_without_command=True)
+    async def extensions(self, ctx: utils.Context) -> None:
         """Extension manager commands group.
 
         Here you can see commands that load, unload and reload extensions.
         """
         return await ctx.send_help('ext')
 
-    @utils.command()
-    async def _ext_load(
-        self,
-        ctx: utils.Context,
-        *extensions: str
-    ) -> None:
+    @extensions.command(aliases=('list',))
+    async def _ext_show(self, ctx: utils.Context) -> None:
+        """Get the list of modules that are available to use."""
+        exts = [str(ext) for ext in ctx.bot.cogs.values()]
+        exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
+        length = [len(element) for row in exts for element in row]
+        rows = [''.join(e.ljust(max(length) + 2) for e in row) for row in exts]
+
+        embed = ctx.embed(
+            title='Currently working modules.',
+            description='```%s```' % '\n'.join(rows)
+        )
+        await ctx.send(embed=embed)
+
+    @extensions.command()
+    async def _ext_load(self, ctx: utils.Context, *extensions: str) -> None:
         """Load a cog.
 
         Examples
@@ -336,6 +346,42 @@ class Developer(utils.Cog):
         exts = ctx.config.main.exts if extensions[0] == '~' else extensions
         [ctx.bot.load_extension(ext) for ext in exts]
         await ctx.send(f'Loaded extension{"s" if len(exts) else ""}: ' + ', '.join(exts))
+
+    @extensions.command()
+    async def _ext_unload(self, ctx: utils.Context, *extensions: str) -> None:
+        """Unload a cog.
+
+        Examples
+        --------
+            **{p}ext load ~** - loads all extensions.
+            **{p}ext load boribay.extensions.fun** - loads the "Fun" cog.
+
+        Parameters
+        ----------
+        extensions : str
+            A set of extensions to load, by default '~ (all)'
+        """
+        exts = ctx.config.main.exts if extensions[0] == '~' else extensions
+        [ctx.bot.unload_extension(ext) for ext in exts]
+        await ctx.send(f'Unloaded extension{"s" if len(exts) else ""}: ' + ', '.join(exts))
+
+    @extensions.command()
+    async def _ext_reload(self, ctx: utils.Context, *extensions: str) -> None:
+        """Unload a cog.
+
+        Examples
+        --------
+            **{p}ext load ~** - loads all extensions.
+            **{p}ext load boribay.extensions.fun** - loads the "Fun" cog.
+
+        Parameters
+        ----------
+        extensions : str
+            A set of extensions to load, by default '~ (all)'
+        """
+        exts = ctx.config.main.exts if extensions[0] == '~' else extensions
+        [ctx.bot.reload_extension(ext) for ext in exts]
+        await ctx.send(f'Reloaded extension{"s" if len(exts) else ""}: ' + ', '.join(exts))
 
     @utils.command(name='as')
     async def _run_as(

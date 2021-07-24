@@ -6,7 +6,7 @@ from typing import Optional
 import discord
 from boribay.core import exceptions, utils
 from boribay.core.database import Cache
-from discord.ext import commands, flags
+from discord.ext import commands
 
 from .games import Trivia, Work
 from .utils import CasinoConverter
@@ -62,21 +62,22 @@ class Economics(utils.Cog):
 
         await Trivia(ctx).run(difficulty)
 
-    @flags.add_flag(
-        '--limit',
-        type=int,
-        default=5,
-        help='Set the limit of users you want to see.'
-    )
-    @flags.command(aliases=('lb',))
-    async def leaderboard(self, ctx: utils.Context, **flags) -> None:
+    @utils.command(aliases=('lb',))
+    async def leaderboard(self, ctx: utils.Context, limit: int = 5) -> None:
         """Boribay economics leaderboard. Defaults to 5 users,
         however you can specify the limitation of the leaderboard.
 
-        Raises:
-            commands.BadArgument: If the limit more than 10 users was specified.
+        Parameters
+        ----------
+        limit : int, optional
+            Set the limit of users you want to see, by default 5
+
+        Raises
+        ------
+        commands.BadArgument
+            If more than 10 users were specified in the limit.
         """
-        if (limit := flags.pop('limit')) > 10:
+        if limit > 10:
             raise commands.BadArgument('I cannot get why do you need more than 10 people.')
 
         data = await ctx.bot.pool.fetch('SELECT * FROM users ORDER by wallet + bank DESC')

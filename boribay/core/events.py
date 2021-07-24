@@ -5,7 +5,7 @@ from io import BytesIO
 import boribay
 import discord
 from boribay.core import exceptions, utils
-from discord.ext import commands, flags
+from discord.ext import commands
 from rich import box, get_console
 from rich.columns import Columns
 from rich.panel import Panel
@@ -206,9 +206,6 @@ def set_events(bot):
                 commands.NSFWChannelRequired,
                 commands.MaxConcurrencyReached,
                 commands.PartialEmojiConversionFailure,
-                # discord-ext-flags.
-                flags._parser.ArgumentParsingError,
-                # boribay.
                 exceptions.UserError
             )
         ):
