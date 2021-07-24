@@ -2,14 +2,40 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import Enum
-from typing import Union
+from typing import List, Union
 
 import discord
-import twemoji_parser
 from discord.ext import commands
 from PIL import ImageColor
 
-__all__ = ('AuthorCheckConverter', 'TimeConverter', 'ImageConverter', 'ColorConverter')
+__all__ = (
+    'AuthorCheckConverter',
+    'TimeConverter',
+    'ImageConverter',
+    'ColorConverter',
+    'SettingsConverter'
+)
+
+
+async def is_valid_url(url: str, session):
+    response = await session.head(url)
+    return response.status == 200
+
+
+def codepoint(codes: List[str]):
+    if '200d' not in codes:
+        return '-'.join(c for c in codes if c != 'fe0f')
+    return '-'.join(codes)
+
+
+async def emoji_to_url(char, *, session):
+    path = codepoint([f'{ord(c):x}' for c in char])
+    url = f'https://twemoji.maxcdn.com/v/latest/72x72/{path}.png'
+
+    if await is_valid_url(url, session):
+        return url
+
+    return char
 
 
 class Regex(Enum):
@@ -141,8 +167,8 @@ class ImageConverter(commands.Converter):
 
         except (TypeError, commands.MemberNotFound):
             try:
-                url = await twemoji_parser.emoji_to_url(argument, include_check=True)
                 cs = ctx.bot.session
+                url = await emoji_to_url(argument, session=cs)
 
                 if re.match(Regex.URL, url):
                     if return_url:

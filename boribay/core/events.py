@@ -15,7 +15,7 @@ __all__ = ('set_events',)
 
 logger = logging.getLogger('bot')
 
-welcoming_text = r'''
+start_screen = r'''
  ____             _  _
 | __ )  ___  _ __(_)| |__   __ _ _   _
 |  _ \ / _ \| '__| || '_ \ / _` | | | |
@@ -49,7 +49,7 @@ def set_events(bot):
             counts.add_row('Cached Users', str(users))
 
         console = get_console()
-        console.print(welcoming_text, style='blue', markup=False, highlight=False)
+        console.print(start_screen, style='blue', markup=False, highlight=False)
         if guilds:
             console.print(
                 Columns(
@@ -135,14 +135,8 @@ def set_events(bot):
         ctx : Context
             The custom context object.
         """
-        author = ctx.author.id
         bot.counter['command_usage'] += 1
         await bot.pool.execute('UPDATE bot_stats SET command_usage = command_usage + 1')
-
-        if not await bot.pool.fetch('SELECT * FROM users WHERE user_id = $1', author):
-            query = 'INSERT INTO users(user_id) VALUES($1)'
-            await bot.pool.execute(query, author)
-            await bot.user_cache.refresh()
 
     # Member-logging.
     @bot.event

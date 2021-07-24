@@ -3,11 +3,12 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from boribay.core.utils import Cog, Context, Manip, make_image, polaroid_filter
+from boribay.core import utils
+from boribay.core.utils.manipulation import Manip, make_image, polaroid_filter
 from discord.ext import commands
 
 
-class Images(Cog):
+class Images(utils.Cog):
     """The image commands extension.
 
     A module that is created to work with images.
@@ -17,8 +18,8 @@ class Images(Cog):
 
     icon = '🖼'
 
-    @commands.command()
-    async def invert(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def invert(self, ctx, image: Optional[str]) -> None:
         """Invert an image.
 
         Example:
@@ -33,8 +34,8 @@ class Images(Cog):
 
         await ctx.send(file=file)
 
-    @commands.command()
-    async def grayscale(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def grayscale(self, ctx, image: Optional[str]) -> None:
         """Add the grayscale filter to an image.
 
         Example:
@@ -49,9 +50,9 @@ class Images(Cog):
 
         await ctx.send(file=file)
 
-    @commands.command()
+    @utils.command()
     async def monochrome(
-        self, ctx: Context, rgb: commands.Greedy[int], image: Optional[str]
+        self, ctx, rgb: commands.Greedy[int], image: Optional[str]
     ) -> None:
         """Add the monochrome filter to an image.
 
@@ -78,8 +79,8 @@ class Images(Cog):
 
         await ctx.send(f'Taken RGB parameters: {r, g, b}', file=file)
 
-    @commands.command()
-    async def solarize(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def solarize(self, ctx, image: Optional[str]) -> None:
         """Solarize an image.
 
         Example:
@@ -94,8 +95,8 @@ class Images(Cog):
 
         await ctx.send(file=file)
 
-    @commands.command()
-    async def brighten(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def brighten(self, ctx, image: Optional[str]) -> None:
         """Brighten an image.
 
         Example:
@@ -110,8 +111,8 @@ class Images(Cog):
 
         await ctx.send(file=file)
 
-    @commands.command()
-    async def avatar(self, ctx: Context, member: Optional[discord.Member]) -> None:
+    @utils.command()
+    async def avatar(self, ctx, member: Optional[discord.Member]) -> None:
         """Sends either author or member avatar if specified.
 
         Example:
@@ -123,8 +124,8 @@ class Images(Cog):
         member = member or ctx.author
         await ctx.send(str(member.avatar_url))
 
-    @commands.command()
-    async def pixelate(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def pixelate(self, ctx, image: Optional[str]) -> None:
         """Pixelate an image.
 
         Example:
@@ -140,8 +141,8 @@ class Images(Cog):
         file = discord.File(buffer, 'pixelated.png')
         await ctx.send(file=file)
 
-    @commands.command()
-    async def wanted(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def wanted(self, ctx, image: Optional[str]) -> None:
         """Make someone wanted.
 
         Example:
@@ -157,8 +158,8 @@ class Images(Cog):
         file = discord.File(buffer, 'wanted.png')
         await ctx.send(file=file)
 
-    @commands.command()
-    async def jail(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def jail(self, ctx, image: Optional[str]) -> None:
         """Put someone into jail.
 
         Example:
@@ -174,8 +175,8 @@ class Images(Cog):
         file = discord.File(buffer, 'jail.png')
         await ctx.send(file=file)
 
-    @commands.command(name='f')
-    async def press_f(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command(name='f')
+    async def press_f(self, ctx, image: Optional[str]) -> None:
         """Pay respects to someone.
 
         Example:
@@ -192,8 +193,8 @@ class Images(Cog):
         message = await ctx.send(file=file)
         await message.add_reaction('<:press_f:796264575065653248>')
 
-    @commands.command(aliases=('5g1g', 'fivegoneg'))
-    async def fiveguysonegirl(self, ctx: Context, member: Optional[str]) -> None:
+    @utils.command(aliases=('5g1g', 'fivegoneg'))
+    async def fiveguysonegirl(self, ctx, member: Optional[str]) -> None:
         """Legendary "5 guys 1 girl" meme maker.
 
         Example:
@@ -210,8 +211,8 @@ class Images(Cog):
         file = discord.File(buffer, '5g1g.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=('ko',))
-    async def fight(self, ctx: Context, member: str) -> None:
+    @utils.command(aliases=('ko',))
+    async def fight(self, ctx, member: str) -> None:
         """Fight someone!
 
         Example:
@@ -228,9 +229,9 @@ class Images(Cog):
         file = discord.File(buffer, 'fight.png')
         await ctx.send(file=file)
 
-    @commands.command()
+    @utils.command()
     async def swirl(
-        self, ctx: Context, degrees: Optional[int], image: Optional[str]
+        self, ctx, degrees: Optional[int], image: Optional[str]
     ) -> None:
         """Swirl an image.
 
@@ -252,8 +253,8 @@ class Images(Cog):
         file = discord.File(buffer, 'swirl.png')
         await ctx.send(file=file)
 
-    @commands.command()
-    async def communist(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command()
+    async def communist(self, ctx, image: Optional[str]) -> None:
         """The communist meme maker.
 
         Example:
@@ -269,8 +270,8 @@ class Images(Cog):
         file = discord.File(buffer, 'communist.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=('gay', 'gayize'))
-    async def rainbow(self, ctx: Context, image: Optional[str]) -> None:
+    @utils.command(aliases=('gay', 'gayize'))
+    async def rainbow(self, ctx, image: Optional[str]) -> None:
         """Put the rainbow filter on a user.
 
         Example:
@@ -286,8 +287,8 @@ class Images(Cog):
         file = discord.File(buffer, 'rainbow.png')
         await ctx.send(file=file)
 
-    @commands.command(aliases=('wayg',))
-    async def whyareyougay(self, ctx: Context, member: Optional[str]) -> None:
+    @utils.command(aliases=('wayg',))
+    async def whyareyougay(self, ctx, member: Optional[str]) -> None:
         """The legendary "WhY aRe YoU gAy?" meme maker.
 
         Example:
@@ -305,8 +306,8 @@ class Images(Cog):
         file = discord.File(buffer, 'wayg.png')
         await ctx.send(file=file)
 
-    @commands.command()
-    async def drake(self, ctx: Context, no: str, yes: str) -> None:
+    @utils.command()
+    async def drake(self, ctx, no: str, yes: str) -> None:
         """The legendary "Drake yes/no" meme maker.
 
         Example:
@@ -327,8 +328,8 @@ class Images(Cog):
         file = discord.File(buffer, 'drake.png')
         await ctx.send(file=file)
 
-    @commands.command()
-    async def clyde(self, ctx: Context, *, text: str) -> None:
+    @utils.command()
+    async def clyde(self, ctx, *, text: str) -> None:
         """Send a message from Clyde's POV.
 
         Example:

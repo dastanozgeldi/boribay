@@ -1,20 +1,18 @@
 import decimal
 import random
-import re
 import zipfile
 from datetime import datetime
 from io import BytesIO
-from typing import Dict, List
+from typing import Dict
 
 import discord
-from boribay.core import Boribay, constants, exceptions, utils
+from boribay.core import exceptions, utils
+from boribay.core.bot import Boribay
 from discord.ext import commands, flags
 from humanize import time
 
 from .calculator import CalcLexer, CalcParser
 from .utils import Poll, TodoPageSource, UrbanDictionaryPageSource
-
-REDDIT_ICON = 'https://icons.iconarchive.com/icons/papirus-team/papirus-apps/96/reddit-icon.png'
 
 
 class Useful(utils.Cog):
@@ -27,47 +25,7 @@ class Useful(utils.Cog):
         self.icon = '<:pickaxe:807534625785380904>'
         self.bot = bot
 
-    async def search(self, query: str) -> List[str]:
-        """The youtube search method that fetches videos with a given query.
-
-        Parameters
-        ----------
-        query : str
-            Used to find videos a user is looking for.
-
-        Returns
-        -------
-        list
-            List of 10 most matching videos.
-        """
-        resp = await self.bot.session.get(
-            'https://www.youtube.com/results',
-            params={'search_query': query},
-            headers={'user-agent': 'Boribay-Useful/3.0'}
-        )
-        found = re.findall(r'{"videoId":"(.{11})', await resp.text())
-        return ['https://youtube.com/watch?v=' + res for res in found[:11]]
-
-    @commands.group()
-    async def youtube(self, ctx: utils.Context):
-        ...
-
-    @youtube.command(aliases=('yt',))
-    async def _youtube_search(self, ctx: utils.Context, *, query: str) -> None:
-        """Search for a video from YouTube through Discord.
-
-        Parameters
-        ----------
-        query : str
-            A query to search with.
-        """
-        # TODO: add pagination features.
-        if not (results := await self.search(query)):
-            return await ctx.send(f'❌ Could not find videos for query: {query}')
-
-        await ctx.send('The first video I have found: ' + results[0])
-
-    @commands.command()
+    @utils.command()
     @commands.cooldown(1, 60.0, commands.BucketType.guild)
     async def zipemojis(self, ctx: utils.Context) -> None:
         """Zip all emojis of the current guild.
@@ -156,7 +114,7 @@ class Useful(utils.Cog):
         # To make people sure this is working. ↑
         await ctx.author.send(f'Here is your password: ```{result}```')
 
-    @commands.command()
+    @utils.command()
     async def anime(self, ctx: utils.Context, *, anime: str) -> None:
         """Anime search command. Get the detailed information about an anime.
 
@@ -200,7 +158,7 @@ class Useful(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @utils.command()
     async def manga(self, ctx: utils.Context, *, manga: str) -> None:
         """Manga search command. Get the detailed information about a manga.
 
@@ -243,7 +201,7 @@ class Useful(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.group(invoke_without_command=True, aliases=('to-do',))
+    @utils.group()
     async def todo(self, ctx: utils.Context) -> None:
         """To-do commands parent. Sends help for its subcommands.
         Kind of pro-tip to use this instead of **{p}help todo**"""
@@ -282,7 +240,7 @@ class Useful(utils.Cog):
             timeout=60.0
         ).start(ctx, channel=dest)
 
-    @todo.command(name='add', aliases=('append',))
+    @todo.command(name='add')
     async def _todo_add(self, ctx: utils.Context, *, content: str) -> None:
         """Add anything you think you have to-do to your list.
 
@@ -353,7 +311,7 @@ class Useful(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @todo.command(name='clear')
+    @todo.command(name='clear', aliases=('reset',))
     async def _todo_clear(self, ctx: utils.Context) -> None:
         """Clear your to-do list up using this command."""
         query = 'DELETE FROM todos WHERE user_id = $1'
@@ -363,8 +321,8 @@ class Useful(utils.Cog):
             await ctx.bot.pool.execute(query, ctx.author.id)
             return await ctx.message.add_reaction('✅')
 
-    @commands.command(name='poll')
-    async def command_poll(self, ctx: utils.Context, *, options: str) -> None:
+    @utils.command()
+    async def poll(self, ctx: utils.Context, *, options: str) -> None:
         """Make a simple poll in your server using this command.
         You can add an image so it will be added as the main image.
 
@@ -380,9 +338,10 @@ class Useful(utils.Cog):
         options = list(map(str.strip, options.split('|')))
         description = options.pop(0)  # Getting the first one as the poll title.
 
-        await Poll(ctx, options, description=description).start()
+        menu = Poll(ctx, options=options, description=description)
+        await menu.start()
 
-    @commands.command()
+    @utils.command()
     async def reddit(self, ctx: utils.Context, subreddit: str) -> None:
         """Get fresh posts from your favorite subreddit.
 
@@ -401,7 +360,6 @@ class Useful(utils.Cog):
             r = await ctx.bot.session.get(url)
             js = await r.json()
             data = js['data']['children'][random.randint(0, 10)]['data']
-
         except IndexError:
             raise commands.BadArgument(f'There is no subreddit called: {subreddit}.')
 
@@ -409,13 +367,12 @@ class Useful(utils.Cog):
             raise commands.NSFWChannelRequired(ctx.channel)
 
         embed = ctx.embed().set_image(url=data['url'])
-
-        embed.set_author(name=data['title'], icon_url=REDDIT_ICON)
+        embed.set_author(name=data['title'], icon_url='https://tinyurl.com/yhkdozxx')
         embed.set_footer(text=f'from {data["subreddit_name_prefixed"]}')
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('ud', 'urban'))
+    @utils.command(aliases=('ud', 'urban'))
     async def urbandictionary(self, ctx: utils.Context, *, word: str) -> None:
         """Search for word definitions from urban dictionary.
 
@@ -440,7 +397,7 @@ class Useful(utils.Cog):
             UrbanDictionaryPageSource(ctx, source)
         ).start(ctx)
 
-    @commands.command(aliases=('calc',))
+    @utils.command(aliases=('calc',))
     async def calculate(self, ctx: utils.Context, *, expression: str) -> None:
         """A simple calculator command that supports useful features.
 
@@ -487,7 +444,7 @@ class Useful(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('colour',))
+    @utils.command(aliases=('colour',))
     async def color(
         self, ctx: utils.Context, *, color: utils.ColorConverter
     ) -> None:
@@ -567,7 +524,7 @@ class Useful(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('temp', 'temperature'))
+    @utils.command(aliases=('temp', 'temperature'))
     async def weather(self, ctx: utils.Context, *, city: str.capitalize) -> None:
         """Simply gets the weather statistics for a city | region.
         Returns: description, temperature, humidity%, atmospheric pressure.
@@ -584,7 +541,7 @@ class Useful(utils.Cog):
 
         if x['cod'] != '404':
             embed = ctx.embed(title=f'Weather in {city}')
-            embed.set_thumbnail(url=constants.WEATHER_ICON_URL)
+            embed.set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
 
             fields = [
                 ('Description', f'**{x["weather"][0]["description"]}**', False),

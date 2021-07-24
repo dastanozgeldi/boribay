@@ -1,5 +1,5 @@
 """
-95% of this file was taken from Red.
+95% of this code was taken from Red.
 
 Thanks Cog-Creators for this awesome way of logging!
 

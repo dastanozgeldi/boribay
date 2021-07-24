@@ -8,12 +8,12 @@ from typing import Optional
 
 import discord
 from boribay.core import utils
-from discord.ext import commands, flags
+from discord.ext import commands
 
 from jishaku.codeblocks import codeblock_converter
 
 from .formats import TabularData
-from .utils import IdeaPageSource
+# from .utils import IdeaPageSource
 
 __all__ = ('Developer',)
 
@@ -31,7 +31,7 @@ class Developer(utils.Cog):
     async def cog_check(self, ctx: utils.Context) -> bool:
         return await ctx.bot.is_owner(ctx.author)
 
-    @commands.command()
+    @utils.command()
     async def nick(self, ctx, *, nick: str) -> None:
         """Nickname changing quick tool.
 
@@ -44,7 +44,7 @@ class Developer(utils.Cog):
         await ctx.me.edit(nick=nick)
         await ctx.message.add_reaction('✅')
 
-    @commands.command(aliases=('ss',))
+    @utils.command(aliases=('ss',))
     async def screenshot(self, ctx, url: str) -> None:
         """Take a screenshot of the URL you give to the bot.
 
@@ -58,7 +58,7 @@ class Developer(utils.Cog):
         file = discord.File(fp=BytesIO(await r.read()), filename='screenshot.png')
         await ctx.send(file=file)
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def blacklist(self, ctx: utils.Context) -> None:
         """Blacklists parent command."""
         await ctx.send_help('blacklist')
@@ -107,7 +107,7 @@ class Developer(utils.Cog):
         await ctx.send(f'✅ Successfully removed **{", ".join(str(x) for x in users)}** from blacklist.')
         await ctx.user_cache.refresh()
 
-    @commands.command()
+    @utils.command()
     async def leave(self, ctx: utils.Context, guild: Optional[discord.Guild]) -> None:
         """Make the bot leave a specific guild.
 
@@ -130,24 +130,19 @@ class Developer(utils.Cog):
                 f'❌ Could not leave the guild: {guild} | {guild.id}'
             )
 
-    @flags.add_flag(
-        '-s',
-        '--silently',
-        action='store_true',
-        help='Whether to logout silently.'
-    )
-    @flags.command()
-    async def shutdown(self, ctx: utils.Context, **flags) -> None:
-        """A shutdown command.
+    @utils.command()
+    async def shutdown(self, ctx: utils.Context, silently: bool = False) -> None:
+        """Shutdown command.
 
         This makes the bot close all its instances in order to log out from discord.
-        """
-        # The developer may not want the bot to send the last message before
-        # shutting down, if they set this to False, the bot will close
-        # its instances silently.
-        if not flags.pop('silently'):
-            await ctx.send('Shutting down... 👌')
 
+        Parameters
+        ----------
+        silently : bool, optional
+            Whether to logout silently (no message), by default False
+        """
+        if not silently:
+            await ctx.send('Shutting down... 👌')
         await ctx.bot.close()
 
     @staticmethod
@@ -164,7 +159,7 @@ class Developer(utils.Cog):
 
         return code.strip('` \n')
 
-    @commands.command(name='run')
+    @utils.command(name='run')
     async def _run_code(self, ctx: utils.Context, *, code: str) -> None:
         """Evaluate the given code.
 
@@ -212,7 +207,7 @@ class Developer(utils.Cog):
             else:
                 return await ctx.send(repr(result))
 
-    @commands.command()
+    @utils.command()
     async def sql(self, ctx: utils.Context, *, query: codeblock_converter) -> None:
         """Do some SQL queries.
 
@@ -244,7 +239,7 @@ class Developer(utils.Cog):
         else:
             await ctx.send(results)
 
-    @commands.command(name='tableinfo')
+    @utils.command(name='tableinfo')
     async def _table_info(self, ctx: utils.Context, table_name: str) -> None:
         """Get some information about the given table.
 
@@ -268,29 +263,22 @@ class Developer(utils.Cog):
 
         await ctx.send(f'```py\n{render}\n```')
 
-    @commands.group(name='git', invoke_without_command=True)
-    async def _git_commands(self, ctx: utils.Context) -> None:
+    @utils.group()
+    async def git(self, ctx: utils.Context) -> None:
         """A set of git command-line features to work with."""
         await ctx.send_help('git')
 
-    @flags.add_flag(
-        '-r',
-        '--reload',
-        help='Whether to reload all extensions after pulling.'
-    )
-    @_git_commands.command(cls=flags.FlagCommand, name='pull')
-    async def _git_pull(self, ctx, **flags) -> None:
+    @git.command(name='pull')
+    async def _git_pull(self, ctx: utils.Context, reload: bool = False) -> None:
         """Pull changes from original source code on GitHub."""
         await ctx.bot.shell('git pull')
-
-        if flags.pop('reload'):
-            cmd = ctx.bot.get_command('ext')
-            await cmd(ctx, mode='r', ext=['~'])  # to reload everything.
+        if reload:
+            await ctx.bot.get_command('ext reload')(ctx)  # reload all cogs.
 
         await ctx.send('✅ Pulled changes from GitHub.')
 
-    @_git_commands.command(name='source', aliases=('src',))
-    async def _git_source(self, ctx, *, command: Optional[str]) -> None:
+    @git.command(name='source', aliases=('src',))
+    async def _git_source(self, ctx, *, command: Optional[str] = None) -> None:
         """Get source code for commands from the GitHub repo.
 
         Example:
@@ -319,36 +307,37 @@ class Developer(utils.Cog):
         final_url = f'<{base}/blob/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>'
         await ctx.send(final_url)
 
-    @flags.add_flag(
-        '--mode',
-        choices=('r', 'l', 'u'),
-        default='r',
-        help='A specific mode [reload, load, unload].'
-    )
-    @flags.add_flag('ext', nargs="*")
-    @flags.command()
-    async def ext(self, ctx, **flags) -> None:
-        """Extensions manager.
+    @utils.group(invoke_without_command=True)
+    async def ext(self, ctx: utils.Context) -> None:
+        """Extension manager commands group.
 
-        Load, unload, reload the specified extensions.
-
-        Example:
-            **{p}ext ~** - reloads all extensions.
-            **{p}ext boribay.extensions.fun** - reloads the "Fun" cog.
+        Here you can see commands that load, unload and reload extensions.
         """
-        modes = {
-            'r': ctx.bot.reload_extension,
-            'l': ctx.bot.load_extension,
-            'u': ctx.bot.unload_extension,
-        }
-        exts = ctx.config.main.exts if flags['ext'][0] == '~' else flags['ext']
+        return await ctx.send_help('ext')
 
-        for ext in exts:
-            modes.get(flags['mode'])(ext)
+    @utils.command()
+    async def _ext_load(
+        self,
+        ctx: utils.Context,
+        *extensions: str
+    ) -> None:
+        """Load a cog.
 
-        await ctx.message.add_reaction('✅')
+        Examples
+        --------
+            **{p}ext load ~** - loads all extensions.
+            **{p}ext load boribay.extensions.fun** - loads the "Fun" cog.
 
-    @commands.command(name='as')
+        Parameters
+        ----------
+        extensions : str
+            A set of extensions to load, by default '~ (all)'
+        """
+        exts = ctx.config.main.exts if extensions[0] == '~' else extensions
+        [ctx.bot.load_extension(ext) for ext in exts]
+        await ctx.send(f'Loaded extension{"s" if len(exts) else ""}: ' + ', '.join(exts))
+
+    @utils.command(name='as')
     async def _run_as(
         self, ctx: utils.Context, member: discord.Member, *, command: str
     ) -> None:
@@ -368,53 +357,7 @@ class Developer(utils.Cog):
         new_context = await ctx.bot.get_context(message)
         await ctx.bot.invoke(new_context)
 
-    @commands.group(invoke_without_command=True)
-    async def refresh(self, ctx: utils.Context) -> None:
-        """The refresh commands group."""
-        await ctx.send_help('refresh')
-
-    @refresh.command(name='config')
-    async def _refresh_config(self, ctx: utils.Context) -> None:
-        """Refresh the bot config which is stored in the config.toml file.
-
-        Args:
-            ctx (utils.Context): Automatically passed utils.Context argument.
-        """
-        ctx.config.reload()
-        await ctx.send('✅ Reloaded the configuration file values.')
-
-    @flags.add_flag(
-        '--of',
-        choices=('guilds', 'users', 'stats'),
-        default='users'
-    )
-    @flags.add_flag(
-        '--all',
-        action='store_true',
-        help='Whether to refresh all cache categories.'
-    )
-    @refresh.command(cls=flags.FlagCommand, name='cache')
-    async def _refresh_cache(self, ctx: utils.Context, **flags) -> None:
-        """Refresh the bot cache through this command.
-
-        Args:
-            ctx (utils.Context): Automatically passed utils.Context argument.
-
-        Raises:
-            commands.BadArgument: If an invalid mode was given.
-        """
-        modes = {'guilds': ctx.guild_cache, 'users': ctx.user_cache}
-        if flags.pop('all'):
-            for mode in modes.values():
-                await mode.refresh()
-
-            return await ctx.send('✅ Every caching category was refreshed.')
-
-        mode = flags.pop('of')
-        await modes[mode].refresh()
-        await ctx.send(f'✅ Refreshed `{mode}` cache.')
-
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def idea(self, ctx: utils.Context) -> None:
         await ctx.send_help('idea')
 
@@ -439,7 +382,7 @@ class Developer(utils.Cog):
         )
 
         if return_author:
-            owner = ctx.bot.dosek
+            owner = ctx.bot.owner
             embed.set_author(name=str(owner), icon_url=owner.avatar_url)
             return author, embed
 
@@ -483,39 +426,39 @@ class Developer(utils.Cog):
         await ctx.bot.pool.execute(query, suggestion_id)
         await ctx.message.add_reaction('✅')
 
-    @flags.add_flag(
-        '--approved',
-        action='store_true',
-        help='Whether to list only approved suggestions.'
-    )
-    @flags.add_flag(
-        '--limit',
-        type=int,
-        help='Set the limit of suggestions to get displayed.'
-    )
-    @idea.command(cls=flags.FlagCommand)
-    @commands.is_owner()
-    async def pending(self, ctx: utils.Context, **flags) -> None:
-        """Check out all pending suggestions.
+    # @flags.add_flag(
+    #     '--approved',
+    #     action='store_true',
+    #     help='Whether to list only approved suggestions.'
+    # )
+    # @flags.add_flag(
+    #     '--limit',
+    #     type=int,
+    #     help='Set the limit of suggestions to get displayed.'
+    # )
+    # @idea.command(cls=flags.FlagCommand)
+    # @commands.is_owner()
+    # async def pending(self, ctx: utils.Context, **flags) -> None:
+    #     """Check out all pending suggestions.
 
-        Example:
-            **{p}idea pending** - shows all unapproved suggestions.
-            **{p}idea pending --approved** - shows only approved ideas.
-            **{p}idea pending --limit 10** - shows last 10 added suggestions.
-        """
-        additional = 'true' if flags.pop('approved') else 'false'
-        answers = {
-            'true': 'There are no any approved ideas yet.',
-            'false': 'Currently, there are no suggestions waiting to be approved.'
-        }
+    #     Example:
+    #         **{p}idea pending** - shows all unapproved suggestions.
+    #         **{p}idea pending --approved** - shows only approved ideas.
+    #         **{p}idea pending --limit 10** - shows last 10 added suggestions.
+    #     """
+    #     additional = 'true' if flags.pop('approved') else 'false'
+    #     answers = {
+    #         'true': 'There are no any approved ideas yet.',
+    #         'false': 'Currently, there are no suggestions waiting to be approved.'
+    #     }
 
-        query = f'SELECT id, content, author_id FROM ideas WHERE approved is {additional};'
-        if not (data := await ctx.bot.pool.fetch(query)):
-            await ctx.send(answers[additional])
-            return
+    #     query = f'SELECT id, content, author_id FROM ideas WHERE approved is {additional};'
+    #     if not (data := await ctx.bot.pool.fetch(query)):
+    #         await ctx.send(answers[additional])
+    #         return
 
-        menu = utils.Paginate(source=IdeaPageSource(ctx, data))
-        await menu.start(ctx)
+    #     menu = utils.Paginate(source=IdeaPageSource(ctx, data))
+    #     await menu.start(ctx)
 
     @idea.command()
     @commands.is_owner()

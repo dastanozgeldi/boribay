@@ -6,8 +6,6 @@ import discord
 from boribay.core.exceptions import UserError
 from discord.ext import menus
 
-URBAN_DICTIONARY_ICON = 'https://is4-ssl.mzstatic.com/image/thumb/Purple111/v4/7e/49/85/7e498571-a905-d7dc-26c5-33dcc0dc04a8/source/512x512bb.jpg'
-
 
 class OptionsNotInRange(UserError):
     """Raised when there were more than 10 options on a poll."""
@@ -20,9 +18,9 @@ class OptionsNotInRange(UserError):
 
 
 class Poll:
-    def __init__(self, ctx, options: List[str], **kwargs: Any):
+    def __init__(self, ctx, **kwargs: Any) -> None:
         self.ctx = ctx
-        self.options = options
+        self.options: List[str] = kwargs.pop('options')
         self.embed = ctx.embed(**kwargs)
 
     def get_reactions(self) -> Tuple[str]:
@@ -35,7 +33,7 @@ class Poll:
         Tuple[str]
             A tuple of reactions to add below the poll in the future.
         """
-        if len(self.options) == 2 and ('y', 'n') == tuple(map(str.lower, self.options)):
+        if len(self.options) == 2 and self.options[0] in ('y', 'yes'):
             return (
                 '<:thumbs_up:746352051717406740>',
                 '<:thumbs_down:746352095510265881>'
@@ -72,7 +70,9 @@ class Poll:
 
 class TodoPageSource(menus.ListPageSource):
     """TodoPageSource, a special paginator created for the todo commands parent.
-    Takes the list of data, enumerates, then paginates through."""
+
+    Takes the list of data, enumerates, then paginates through.
+    """
 
     def __init__(self, ctx, data):
         super().__init__(data, per_page=10)
@@ -92,7 +92,9 @@ class TodoPageSource(menus.ListPageSource):
                 name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} todos)',
                 icon_url=self.ctx.author.avatar_url
             )
-            embed.description = '\n'.join(f'[{i}]({v[1]}). {v[0]}' for i, v in enumerate(entries, start=offset))
+            embed.description = '\n'.join(
+                f'[{i}]({v[1]}). {v[0]}' for i, v in enumerate(entries, start=offset)
+            )
 
         return embed
 
@@ -123,7 +125,7 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
         """
         brackets = re.compile(r'(\[(.+?)\])')
 
-        def func(m):  # idk how to name this.
+        def func(m) -> str:
             word = m.group(2)
             return f'[{word}](http://{word.replace(" ", "-")}.urbanup.com)'
 
@@ -142,7 +144,7 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
         embed.set_author(
             name=f'{entry["word"]} ({menu.current_page + 1} of {mx})' if mx else entry['word'],
             url=entry['permalink'],
-            icon_url=URBAN_DICTIONARY_ICON
+            icon_url='https://is4-ssl.mzstatic.com/image/thumb/Purple111/v4/7e/49/85/7e498571-a905-d7dc-26c5-33dcc0dc04a8/source/512x512bb.jpg'
         )
 
         embed.add_field(

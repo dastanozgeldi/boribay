@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import re
 from collections import Counter, namedtuple
 from datetime import datetime
@@ -12,35 +11,15 @@ import asyncpg
 import discord
 from discord.ext import commands
 
-from .checks import is_beta, is_blacklisted
 from .config import Config
 from .database import Cache, DatabaseManager
 from .events import set_events
-from .utils import Context
+from .utils import Context, is_beta, is_blacklisted
 
 __all__ = ('Boribay',)
 
 logger = logging.getLogger('bot')
 Output = namedtuple('Output', 'stdout stderr returncode')
-
-
-def get_prefix(bot: Boribay, msg: discord.Message) -> str:
-    """Get the right prefix using this method.
-
-    Parameters
-    ----------
-    bot : Boribay
-        The bot instance.
-    msg : discord.Message
-        A message to parse a prefix from.
-
-    Returns
-    -------
-    str
-        The parsed prefix the bot gets called with.
-    """
-    prefix = '.' if not msg.guild else bot.guild_cache[msg.guild.id]['prefix']
-    return commands.when_mentioned_or(prefix)(bot, msg)
 
 
 class Boribay(commands.Bot):
@@ -50,10 +29,21 @@ class Boribay(commands.Bot):
     """
 
     def __init__(self, *, cli_flags, **kwargs):
+        self._BotBase__cogs = commands.core._CaseInsensitiveDict()
+        self.cli = cli_flags
+        self.counter = Counter()
+        self.config = Config('./data/config/config.toml')
+
+        self._launch_time = datetime.now()
+
+        def get_prefix(bot: Boribay, msg: discord.Message) -> str:
+            prefix = '.' if not msg.guild else bot.guild_cache[msg.guild.id]['prefix']
+            return commands.when_mentioned_or(prefix)(bot, msg)
+
         intents = discord.Intents.default()
         intents.members = True
         super().__init__(
-            get_prefix,
+            command_prefix=get_prefix,
             description='A Discord Bot created to make people smile.',
             intents=intents,
             max_messages=1000,
@@ -67,43 +57,9 @@ class Boribay(commands.Bot):
             ),
             **kwargs
         )
-        self._BotBase__cogs = commands.core._CaseInsensitiveDict()
-        self.cli = cli_flags
-        self.start_time = datetime.now()
-        self.counter = Counter()
-        self.config = Config('./data/config/config.toml')
-
-        self.setup()
-
-    async def __ainit__(self) -> None:
-        """The asynchronous init method to prepare database with cache stuff.
-
-        The main bot pool, guild-user cache, all are being instantiated here.
-        """
-        # Session-related.
-        self.session = aiohttp.ClientSession(loop=self.loop)
-        self.webhook = discord.Webhook.from_url(
-            self.config.links.log_url,
-            adapter=discord.AsyncWebhookAdapter(self.session)
-        )
-
-        # Data-related.
-        self.pool = await asyncpg.create_pool(**self.config.database)
-        self.db = DatabaseManager(self)
-
-        self.guild_cache = await Cache(
-            'SELECT * FROM guild_config',
-            'guild_id',
-            self.pool
-        )
-        self.user_cache = await Cache(
-            'SELECT * FROM users',
-            'user_id',
-            self.pool
-        )
 
     @property
-    def dosek(self) -> discord.User:
+    def owner(self) -> discord.User:
         return self.get_user(682950658671902730)
 
     @property
@@ -113,7 +69,7 @@ class Boribay(commands.Bot):
 
     @property
     def uptime(self) -> int:
-        return int((datetime.now() - self.start_time).total_seconds())
+        return int((datetime.now() - self._launch_time).total_seconds())
 
     @staticmethod
     async def shell(command: str):
@@ -148,7 +104,6 @@ class Boribay(commands.Bot):
         """
         embed_color = 0x36393e if ctx.guild is None else self.guild_cache[ctx.guild.id]['embed_color']
         kwargs.update(timestamp=datetime.utcnow(), color=kwargs.pop('color', embed_color))
-
         return discord.Embed(**kwargs)
 
     async def on_message(self, message: discord.Message) -> None:
@@ -180,33 +135,40 @@ class Boribay(commands.Bot):
         await super().close()
         await self.session.close()
 
-    def setup(self) -> None:
-        """The important setup method to get already done in one place.
+    async def setup(self):
+        # Session-related.
+        self.session = aiohttp.ClientSession(loop=self.loop)
+        self.webhook = discord.Webhook.from_url(
+            self.config.links.log_url,
+            adapter=discord.AsyncWebhookAdapter(self.session)
+        )
 
-        Environment variables, bot checks and the database.
-
-        Returns:
-            None: Means that the method returns nothing.
-        """
-        # Setting Jishaku environment variables to work with.
-        os.environ['JISHAKU_NO_UNDERSCORE'] = 'True'
-        os.environ['JISHAKU_NO_DM_TRACEBACK'] = 'True'
-        os.environ['JISHAKU_HIDE'] = 'True'
+        # Data-related.
+        self.pool = await asyncpg.create_pool(**self.config.database)
+        self.db = DatabaseManager(self)
+        self.guild_cache = await Cache(
+            'SELECT * FROM guild_config',
+            'guild_id',
+            self.pool
+        )
+        self.user_cache = await Cache(
+            'SELECT * FROM users',
+            'user_id',
+            self.pool
+        )
 
         # Checks to limit certain things.
         self.add_check(is_beta)
         self.add_check(is_blacklisted)
 
-        # Putting the async init method into loop.
-        self.loop.create_task(self.__ainit__())
+        # Initializer functions.
+        set_events(self)
 
         # Check for flags.
         if self.cli.developer or self.config.main.beta:
             logger.info('Developer mode enabled.')
             self.load_extension('boribay.core.developer')
 
-    def run(self) -> None:
-        """An overridden run method to make the launcher file smaller."""
         if self.cli.no_cogs:
             logger.info('Booting up with no extensions loaded.')
 
@@ -221,8 +183,8 @@ class Boribay(commands.Bot):
 
             logger.info('Loaded extensions: ' + ', '.join(self.cogs.keys()))
 
-        set_events(self)  # Setting up the events.
-
+    async def start(self, *args, **kwargs) -> None:
+        """An overridden run method to make the launcher file smaller."""
         # Getting the token.
         token = self.config.main.token
         if self.cli.token:
@@ -232,5 +194,6 @@ class Boribay(commands.Bot):
             )
             token = self.cli.token
 
-        # Finally, running the bot instance.
-        super().run(token)
+        # Finally, booting up the bot instance.
+        await self.setup()
+        await super().start(token, *args, **kwargs)

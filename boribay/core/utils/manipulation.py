@@ -11,8 +11,8 @@ from wand.image import Image as WI
 
 from .converters import ImageConverter
 
-IMAGE_PATH = './data/layouts'
 FONT_PATH = './data/fonts'
+IMAGE_PATH = './data/layouts'
 
 
 def executor(func):
@@ -20,6 +20,7 @@ def executor(func):
 
     This provides us non-blocking wrapped functions.
     """
+
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         """Sync function wrapper."""
@@ -68,13 +69,7 @@ async def make_image(
     return image
 
 
-def polaroid_filter(
-    image: bytes,
-    *,
-    method: str,
-    args: list = [],
-    kwargs: dict = {}
-) -> discord.File:
+def polaroid_filter(image: bytes, *, method: str, args: list = [], kwargs: dict = {}):
     image = PI(image)
     func = getattr(image, method)
     func(*args, **kwargs)

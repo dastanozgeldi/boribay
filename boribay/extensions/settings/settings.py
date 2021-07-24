@@ -1,6 +1,5 @@
 import discord
-from boribay.core import checks, utils
-from discord.ext import commands
+from boribay.core import utils
 
 
 class Settings(utils.Cog):
@@ -18,15 +17,13 @@ class Settings(utils.Cog):
             'autorole': None
         }
 
-    async def cog_check(self, ctx: utils.Context) -> bool:
+    async def cog_check(self, ctx) -> bool:
         """
         Making sure that only Mods are trying to run those commands.
         """
-        return await checks.is_mod().predicate(ctx)
+        return await utils.is_mod().predicate(ctx)
 
-    async def _update(
-        self, ctx: utils.Context, key: str, value: str
-    ) -> None:
+    async def _update(self, ctx: utils.Context, key: str, value: str) -> None:
         """A function to simply update changed values in the DB + cache.
 
         Args:
@@ -62,7 +59,7 @@ class Settings(utils.Cog):
 
         return '<:tick:814838692459446293>'
 
-    @commands.command(aliases=('gs', 'settings'))
+    @utils.command(aliases=('gs', 'settings'))
     async def guildsettings(self, ctx: utils.Context):
         """The settings command. Shows the settings of the current server.
 
@@ -90,7 +87,7 @@ class Settings(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.group(invoke_without_command=True, aliases=('wc',))
+    @utils.group(aliases=('wc',))
     async def welcomechannel(self, ctx: utils.Context) -> None:
         """
         The welcome channel setting parent command.
@@ -120,7 +117,7 @@ class Settings(utils.Cog):
         await self._disable(ctx, 'welcome_channel')
         await ctx.send('✅ Disabled the welcoming channel.')
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def prefix(self, ctx: utils.Context):
         """The prefix setting parent command.
 
@@ -151,7 +148,7 @@ class Settings(utils.Cog):
         await self._update(ctx, 'prefix', '.')
         await ctx.send('✅ Prefix has been set to the default one.')
 
-    @commands.group(invoke_without_command=True, aliases=('embedcolour', 'ec'))
+    @utils.group(aliases=('embedcolour', 'ec'))
     async def embedcolor(self, ctx: utils.Context) -> None:
         """
         The color setting parent command.
@@ -190,7 +187,7 @@ class Settings(utils.Cog):
         await ctx.send(embed=embed)
 
     # Autorole Settings Part
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def autorole(self, ctx: utils.Context):
         """
         The autorole setting parent command.

@@ -1,7 +1,15 @@
-from re import search
+import re
 from typing import Dict
 
 from discord.ext import commands
+
+__all__ = (
+    'is_mod',
+    'beta_command',
+    'is_valid_alias',
+    'is_blacklisted',
+    'is_beta'
+)
 
 
 async def check_guild_perms(
@@ -28,7 +36,6 @@ async def check_guild_perms(
     """
     if await ctx.bot.is_owner(ctx.author):
         return True
-
     if not ctx.guild:
         return False
 
@@ -76,7 +83,7 @@ def is_valid_alias(name: str) -> bool:
     bool
         True - if the name passed all checks, otherwise False.
     """
-    return not bool(search(r'\s', name)) and name.isprintable()
+    return not bool(re.search(r'\s', name)) and name.isprintable()
 
 
 async def is_blacklisted(ctx: commands.Context) -> bool:
@@ -108,15 +115,10 @@ async def is_beta(ctx: commands.Context) -> bool:
     -------
     bool
         True if the message author is owner of the bot is not in beta.
-
-    Raises
-    ------
-    commands.CheckFailure
-        In case if beta mode is enabled.
     """
     if ctx.config.main.beta and ctx.author.id not in ctx.bot.owner_ids:
-        raise commands.CheckFailure(
-            '❌ The bot is currently in the maintenance mode.'
-        )
+        embed = ctx.embed(description='❌ I am currently in the maintenance mode.')
+        await ctx.send(embed=embed)
+        return False
 
     return True

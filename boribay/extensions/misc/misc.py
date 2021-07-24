@@ -3,12 +3,15 @@ from glob import glob
 from typing import Optional
 
 import boribay
-from boribay.core.utils import Cog, Context
+from boribay.core import utils
 from discord.ext import commands, flags
 from humanize import naturaldate, naturaltime
 
+LOADING = '<a:loading:837049644462374935>'
+POSTGRES = '<:pg:795005204289421363>'
 
-class Miscellaneous(Cog):
+
+class Miscellaneous(utils.Cog):
     """The miscellaneous extension.
 
     Commands that do not match other categories will be inserted here.
@@ -16,8 +19,8 @@ class Miscellaneous(Cog):
 
     icon = '💫'
 
-    @commands.command(aliases=('suggestion',))
-    async def suggest(self, ctx: Context, *, content: str) -> None:
+    @utils.command(aliases=('suggestion',))
+    async def suggest(self, ctx: utils.Context, *, content: str) -> None:
         """Suggest an idea to the bot owner.
 
         Example:
@@ -31,8 +34,8 @@ class Miscellaneous(Cog):
         await ctx.bot.pool.execute(query, content, ctx.author.id)
         await ctx.send('✅ Added your suggestion, you will be notified when it will be approved/rejected.')
 
-    @commands.command(aliases=('codestats', 'cs'))
-    async def codestatistics(self, ctx: Context) -> None:
+    @utils.command(aliases=('codestats', 'cs'))
+    async def codestatistics(self, ctx: utils.Context) -> None:
         """See the code statistics of the bot."""
         ctr = Counter()
 
@@ -49,8 +52,8 @@ class Miscellaneous(Cog):
         embed = ctx.embed(description='\n'.join(f'**{k.capitalize()}:** {v}' for k, v in ctr.items()))
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('modules',))
-    async def extensions(self, ctx: Context) -> None:
+    @utils.command(aliases=('modules',))
+    async def extensions(self, ctx: utils.Context) -> None:
         """Get the list of modules that are currently loaded."""
         exts = [str(ext) for ext in ctx.bot.cogs.values()]
         exts = [exts[i: i + 3] for i in range(0, len(exts), 3)]
@@ -63,8 +66,8 @@ class Miscellaneous(Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.command()
-    async def uptime(self, ctx: Context) -> None:
+    @utils.command()
+    async def uptime(self, ctx: utils.Context) -> None:
         """Returns uptime: How long the bot is online."""
         h, r = divmod((ctx.bot.uptime), 3600)
         (m, s), (d, h) = divmod(r, 60), divmod(h, 24)
@@ -74,28 +77,26 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('about',))
-    async def info(self, ctx: Context) -> None:
-        """See some kind of information about me (such as command usage, links etc.)"""
-        me = ctx.bot
+    @utils.command(aliases=('about',))
+    async def info(self, ctx: utils.Context) -> None:
+        """See some kind of information about Boribay (such as command usage)."""
+        bot = ctx.bot
         embed = ctx.embed().set_author(
-            name=f'{me.user} - v{boribay.__version__}',
-            icon_url=me.user.avatar_url
+            name=f'{bot.user} - v{boribay.__version__}',
+            icon_url=bot.user.avatar_url
         )
-
         fields = {
             'Development': {
-                ('Developer', str(me.dosek)),
+                ('Developer', str(bot.owner)),
                 ('Language', 'Python'),
                 ('Library', 'Discord.py')
             },
             'General': {
-                ('Currently in', f'{len(me.guilds)} servers'),
-                ('Commands working', f'{len(me.commands)}'),
-                ('Commands usage (last restart)', me.counter['command_usage'])
+                ('Currently in', f'{len(bot.guilds)} servers'),
+                ('Commands working', f'{len(bot.commands)}'),
+                ('Commands usage (last restart)', bot.counter['command_usage'])
             }
         }
-
         for key in fields:
             embed.add_field(
                 name=key,
@@ -105,11 +106,11 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('memberinfo', 'ui', 'mi'))
+    @utils.command(aliases=('memberinfo', 'ui', 'mi'))
     @commands.guild_only()
     async def userinfo(
         self,
-        ctx: Context,
+        ctx,
         member: Optional[commands.MemberConverter]
     ) -> None:
         """See some general information about the mentioned user.
@@ -135,9 +136,9 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('guildinfo', 'si', 'gi'))
+    @utils.command(aliases=('guildinfo', 'si', 'gi'))
     @commands.guild_only()
-    async def serverinfo(self, ctx: Context) -> None:
+    async def serverinfo(self, ctx: utils.Context) -> None:
         """See some general information about current guild."""
         g = ctx.guild
 
@@ -162,7 +163,7 @@ class Miscellaneous(Cog):
         '--tts', action='store_true', help='Whether to send a tts message.'
     )
     @flags.command(name='say')
-    async def command_say(self, ctx: Context, message: str, **flags) -> None:
+    async def command_say(self, ctx: utils.Context, message: str, **flags) -> None:
         """Make the bot say what you want
 
         Example:
@@ -177,8 +178,8 @@ class Miscellaneous(Cog):
         await ctx.try_delete(ctx.message)
         await ctx.send(message, tts=tts)
 
-    @commands.command()
-    async def links(self, ctx: Context):
+    @utils.command()
+    async def links(self, ctx: utils.Context):
         """Some useful invites (support server, bot invite and voting URL)."""
         links = ctx.config.links
         embed = ctx.embed(description=f'Invite me [here]({links.invite_url})\n'
@@ -187,12 +188,9 @@ class Miscellaneous(Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command()
-    async def ping(self, ctx: Context) -> None:
+    @utils.command()
+    async def ping(self, ctx: utils.Context) -> None:
         """Check latency of the bot and its system."""
-        LOADING = '<a:loading:837049644462374935>'
-        POSTGRES = '<:pg:795005204289421363>'
-
         fields = (
             (f'{LOADING} Websocket', ctx.bot.latency),
             (f'{POSTGRES} Database', await ctx.db_latency)
@@ -207,8 +205,8 @@ class Miscellaneous(Cog):
             )
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('mrs',))
-    async def messagereactionstats(self, ctx: Context, *, link: str) -> None:
+    @utils.command(aliases=('mrs',))
+    async def messagereactionstats(self, ctx: utils.Context, *, link: str) -> None:
         """See what reactions are there in a message, i.e reaction statistics.
 
         Example:

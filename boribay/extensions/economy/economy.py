@@ -4,7 +4,8 @@ import random
 from typing import Optional
 
 import discord
-from boribay.core import checks, exceptions, utils
+from boribay.core import exceptions, utils
+from boribay.core.database import Cache
 from discord.ext import commands, flags
 
 from .games import Trivia, Work
@@ -18,10 +19,27 @@ class Economics(utils.Cog):
 
     icon = '💵'
 
+    def __init__(self, bot):
+        self.bot = bot
+        self.economy_cache = Cache('SELECT * FROM economy', 'user_id', self.bot.pool)
+
     async def cog_check(self, ctx: utils.Context):
         return await commands.guild_only().predicate(ctx)
 
-    @commands.command()
+    @utils.command()
+    async def register(self, ctx: utils.Context) -> None:
+        """Register into Boribay economics system."""
+        if self.economy_cache[ctx.author.id]:
+            return await ctx.send('You are already registered in the economics system.')
+
+        await self.bot.pool.execute(
+            'INSERT INTO users(user_id) VALUES($1)',
+            ctx.author.id
+        )
+        await self.economy_cache.refresh()
+        await ctx.send('Welcome to the economics system! (test has successfully been passed.)')
+
+    @utils.command()
     @commands.max_concurrency(1, commands.BucketType.channel)
     async def trivia(
         self, ctx: utils.Context, difficulty: str.lower = 'medium'
@@ -70,13 +88,13 @@ class Economics(utils.Cog):
         embed = ctx.embed(title='The Global Leaderboard', description='\n'.join(users))
         await ctx.send(embed=embed)
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def balance(self, ctx: utils.Context) -> None:
         """The moderator-only user balance management command."""
         await ctx.send_help('balance')
 
     @balance.command(name='add')
-    @checks.is_mod()
+    @utils.is_mod()
     async def _add_balance(
         self, ctx: utils.Context, member: discord.Member, amount: int
     ) -> None:
@@ -107,7 +125,7 @@ class Economics(utils.Cog):
         await ctx.send(f'✅ Successfully added **{amount} {BATYR}** to **{member}**.')
 
     @balance.command(name='remove')
-    @checks.is_mod()
+    @utils.is_mod()
     async def _remove_balance(
         self, ctx: utils.Context, member: discord.Member, amount: int
     ) -> None:
@@ -136,7 +154,7 @@ class Economics(utils.Cog):
         await ctx.db.push(query, amount, member.id)
         await ctx.send(f'✅ Successfully removed **{amount} {BATYR}** from **{member}**.')
 
-    @commands.command(aliases=('card',))
+    @utils.command(aliases=('card',))
     async def profile(
         self, ctx: utils.Context, member: Optional[discord.Member]
     ) -> None:
@@ -172,7 +190,7 @@ class Economics(utils.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=('dep',))
+    @utils.command(aliases=('dep',))
     async def deposit(self, ctx: utils.Context, amount: int = None) -> None:
         """Deposit given amount of money into your bank.
         By not specifying the amount of money you deposit them all.
@@ -201,7 +219,7 @@ class Economics(utils.Cog):
         await ctx.db.push(query, amount, ctx.author.id)
         await ctx.send(f'Successfully transfered **{amount}** {BATYR} into your bank!')
 
-    @commands.command(aliases=('wd',))
+    @utils.command(aliases=('wd',))
     async def withdraw(self, ctx: utils.Context, amount: int = None) -> None:
         """Withdraw given amount of money from your bank.
         By not specifying the amount of money you withdraw them all.
@@ -234,7 +252,7 @@ class Economics(utils.Cog):
         await ctx.db.push(query, amount, ctx.author.id)
         await ctx.send(f'Successfully withdrew **{amount}** {BATYR} to your wallet!')
 
-    @commands.command()
+    @utils.command()
     async def transfer(
         self,
         ctx: utils.Context,
@@ -271,7 +289,7 @@ class Economics(utils.Cog):
         await ctx.db.double('wallet', amount, ctx.author, member)
         await ctx.send(f'Transfered **{amount}** {BATYR} to **{member}**')
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def bio(self, ctx: utils.Context) -> None:
         """
         Set your bio that will be displayed on your profile.
@@ -326,7 +344,7 @@ class Economics(utils.Cog):
             )
             await ctx.send('✅ Disabled your bio successfully.')
 
-    @commands.command(aliases=('rob',))
+    @utils.command(aliases=('rob',))
     @commands.cooldown(1, 10.0, commands.BucketType.user)
     async def attack(
         self,
@@ -373,7 +391,7 @@ class Economics(utils.Cog):
         await ctx.db.double('bank', fine, member, ctx.author)
         await ctx.send(f'✅ Stole **{amount}** {BATYR} from **{member}**')
 
-    @commands.command(aliases=('slots',))
+    @utils.command(aliases=('slots',))
     async def slot(
         self,
         ctx: utils.Context,
@@ -409,7 +427,7 @@ class Economics(utils.Cog):
 
         await ctx.db.push(query, result, ctx.author.id)
 
-    @commands.command()
+    @utils.command()
     async def work(self, ctx: utils.Context) -> None:
         """Working is the most legal way to get batyrs.
 
@@ -417,7 +435,7 @@ class Economics(utils.Cog):
         """
         await Work(ctx).start()
 
-    @commands.command(aliases=('hnt',))
+    @utils.command(aliases=('hnt',))
     @commands.cooldown(1, 60.0, commands.BucketType.user)
     async def headsandtails(self, ctx: utils.Context) -> None:
         """Try your luck playing heads and tails!

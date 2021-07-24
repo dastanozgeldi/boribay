@@ -38,15 +38,15 @@ class Config:
 
     All file-configuration stuff is controlled here using `.toml` files.
     """
-    __slots__ = {'config', 'values', 'main', 'database', 'links', 'api'}
+    __slots__ = {'path', 'values', 'main', 'database', 'links', 'api'}
 
     def __init__(self, path: str):
-        self.config = path
+        self.path = path
         self.values = {}
         self.reload()
 
     def reload(self):
-        self.values = toml.load(self.config)
+        self.values = toml.load(self.path)
         self.set_attributes()
 
     def set_attributes(self):

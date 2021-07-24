@@ -1,4 +1,4 @@
-from boribay.core.cog import Cog
+from boribay.core.utils import Cog
 
 from jishaku.cog import OPTIONAL_FEATURES, STANDARD_FEATURES
 

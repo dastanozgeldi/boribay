@@ -16,11 +16,15 @@ CREATE TABLE IF NOT EXISTS todos (
 
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGINT NOT NULL,
-    wallet INTEGER DEFAULT 0,
-    bank INTEGER DEFAULT 0,
     blacklisted BOOLEAN DEFAULT false,
-    bio TEXT
+    bio VARCHAR(190)
 );
+
+CREATE TABLE IF NOT EXISTS economy (
+    user_id BIGINT NOT NULL,
+    wallet INTEGER DEFAULT 0,
+    bank INTEGER DEFAULT 0
+)
 
 CREATE TABLE IF NOT EXISTS ideas (
     id SERIAL PRIMARY KEY,

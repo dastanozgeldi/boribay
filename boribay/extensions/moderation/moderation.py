@@ -2,7 +2,7 @@ import asyncio
 from typing import Optional
 
 import discord
-from boribay.core import checks, utils
+from boribay.core import utils
 from discord.ext import commands
 from humanize import naturaldate
 
@@ -16,9 +16,9 @@ class Moderation(utils.Cog):
     icon = '🛡'
 
     async def cog_check(self, ctx: utils.Context) -> bool:
-        return await checks.is_mod().predicate(ctx)
+        return await utils.is_mod().predicate(ctx)
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def member(self, ctx: utils.Context) -> None:
         """
         Guild members managing commands parent.
@@ -86,7 +86,7 @@ class Moderation(utils.Cog):
         await member.unban(reason=reason)
         await ctx.message.add_reaction('✅')
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def category(self, ctx: utils.Context) -> None:
         """
         The category-managing commands parent.
@@ -155,7 +155,7 @@ class Moderation(utils.Cog):
         await category.delete(reason=reason or 'Reason not specified')
         await ctx.message.add_reaction('✅')
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def channel(self, ctx: utils.Context) -> None:
         """
         The channel-managing commands parent.
@@ -224,7 +224,7 @@ class Moderation(utils.Cog):
         await ctx.channel.edit(slowmode_delay=time)
         await ctx.send(f'✅ Slowmode has set to **{time}** seconds.')
 
-    @commands.group(invoke_without_command=True)
+    @utils.group()
     async def role(self, ctx: utils.Context) -> None:
         """
         The role-managing commands parent.
