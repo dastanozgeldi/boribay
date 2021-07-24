@@ -148,10 +148,10 @@ class HelpCommand(commands.HelpCommand):
 
         embed.add_field(name='Modules:', value='\n'.join(cats))
 
-        with open('./data/config/news.md', 'r') as f:
-            news = f.readlines()
+        # with open('./data/config/news.md', 'r') as f:
+        #     news = f.readlines()
 
-        embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
+        # embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
         embed.set_footer(text=self.get_ending_note())
 
         await HelpMenu(embed=embed).start(ctx)
@@ -165,23 +165,6 @@ class HelpCommand(commands.HelpCommand):
             timeout=30.0,
             clear_reactions_after=True
         ).start(ctx)
-
-    def get_flags(self, command: commands.Command) -> List[str]:
-        """Get all available flags for the command.
-
-        Parameters
-        ----------
-        command : commands.Command
-            A command you are trying to get help for.
-
-        Returns
-        -------
-        list
-            A joinable list of strings, like `**--mode** the manager mode`.
-        """
-        return [f'**--{a.dest}** {a.help}'
-                for a in command.callback._def_parser._actions
-                if lambda x: '_OPTIONAL' not in a.dest]
 
     async def send_command_help(self, command: commands.Command):
         ctx = self.context
@@ -197,13 +180,6 @@ class HelpCommand(commands.HelpCommand):
 
         if aliases := command.aliases:
             embed.add_field(name='Aliases', value=' | '.join(aliases))
-
-        if hasattr(command.callback, '_def_parser'):
-            embed.add_field(
-                name='Flags',
-                value='\n'.join(self.get_flags(command)),
-                inline=False
-            )
 
         await self.get_destination().send(embed=embed)
 

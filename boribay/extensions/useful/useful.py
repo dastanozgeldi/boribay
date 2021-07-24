@@ -1,9 +1,9 @@
 import decimal
 import random
+import string
 import zipfile
 from datetime import datetime
 from io import BytesIO
-import string
 
 import discord
 from boribay.core import exceptions, utils
@@ -12,7 +12,7 @@ from discord.ext import commands
 from humanize import time
 
 from .calculator import CalcLexer, CalcParser
-from .utils import Poll, UrbanDictionaryPageSource  # , TodoPageSource
+from .utils import Poll, TodoPageSource, UrbanDictionaryPageSource
 
 
 class Useful(utils.Cog):
@@ -216,39 +216,35 @@ class Useful(utils.Cog):
         Kind of pro-tip to use this instead of **{p}help todo**"""
         await ctx.send_help('todo')
 
-    # TODO: Rewrite later.
-    # @flags.add_flag(
-    #     '--count',
-    #     action='store_true',
-    #     help='Sends the count of todos.'
-    # )
-    # @flags.add_flag(
-    #     '--dm',
-    #     action='store_true',
-    #     help='Whether to DM you the todo list.'
-    # )
-    # @todo.command(cls=flags.FlagCommand, name='show', aliases=('list',))
-    # async def _todo_show(self, ctx: utils.Context, **flags) -> None:
-    #     """To-do show command, a visual way to manipulate with your list.
+    @todo.command(name='show', aliases=('list',))
+    async def _todo_show(
+        self,
+        ctx: utils.Context,
+        show_count: bool = False,
+        dm: bool = False
+    ) -> None:
+        """To-do show command, a visual way to manipulate with your list.
 
-    #     Example:
-    #         **{p}todo show --dm** - DM's you the to-do list.
-    #         **{p}todo show --count** - sends the current count of to-do's.
-    #         Use them together to get both features.
-    #     """
-    #     query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
-    #     todos = [(todo['content'], todo['jump_url'])
-    #              for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
-    #     dest = ctx.author if flags.pop('dm', False) else ctx.channel
+        Parameters
+        ----------
+        show_count : bool, optional
+            Whether to show to-do list items count, by default False
+        dm : bool, optional
+            Whether to DM your list, by default False
+        """
+        query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
+        todos = [(todo['content'], todo['jump_url'])
+                 for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
+        dest = ctx.author if dm else ctx.channel
 
-    #     if flags.pop('count', False):
-    #         return await dest.send(len(todos))
+        if show_count:
+            return await dest.send(len(todos))
 
-    #     await utils.Paginate(
-    #         TodoPageSource(ctx, todos),
-    #         clear_reactions_after=True,
-    #         timeout=60.0
-    #     ).start(ctx, channel=dest)
+        await utils.Paginate(
+            TodoPageSource(ctx, todos),
+            clear_reactions_after=True,
+            timeout=60.0
+        ).start(ctx, channel=dest)
 
     @todo.command(name='add')
     async def _todo_add(self, ctx: utils.Context, *, content: str) -> None:
@@ -477,63 +473,6 @@ class Useful(utils.Cog):
         embed.add_field(name='RGB', value=str(rgb), inline=False)
 
         await ctx.send(embed=embed)
-
-    # TODO: Rewrite later.
-    # @flags.add_flag('--continent', type=str, help='Search through continents.')
-    # @flags.add_flag('--country', type=str, help='Search through countries.')
-    # @flags.command(aliases=('ncov', 'coronavirus'))
-    # async def covid(self, ctx: utils.Context, **flags) -> None:
-    #     """Get coronavirus statistics with this command.
-    #     Returns current world statistics if no country was specified.
-
-    #     Cases, deaths, recovers, active and critical cases will be sent.
-
-    #     Example:
-    #         **{p}covid** - sends world statistics.
-    #         **{p}covid --continent Europe** - sends Europe statistics.
-    #         **{p}covid --country Kazakhstan** - sends Kazakhstan statistics.
-    #     """
-    #     cs = ctx.bot.session
-    #     api = 'https://disease.sh/v3/covid-19/'
-
-    #     if bool(flags):
-    #         r = await cs.get(api + 'all')
-    #         js = await r.json()
-    #         title = 'Covid-19 World Statistics'
-    #         field = ('Affected Countries', js['affectedCountries'])
-    #         url = 'https://www.freepngimg.com/thumb/globe/40561-7-earth-globe-png-download-free.png'
-
-    #     if continent := flags.pop('continent', False):
-    #         r = await cs.get(f'{api}continents/{continent}?strict=true')
-    #         js = await r.json()
-    #         title = f'Covid-19 Statistics for {continent.title()}'
-    #         field = ('Tests', js['tests'])
-    #         url = ctx.guild.icon_url
-
-    #     if country := flags.pop('country', False):
-    #         r = await cs.get(f'{api}countries/{country}?strict=true')
-    #         js = await r.json()
-    #         title = f'Covid-19 Statistics for {country.title()}'
-    #         field = ('Continent', js['continent'])
-    #         url = js['countryInfo']['flag']
-
-    #     embed = ctx.embed(title=title).set_thumbnail(url=url)
-    #     fields = [
-    #         ('Total Cases', js['cases']),
-    #         ('Today Cases', js['todayCases']),
-    #         ('Deaths', js['deaths']),
-    #         ('Today Deaths', js['todayDeaths']),
-    #         ('Recovered', js['recovered']),
-    #         ('Today Recov', js['todayRecovered']),
-    #         ('Active Cases', js['active']),
-    #         ('Critical', js['critical']),
-    #         field
-    #     ]
-
-    #     for name, value in fields:
-    #         embed.add_field(name=name, value=str(value))
-
-    #     await ctx.send(embed=embed)
 
     @utils.command(aliases=('temp', 'temperature'))
     async def weather(self, ctx: utils.Context, *, city: str.capitalize) -> None:

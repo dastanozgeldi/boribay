@@ -13,7 +13,7 @@ from discord.ext import commands
 from jishaku.codeblocks import codeblock_converter
 
 from .formats import TabularData
-# from .utils import IdeaPageSource
+from .utils import IdeaPageSource
 
 __all__ = ('Developer',)
 
@@ -472,39 +472,30 @@ class Developer(utils.Cog):
         await ctx.bot.pool.execute(query, suggestion_id)
         await ctx.message.add_reaction('✅')
 
-    # @flags.add_flag(
-    #     '--approved',
-    #     action='store_true',
-    #     help='Whether to list only approved suggestions.'
-    # )
-    # @flags.add_flag(
-    #     '--limit',
-    #     type=int,
-    #     help='Set the limit of suggestions to get displayed.'
-    # )
-    # @idea.command(cls=flags.FlagCommand)
-    # @commands.is_owner()
-    # async def pending(self, ctx: utils.Context, **flags) -> None:
-    #     """Check out all pending suggestions.
+    @idea.command()
+    @commands.is_owner()
+    async def pending(
+        self, ctx: utils.Context, limit: int = 10, approved: bool = False
+    ) -> None:
+        """Check out all pending suggestions.
 
-    #     Example:
-    #         **{p}idea pending** - shows all unapproved suggestions.
-    #         **{p}idea pending --approved** - shows only approved ideas.
-    #         **{p}idea pending --limit 10** - shows last 10 added suggestions.
-    #     """
-    #     additional = 'true' if flags.pop('approved') else 'false'
-    #     answers = {
-    #         'true': 'There are no any approved ideas yet.',
-    #         'false': 'Currently, there are no suggestions waiting to be approved.'
-    #     }
+        Parameters
+        ----------
+        limit : int, optional
+            Limit for ideas to be shown, by default 10
+        approved : bool, optional
+            Whether to take only approved ideas, by default False
+        """
+        answers = [
+            'Currently, there are no suggestions waiting to be approved.',
+            'There are no any approved ideas yet.'
+        ]
+        query = f'SELECT id, content, author_id FROM ideas WHERE approved is {approved};'
+        if not (data := await ctx.bot.pool.fetch(query)):
+            return await ctx.send(answers[approved])
 
-    #     query = f'SELECT id, content, author_id FROM ideas WHERE approved is {additional};'
-    #     if not (data := await ctx.bot.pool.fetch(query)):
-    #         await ctx.send(answers[additional])
-    #         return
-
-    #     menu = utils.Paginate(source=IdeaPageSource(ctx, data))
-    #     await menu.start(ctx)
+        menu = utils.Paginate(source=IdeaPageSource(ctx, data))
+        await menu.start(ctx)
 
     @idea.command()
     @commands.is_owner()
