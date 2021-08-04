@@ -8,7 +8,6 @@ __all__ = (
     'beta_command',
     'is_valid_alias',
     'is_blacklisted',
-    'is_beta'
 )
 
 
@@ -101,24 +100,3 @@ async def is_blacklisted(ctx: commands.Context) -> bool:
     """
     user = ctx.user_cache[ctx.author.id]
     return not user.get('blacklisted', False)
-
-
-async def is_beta(ctx: commands.Context) -> bool:
-    """Check whether the bot is in the maintenance (beta) mode.
-
-    Parameters
-    ----------
-    ctx : commands.Context
-        Automatically passed context object.
-
-    Returns
-    -------
-    bool
-        True if the message author is owner of the bot is not in beta.
-    """
-    if ctx.config.main.beta and ctx.author.id not in ctx.bot.owner_ids:
-        embed = ctx.embed(description='❌ I am currently in the maintenance mode.')
-        await ctx.send(embed=embed)
-        return False
-
-    return True
