@@ -1,0 +1,6 @@
+{
+    "autoDocstring.docstringFormat": "numpy",
+    "files.exclude": {
+        "**/__pycache__": true
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "Create a new command": {
+        "prefix": "cncmd",
+        "body": [
+            "@utils.command()",
+            "async def newcmd(self, ctx):",
+            "    ..."
+        ],
+        "description": "Create a new command inside your cog."
+    },
+    "Create a new cog": {
+        "prefix": "cncog",
+        "body": [
+            "from boribay.core import utils\n\n",
+            "class NewCog(utils.Cog):",
+            "    "
+        ]
+    },
+    "Set up a cog": {
+        "prefix": "cgstp",
+        "body": [
+            "def setup(bot):",
+            "    bot.add_cog(NewCog(bot))"
+        ],
+        "description": "Create a setup function for the cog."
+    }
+}
