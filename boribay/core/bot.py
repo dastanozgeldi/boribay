@@ -183,7 +183,7 @@ class Boribay(commands.Bot):
 
             logger.info('Loaded extensions: ' + ', '.join(self.cogs.keys()))
 
-    async def start(self, *args, **kwargs) -> None:
+    def run(self, **kwargs) -> None:
         """An overridden run method to make the launcher file smaller."""
         # Getting the token.
         token = self.config.main.token
@@ -195,5 +195,5 @@ class Boribay(commands.Bot):
             token = self.cli.token
 
         # Finally, booting up the bot instance.
-        await self.setup()
-        await super().start(token, *args, **kwargs)
+        self.loop.create_task(self.setup())
+        super().run(token, **kwargs)
