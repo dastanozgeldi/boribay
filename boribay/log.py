@@ -222,13 +222,13 @@ class CustomRichHandler(RichHandler):
             self.console.print(traceback)
 
 
-def init_logging(level: int) -> None:
-    """Initialize logging features through this method.
+def init_logging(level: int = logging.INFO) -> None:
+    """Initialize logging features.
 
     Parameters
     ----------
-    level : int
-        Logging level to set as the least.
+    level : int, optional
+        Logging level to set as the least, by default logging.INFO
     """
     root_logger = logging.getLogger()
 
