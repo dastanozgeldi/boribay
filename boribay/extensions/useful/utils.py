@@ -10,11 +10,8 @@ from discord.ext import menus
 class OptionsNotInRange(UserError):
     """Raised when there were more than 10 options on a poll."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __str__(self):
-        return 'Please keep poll options range (min 2 : max 10).'
+    def __init__(self):
+        super().__init__('Please keep poll options range (min 2 : max 10).')
 
 
 class Poll:

@@ -22,10 +22,9 @@ class Context(commands.Context):
     This class inherits from `discord.ext.commands.Context`.
     """
 
-    bot: Boribay
-
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
+        self.bot: Boribay
         self.timer = Timer(self)
         self.loading = Loading(self)
 
@@ -68,7 +67,9 @@ class Context(commands.Context):
         obj = getattr(self, obj)
 
         try:
-            _result = getattr(obj, 'get_' + method)(object_id) or await getattr(obj, 'fetch_' + method)(object_id)
+            _result = getattr(obj, 'get_' + method)(object_id) or await getattr(
+                obj, 'fetch_' + method
+            )(object_id)
         except (discord.Forbidden, discord.HTTPException, discord.NotFound):
             return None
 
@@ -83,8 +84,10 @@ class Context(commands.Context):
 
         payload = await self.bot.wait_for(
             'raw_reaction_add',
-            check=lambda p: str(p.emoji) in emojis.keys() and p.user_id == self.author.id and p.message_id == msg.id,
-            timeout=timeout
+            check=lambda p: str(p.emoji) in emojis.keys()
+            and p.user_id == self.author.id
+            and p.message_id == msg.id,
+            timeout=timeout,
         )
 
         with suppress(asyncio.TimeoutError):
@@ -112,7 +115,7 @@ class Timer(ContextDecorator):
 
 
 class Loading(ContextDecorator):
-    """The Loading class made to take some time for users while the command is getting executed.
+    """Made to take some time for users while the command is getting executed.
 
     This class inherits from `contextlib.ContextDecorator`.
     """
@@ -123,7 +126,9 @@ class Loading(ContextDecorator):
         self.content = content
 
     async def __aenter__(self):
-        self.message = await self.ctx.send(f'<a:loading:837049644462374935> {self.content}')
+        self.message = await self.ctx.send(
+            f'<a:loading:837049644462374935> {self.content}'
+        )
 
     async def __aexit__(self, *args):
         await self.ctx.try_delete(self.message)

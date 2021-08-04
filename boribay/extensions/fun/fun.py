@@ -1,12 +1,13 @@
+import asyncio
 import random
-from io import BytesIO
-from typing import Optional
-from time import time
 import textwrap
+from io import BytesIO
+from time import time
+from typing import Optional
+
 import discord
 from boribay.core import Boribay, utils
 from discord.ext import commands
-import asyncio
 
 
 class Fun(utils.Cog):

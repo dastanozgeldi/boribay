@@ -42,9 +42,6 @@ class Cog(commands.Cog, metaclass=commands.CogMeta):
 
     __cog_commands__: Tuple[Command]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def __str__(self):
         if hasattr(self, 'icon'):
             return f'{self.icon} {self.qualified_name}'
