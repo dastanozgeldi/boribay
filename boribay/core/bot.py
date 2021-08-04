@@ -14,7 +14,7 @@ from discord.ext import commands
 from .config import Config
 from .database import Cache, DatabaseManager
 from .events import set_events
-from .utils import Context, is_beta, is_blacklisted
+from .utils import Context, is_blacklisted
 
 __all__ = ('Boribay',)
 
@@ -32,7 +32,7 @@ class Boribay(commands.Bot):
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.cli = cli_flags
         self.counter = Counter()
-        self.config = Config('./data/config/config.toml')
+        self.config = Config('./data/config.json')
 
         self._launch_time = datetime.now()
 
@@ -139,7 +139,7 @@ class Boribay(commands.Bot):
         # Session-related.
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.webhook = discord.Webhook.from_url(
-            self.config.links.log_url,
+            self.config.links.webhook,
             adapter=discord.AsyncWebhookAdapter(self.session)
         )
 
@@ -158,7 +158,6 @@ class Boribay(commands.Bot):
         )
 
         # Checks to limit certain things.
-        self.add_check(is_beta)
         self.add_check(is_blacklisted)
 
         # Initializer functions.
@@ -167,6 +166,7 @@ class Boribay(commands.Bot):
         # Check for flags.
         if self.cli.developer or self.config.main.beta:
             logger.info('Developer mode enabled.')
+            self.load_extension('boribay.core.cog_manager')
             self.load_extension('boribay.core.developer')
 
         if self.cli.no_cogs:
@@ -190,7 +190,7 @@ class Boribay(commands.Bot):
         if self.cli.token:
             logger.info(
                 'Logging in without using the native token. Consider setting '
-                'a token in the configuration file, i.e data/config.toml'
+                'a token in the configuration file, i.e data/config.json'
             )
             token = self.cli.token
 
