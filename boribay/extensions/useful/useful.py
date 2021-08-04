@@ -429,11 +429,11 @@ class Useful(utils.Cog):
 
         try:
             if not parser.match(reg):
-                raise exceptions.UnclosedBrackets()
+                raise exceptions.UnclosedBrackets
 
             for i in range(len(expression) - 1):
                 if expression[i] == '(' and expression[i + 1] == ')':
-                    raise exceptions.EmptyBrackets()
+                    raise exceptions.EmptyBrackets
 
             result = parser.parse(lexer.tokenize(expression))
 

@@ -122,12 +122,11 @@ class Moderation(utils.Cog):
 
     @category.command(name='create')
     async def _create_category(
-        self, ctx: utils.Context, role: discord.Role, *, name: str
+        self, ctx: utils.Context, *, name: str
     ) -> None:
         """Add a category for the current guild.
 
         Args:
-            role (discord.Role): A role that will be able to see this category.
             name (str): The name of the category.
         """
         overwrites = {

@@ -179,7 +179,9 @@ class HelpCommand(commands.HelpCommand):
         await self.get_destination().send(embed=embed)
 
     async def send_group_help(self, group: commands.Group):
-        if len(subcommands := group.commands) == 0 or len(cmds := await self.filter_commands(subcommands, sort=True)) == 0:
+        subcommands = group.commands
+        cmds = await self.filter_commands(subcommands, sort=True)
+        if 0 in (len(subcommands), len(cmds)):
             return await self.send_command_help(group)
 
         await utils.Paginate(
