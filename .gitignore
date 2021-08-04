@@ -1,8 +1,8 @@
 # Useless folders.
 __pycache__/
-.vscode/
+.vim/
 .env/
 
 # Data
 data/emojis/
-data/config/config.toml
+data/config.json
