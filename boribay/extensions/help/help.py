@@ -137,7 +137,7 @@ class HelpCommand(commands.HelpCommand):
         links = ctx.config.links
         cats = []
 
-        for cog, cmds in mapping:
+        for cog, cmds in mapping.items():
             if cog:
                 if await self.filter_commands(cmds, sort=True):
                     cats.append(str(cog))
