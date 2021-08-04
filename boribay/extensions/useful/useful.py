@@ -22,7 +22,7 @@ class Useful(utils.Cog):
     """
 
     def __init__(self, bot: Boribay):
-        self.icon = '<:pickaxe:807534625785380904>'
+        self.icon = '✨'
         self.bot = bot
 
     @utils.command()

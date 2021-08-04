@@ -137,22 +137,17 @@ class HelpCommand(commands.HelpCommand):
         links = ctx.config.links
         cats = []
 
-        for cog, cmds in mapping.items():
+        for cog, cmds in mapping:
             if cog:
                 if await self.filter_commands(cmds, sort=True):
                     cats.append(str(cog))
 
         embed = ctx.embed(
-            description=f'[Invite]({links.invite_url}) | [Support]({links.support_url}) | [Source]({links.github_url}) | [Vote]({links.topgg_url})'
+            description=f'[Invite]({links.invite}) | [Support]({links.support}) | [Source]({links.github}) | [Vote]({links.top_gg})'
         ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
 
         embed.add_field(name='Modules:', value='\n'.join(cats))
-
-        # with open('./data/config/news.md', 'r') as f:
-        #     news = f.readlines()
-
-        # embed.add_field(name=f'📰 News - {news[0]}', value=''.join(news[1:]))
-        embed.set_footer(text=self.get_ending_note())
+        # embed.set_footer(text=self.get_ending_note())
 
         await HelpMenu(embed=embed).start(ctx)
 

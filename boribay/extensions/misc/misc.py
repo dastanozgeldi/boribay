@@ -163,9 +163,9 @@ class Miscellaneous(utils.Cog):
     async def links(self, ctx: utils.Context):
         """Some useful invites (support server, bot invite and voting URL)."""
         links = ctx.config.links
-        embed = ctx.embed(description=f'Invite me [here]({links.invite_url})\n'
-                          f'Support server [here]({links.support_url})'
-                          f'Vote on TopGG [here]({links.topgg_url})')
+        embed = ctx.embed(description=f'Invite me [here]({links.invite})\n'
+                          f'Support server [here]({links.support})'
+                          f'Vote on TopGG [here]({links.top_gg})')
 
         await ctx.send(embed=embed)
 
@@ -184,6 +184,18 @@ class Miscellaneous(utils.Cog):
                 value=f'```{value * 1000:.2f} ms```',
                 inline=False
             )
+        await ctx.send(embed=embed)
+
+    @utils.command(aliases=('exts', 'extensions'))
+    async def cogs(self, ctx: utils.Context) -> None:
+        """Get the list of modules that are available to use."""
+        exts = [str(ext) for ext in ctx.bot.cogs.values()]
+        embed = ctx.embed(
+            title='Currently working modules.',
+            description=f'Currently loaded: {len(ctx.bot.cogs)}\n'
+            f'Available to you: {1}\n'
+            '\n'.join(exts)
+        )
         await ctx.send(embed=embed)
 
     @utils.command(aliases=('mrs',))

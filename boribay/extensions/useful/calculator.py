@@ -1,4 +1,4 @@
-import decimal
+from decimal import Decimal
 import math
 from functools import lru_cache
 
@@ -19,7 +19,7 @@ class CalcLexer(Lexer):
 
     @_(r'(\d+(?:\.\d+)?)')
     def NUMBER(self, t):
-        t.value = decimal.Decimal(t.value)
+        t.value = Decimal(t.value)
         return t
 
     @_(r'\n+|;+')
@@ -58,11 +58,11 @@ class CalcParser(Parser):
         'fib': fib
     }
     constants = {
-        'pi': decimal.Decimal(math.pi),
-        'e': decimal.Decimal(math.e),
-        'tau': decimal.Decimal(math.tau),
-        'inf': decimal.Decimal(math.inf),
-        'nan': decimal.Decimal(math.nan)
+        'pi': Decimal(math.pi),
+        'e': Decimal(math.e),
+        'tau': Decimal(math.tau),
+        'inf': Decimal(math.inf),
+        'nan': Decimal(math.nan)
     }
 
     @_('statement')
@@ -112,7 +112,7 @@ class CalcParser(Parser):
     def expression(self, p):
         if p.expression > 50:
             raise exceptions.Overflow
-        return decimal.Decimal(math.gamma(p.expression + decimal.Decimal("1.0")))
+        return Decimal(math.gamma(p.expression + Decimal("1.0")))
 
     @_('"-" expression %prec UMINUS')
     def expression(self, p):
@@ -125,7 +125,7 @@ class CalcParser(Parser):
     @_('NAME "(" expression ")"')
     def expression(self, p):
         try:
-            return decimal.Decimal(self.funcs[p.NAME](p.expression))
+            return Decimal(self.funcs[p.NAME](p.expression))
         except KeyError:
             raise exceptions.UndefinedVariable(p.NAME)
 
