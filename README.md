@@ -14,8 +14,8 @@
     <img src="https://top.gg/api/widget/upvotes/735397931355471893.svg" />
   </a>
 
-  <a href="https://top.gg/bot/735397931355471893">
-    <img src="https://top.gg/api/widget/owner/735397931355471893.svg" />
+  <a href="https://deepsource.io/gh/Dositan/Boribay/">
+    <img src="https://deepsource.io/gh/Dositan/Boribay.svg" />
   </a>
 </h1>
 
