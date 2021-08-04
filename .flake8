@@ -1,0 +1,7 @@
+[flake8]
+ignore = W191, E501, E731
+exclude =
+    .git,
+    __pycache__,
+per-file-ignores =
+    boribay/extensions/useful/calculator.py: F821, F811
