@@ -61,4 +61,8 @@
 }
 ```
 
-<h3 align="center"><a href="https://discord.com/api/oauth2/authorize?client_id=735397931355471893&permissions=8&scope=bot">Invite Boribay</a> | <a href="https://discord.gg/ZAzTFTCerM">Support Server</a> | <a href="https://boribay.netlify.app/">Website</a></h3>
+<h3 align="center">
+  <a href="https://discord.com/api/oauth2/authorize?client_id=735397931355471893&permissions=8&scope=bot">Invite Boribay</a> |
+  <a href="https://discord.gg/ZAzTFTCerM">Support Server</a>
+</h3>
+<!-- Add docs sooner. -->

@@ -5,7 +5,6 @@ description = "A discord bot created to make people smile."
 authors = ["Dastan Ozgeldi <ozgdastan@gmail.com>"]
 license = "AGPL-3.0"
 readme = "README.md"
-homepage = "https://boribay.netlify.app/"
 repository = "https://github.com/Dositan/Boribay"
 # documentation = "*soon*"
 keywords = ["discord", "bot", "discord.py", "python"]
