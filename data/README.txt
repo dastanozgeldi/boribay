@@ -1,0 +1,1 @@
+Here we store any kind of data: images, fonts, and textfiles.
