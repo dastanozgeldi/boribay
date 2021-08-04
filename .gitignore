@@ -4,5 +4,4 @@ __pycache__/
 .env/
 
 # Data
-data/emojis/
 data/config.json
