@@ -1,27 +1,27 @@
-import toml
+import json
 
 __all__ = ('Config',)
 
 
 class BotPart:
-    __slots__ = {'beta', 'token', 'exts', 'errors_channel'}
+    __slots__ = {'beta', 'token', 'exts', 'errors_log'}
 
     def __init__(self, data: dict):
         self.beta = data.get('beta', False)
         self.token = data['token']
         self.exts = data.get('exts', [])
-        self.errors_channel = data.get('errors_channel')
+        self.errors_log = data.get('errors_log')
 
 
 class LinksPart:
-    __slots__ = {'log_url', 'invite_url', 'github_url', 'support_url', 'topgg_url'}
+    __slots__ = {'webhook', 'invite', 'github', 'support', 'top_gg'}
 
     def __init__(self, data: dict):
-        self.log_url = data.get('log_url')
-        self.invite_url = data.get('invite_url')
-        self.github_url = data.get('github_url')
-        self.support_url = data.get('support_url')
-        self.topgg_url = data.get('topgg_url')
+        self.webhook = data.get('webhook')
+        self.invite = data.get('invite')
+        self.github = data.get('github')
+        self.support = data.get('support')
+        self.top_gg = data.get('top_gg')
 
 
 class ApiPart:
@@ -36,7 +36,7 @@ class ApiPart:
 class Config:
     """Configuration loader class for Boribay.
 
-    All file-configuration stuff is controlled here using `.toml` files.
+    All file-configuration stuff is controlled here using `.json` files.
     """
     __slots__ = {'path', 'values', 'main', 'database', 'links', 'api'}
 
@@ -46,11 +46,12 @@ class Config:
         self.reload()
 
     def reload(self):
-        self.values = toml.load(self.path)
+        with open(self.path, 'r') as fp:
+            self.values = json.load(fp)
         self.set_attributes()
 
     def set_attributes(self):
         self.main = BotPart(self.values['bot'])
         self.database = self.values.get('database', {})
         self.links = LinksPart(self.values.get('links', {}))
-        self.api = ApiPart(self.values.get('API', {}))
+        self.api = ApiPart(self.values.get('api', {}))
