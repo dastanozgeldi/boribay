@@ -1,5 +1,9 @@
 version = 1
 
+exclude_patterns = [
+  "**/calculator.py",  # Has lexer-parser stuff.
+]
+
 [[analyzers]]
 name = "python"
 enabled = true
