@@ -1,6 +1,9 @@
 # Useless folders.
 __pycache__/
 .vim/
+
+# Virtual environments.
+env/
 .env/
 
 # Data
