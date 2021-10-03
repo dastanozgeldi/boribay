@@ -176,7 +176,7 @@ class Developer(utils.Cog):
         env = {
             'ctx': ctx,
             'bot': ctx.bot,
-            'discord': discord,
+            'discord': nextcord,
             'guild': ctx.guild,
             'commands': commands,
             'author': ctx.author,
