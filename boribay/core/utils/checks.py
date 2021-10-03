@@ -1,7 +1,7 @@
 import re
 from typing import Dict
 
-from discord.ext import commands
+from nextcord.ext import commands
 
 __all__ = (
     'is_mod',

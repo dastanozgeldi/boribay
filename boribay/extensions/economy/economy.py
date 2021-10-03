@@ -3,10 +3,10 @@ import copy
 import random
 from typing import Optional
 
-import discord
+import nextcord
 from boribay.core import exceptions, utils
 from boribay.core.database import Cache
-from discord.ext import commands
+from nextcord.ext import commands
 
 from .games import Trivia, Work
 from .utils import CasinoConverter
@@ -97,7 +97,7 @@ class Economics(utils.Cog):
     @balance.command(name='add')
     @utils.is_mod()
     async def _add_balance(
-        self, ctx: utils.Context, member: discord.Member, amount: int
+        self, ctx: utils.Context, member: nextcord.Member, amount: int
     ) -> None:
         """Increase someone's balance for being well behaved.
 
@@ -108,7 +108,7 @@ class Economics(utils.Cog):
             **{p}balance add @Dosek 1000** - gives Dosek 1000 batyrs.
 
         Args:
-            member (discord.Member): A member you'd like to add some money to.
+            member (nextcord.Member): A member you'd like to add some money to.
             amount (int): Amount of money to add.
 
         Raises:
@@ -128,7 +128,7 @@ class Economics(utils.Cog):
     @balance.command(name='remove')
     @utils.is_mod()
     async def _remove_balance(
-        self, ctx: utils.Context, member: discord.Member, amount: int
+        self, ctx: utils.Context, member: nextcord.Member, amount: int
     ) -> None:
         """Decrease someone's balance for being bad behaved.
 
@@ -139,7 +139,7 @@ class Economics(utils.Cog):
             **{p}balance remove @Dosek 1000** - takes 1000 batyrs from Dosek.
 
         Args:
-            member (discord.Member): A member you'd like to remove some money from.
+            member (nextcord.Member): A member you'd like to remove some money from.
             amount (int): Amount of money to remove.
 
         Raises:
@@ -157,7 +157,7 @@ class Economics(utils.Cog):
 
     @utils.command(aliases=('card',))
     async def profile(
-        self, ctx: utils.Context, member: Optional[discord.Member]
+        self, ctx: utils.Context, member: Optional[nextcord.Member]
     ) -> None:
         """Check the profile card of a user in Economics system.
         If you don't specify anyone you get your own card information.
@@ -167,7 +167,7 @@ class Economics(utils.Cog):
             **{p}profile @Dosek** - get Dosek's profile.
 
         Args:
-            member (Optional[discord.Member]): A member whose card you'd like to see.
+            member (Optional[nextcord.Member]): A member whose card you'd like to see.
 
         Raises:
             DefaultError: If the member has no profile card set yet.
@@ -451,7 +451,7 @@ class Economics(utils.Cog):
         """
         await ctx.send('Share your choice, you have 10 seconds.')
 
-        def check(msg: discord.Message):
+        def check(msg: nextcord.Message):
             return msg.author == ctx.author and msg.channel == ctx.channel
 
         try:

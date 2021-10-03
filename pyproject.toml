@@ -1,13 +1,12 @@
 [tool.poetry]
 name = "boribay"
-version = "1.1.6"
+version = "1.1.7a"
 description = "A discord bot created to make people smile."
 authors = ["Dastan Ozgeldi <ozgdastan@gmail.com>"]
 license = "AGPL-3.0"
 readme = "README.md"
 repository = "https://github.com/Dositan/Boribay"
-# documentation = "*soon*"
-keywords = ["discord", "bot", "discord.py", "python"]
+keywords = ["discord", "bot", "python"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Framework :: AsyncIO",
@@ -24,8 +23,8 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.8"
 asyncpg = "0.23.0"
-discord-ext-menus = "1.1"
-"discord.py" = "1.7.3"
+nextcord-ext-menus = "1.3.0"
+nextcord = "2.0.0a3"
 humanize = "3.9.0"
 jishaku = "2.0.0"
 Pillow = "8.2.0"

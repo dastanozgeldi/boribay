@@ -5,9 +5,9 @@ from io import BytesIO
 from time import time
 from typing import Optional
 
-import discord
+import nextcord
 from boribay.core import Boribay, utils
-from discord.ext import commands
+from nextcord.ext import commands
 
 
 class Fun(utils.Cog):
@@ -17,7 +17,7 @@ class Fun(utils.Cog):
         self.icon = '🎉'
         self.bot = bot
 
-    async def alex_image(self, url: str, fn: str = None) -> discord.File:
+    async def alex_image(self, url: str, fn: str = None) -> nextcord.File:
         """Quick-Alex-image making function.
 
         Args:
@@ -25,7 +25,7 @@ class Fun(utils.Cog):
             fn (str, optional): Filename to take. Defaults to None.
 
         Returns:
-            discord.File: A done to send file.
+            nextcord.File: A done to send file.
         """
         key = self.bot.config.api.alex
         r = await self.bot.session.get(
@@ -33,9 +33,9 @@ class Fun(utils.Cog):
             headers={'Authorization': key}
         )
         fp = BytesIO(await r.read())
-        return discord.File(fp, fn or 'alex.png')
+        return nextcord.File(fp, fn or 'alex.png')
 
-    async def dagpi_image(self, url: str, fn: str = None) -> discord.File:
+    async def dagpi_image(self, url: str, fn: str = None) -> nextcord.File:
         """Quick-Dagpi-image making function.
 
         Args:
@@ -43,7 +43,7 @@ class Fun(utils.Cog):
             fn (str, optional): Filename to take. Defaults to None.
 
         Returns:
-            discord.File: A done to send file.
+            nextcord.File: A done to send file.
         """
         key = self.bot.config.api.dagpi
         r = await self.bot.session.get(
@@ -51,7 +51,7 @@ class Fun(utils.Cog):
             headers={'Authorization': key}
         )
         fp = BytesIO(await r.read())
-        return discord.File(fp, fn or 'dagpi.png')
+        return nextcord.File(fp, fn or 'dagpi.png')
 
     @utils.command(aliases=('rps',))
     async def rockpaperscissors(self, ctx: utils.Context) -> None:
@@ -125,7 +125,7 @@ class Fun(utils.Cog):
         ).set_image(url='attachment://typeracer.png')
         embed.set_footer(text=f'© {quote["author"]}')
 
-        race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
+        race = await ctx.send(file=nextcord.File(buffer, 'typeracer.png'), embed=embed)
         await race.add_reaction('🗑')
         start = time()
 
@@ -144,7 +144,7 @@ class Fun(utils.Cog):
 
             stuff = done.pop().result()
 
-            if isinstance(stuff, discord.RawReactionActionEvent):
+            if isinstance(stuff, nextcord.RawReactionActionEvent):
                 return await race.delete()
 
             final = round(time() - start, 2)
@@ -208,7 +208,7 @@ class Fun(utils.Cog):
             'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + url
         )
         io = BytesIO(await r.read())
-        await ctx.send(file=discord.File(io, 'qr.png'))
+        await ctx.send(file=nextcord.File(io, 'qr.png'))
 
     @utils.command()
     async def caption(self, ctx: utils.Context, image: Optional[str]) -> None:
@@ -359,11 +359,11 @@ class Fun(utils.Cog):
         io = BytesIO(await r.read())
 
         # Sending to the utils.Contextual channel.
-        await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
+        await ctx.send(file=nextcord.File(fp=io, filename='ejected.png'))
 
     @utils.command(name='pp', aliases=('peepee',))
     async def command_pp(
-        self, ctx: utils.Context, member: Optional[discord.Member]
+        self, ctx: utils.Context, member: Optional[nextcord.Member]
     ) -> None:
         """Get the random size of your PP.
 
@@ -371,7 +371,7 @@ class Fun(utils.Cog):
             **{p}pp @Dosek** - sends Dosek's pp size.
 
         Args:
-            member (Optional[discord.Member]): A member to check the pp size of.
+            member (Optional[nextcord.Member]): A member to check the pp size of.
             Takes you as the member if no one was mentioned.
         """
         member = member or ctx.author

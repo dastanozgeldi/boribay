@@ -2,10 +2,10 @@ import random
 from io import BytesIO
 from typing import Optional
 
-import discord
+import nextcord
 from boribay.core import utils
 from boribay.core.utils.manipulation import Manip, make_image, polaroid_filter
-from discord.ext import commands
+from nextcord.ext import commands
 
 
 class Images(utils.Cog):
@@ -112,14 +112,14 @@ class Images(utils.Cog):
         await ctx.send(file=file)
 
     @utils.command()
-    async def avatar(self, ctx, member: Optional[discord.Member]) -> None:
+    async def avatar(self, ctx, member: Optional[nextcord.Member]) -> None:
         """Sends either author or member avatar if specified.
 
         Example:
             **{p}avatar @Dosek** - sends Dosek's avatar.
 
         Args:
-            member (Optional[discord.Member]): A member you want to grab avatar from.
+            member (Optional[nextcord.Member]): A member you want to grab avatar from.
         """
         member = member or ctx.author
         await ctx.send(str(member.avatar_url))
@@ -138,7 +138,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.pixelate(BytesIO(image))
 
-        file = discord.File(buffer, 'pixelated.png')
+        file = nextcord.File(buffer, 'pixelated.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -155,7 +155,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.wanted(BytesIO(image))
 
-        file = discord.File(buffer, 'wanted.png')
+        file = nextcord.File(buffer, 'wanted.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -172,7 +172,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.jail(BytesIO(image))
 
-        file = discord.File(buffer, 'jail.png')
+        file = nextcord.File(buffer, 'jail.png')
         await ctx.send(file=file)
 
     @utils.command(name='f')
@@ -189,7 +189,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.press_f(BytesIO(image))
 
-        file = discord.File(buffer, 'f.png')
+        file = nextcord.File(buffer, 'f.png')
         message = await ctx.send(file=file)
         await message.add_reaction('<:press_f:796264575065653248>')
 
@@ -208,7 +208,7 @@ class Images(utils.Cog):
             member = await make_image(ctx, member)
             buffer = await Manip.fiveguysonegirl(BytesIO(author), BytesIO(member))
 
-        file = discord.File(buffer, '5g1g.png')
+        file = nextcord.File(buffer, '5g1g.png')
         await ctx.send(file=file)
 
     @utils.command(aliases=('ko',))
@@ -226,7 +226,7 @@ class Images(utils.Cog):
             knocked_out = await make_image(ctx, member)
             buffer = await Manip.fight(BytesIO(winner), BytesIO(knocked_out))
 
-        file = discord.File(buffer, 'fight.png')
+        file = nextcord.File(buffer, 'fight.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -250,7 +250,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.swirl(degrees, BytesIO(image))
 
-        file = discord.File(buffer, 'swirl.png')
+        file = nextcord.File(buffer, 'swirl.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -267,7 +267,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.communist(BytesIO(image))
 
-        file = discord.File(buffer, 'communist.png')
+        file = nextcord.File(buffer, 'communist.png')
         await ctx.send(file=file)
 
     @utils.command(aliases=('gay', 'gayize'))
@@ -284,7 +284,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.rainbow(BytesIO(image))
 
-        file = discord.File(buffer, 'rainbow.png')
+        file = nextcord.File(buffer, 'rainbow.png')
         await ctx.send(file=file)
 
     @utils.command(aliases=('wayg',))
@@ -303,7 +303,7 @@ class Images(utils.Cog):
             member = await make_image(ctx, member)
             buffer = await Manip.whyareyougae(BytesIO(author), BytesIO(member))
 
-        file = discord.File(buffer, 'wayg.png')
+        file = nextcord.File(buffer, 'wayg.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -325,7 +325,7 @@ class Images(utils.Cog):
 
         buffer = await Manip.drake(no, yes)
 
-        file = discord.File(buffer, 'drake.png')
+        file = nextcord.File(buffer, 'drake.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -346,5 +346,5 @@ class Images(utils.Cog):
 
         buffer = await Manip.clyde(text)
 
-        file = discord.File(buffer, 'clyde.png')
+        file = nextcord.File(buffer, 'clyde.png')
         await ctx.send(file=file)

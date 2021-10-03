@@ -4,10 +4,10 @@ import textwrap
 from io import BytesIO
 from typing import Union
 
-import discord
+import nextcord
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 from polaroid import Image as PI
-from wand.image import Image as WI
+# from wand.image import Image as WI
 
 from .converters import ImageConverter
 
@@ -74,7 +74,7 @@ def polaroid_filter(image: bytes, *, method: str, args: list = [], kwargs: dict 
     func = getattr(image, method)
     func(*args, **kwargs)
     byt = image.save_bytes()
-    return discord.File(byt, f'{method}.png')
+    return nextcord.File(byt, f'{method}.png')
 
 
 class Manip:
@@ -214,79 +214,79 @@ class Manip:
         buffer.seek(0)
         return buffer
 
-    @staticmethod
-    @executor
-    def jail(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/jailbars.png')
+    # @staticmethod
+    # @executor
+    # def jail(image: BytesIO):
+    #     layout = WI(filename=f'{IMAGE_PATH}/jailbars.png')
 
-        with WI(file=image) as img:
-            w, h = img.size
-            layout.resize(w, h)
-            img.watermark(layout, 0.3)
-            buffer = BytesIO()
-            img.save(file=buffer)
+    #     with WI(file=image) as img:
+    #         w, h = img.size
+    #         layout.resize(w, h)
+    #         img.watermark(layout, 0.3)
+    #         buffer = BytesIO()
+    #         img.save(file=buffer)
 
-        buffer.seek(0)
-        return buffer
+    #     buffer.seek(0)
+    #     return buffer
 
-    @staticmethod
-    @executor
-    def press_f(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/f.png')
+    # @staticmethod
+    # @executor
+    # def press_f(image: BytesIO):
+    #     layout = WI(filename=f'{IMAGE_PATH}/f.png')
 
-        with WI(file=image) as img:
-            img.resize(52, 87)
-            img.rotate(-5)
-            buffer = BytesIO()
-            layout.watermark(img, left=310, top=71)
-            layout.save(file=buffer)
+    #     with WI(file=image) as img:
+    #         img.resize(52, 87)
+    #         img.rotate(-5)
+    #         buffer = BytesIO()
+    #         layout.watermark(img, left=310, top=71)
+    #         layout.save(file=buffer)
 
-        buffer.seek(0)
-        return buffer
+    #     buffer.seek(0)
+    #     return buffer
 
-    @staticmethod
-    @executor
-    def rainbow(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/rainbow.png')
+    # @staticmethod
+    # @executor
+    # def rainbow(image: BytesIO):
+    #     layout = WI(filename=f'{IMAGE_PATH}/rainbow.png')
 
-        with WI(file=image) as img:
-            w, h = img.size
-            layout.resize(w, h)
-            img.watermark(layout, 0.5)
-            buffer = BytesIO()
-            img.save(file=buffer)
+    #     with WI(file=image) as img:
+    #         w, h = img.size
+    #         layout.resize(w, h)
+    #         img.watermark(layout, 0.5)
+    #         buffer = BytesIO()
+    #         img.save(file=buffer)
 
-        buffer.seek(0)
-        return buffer
+    #     buffer.seek(0)
+    #     return buffer
 
-    @staticmethod
-    @executor
-    def communist(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/communist-flag.jpg')
+    # @staticmethod
+    # @executor
+    # def communist(image: BytesIO):
+    #     layout = WI(filename=f'{IMAGE_PATH}/communist-flag.jpg')
 
-        with WI(file=image) as img:
-            w, h = img.size
-            layout.resize(w, h)
-            img.watermark(layout, 0.7)
-            buffer = BytesIO()
-            img.save(file=buffer)
+    #     with WI(file=image) as img:
+    #         w, h = img.size
+    #         layout.resize(w, h)
+    #         img.watermark(layout, 0.7)
+    #         buffer = BytesIO()
+    #         img.save(file=buffer)
 
-        buffer.seek(0)
-        return buffer
+    #     buffer.seek(0)
+    #     return buffer
 
-    @staticmethod
-    @executor
-    def swirl(degree: int, image: BytesIO):
-        if degree > 360:
-            degree = 360
+    # @staticmethod
+    # @executor
+    # def swirl(degree: int, image: BytesIO):
+    #     if degree > 360:
+    #         degree = 360
 
-        elif degree < -360:
-            degree = -360
+    #     elif degree < -360:
+    #         degree = -360
 
-        with WI(file=image) as img:
-            img.swirl(degree=degree)
-            buffer = BytesIO()
-            img.save(file=buffer)
+    #     with WI(file=image) as img:
+    #         img.swirl(degree=degree)
+    #         buffer = BytesIO()
+    #         img.save(file=buffer)
 
-        buffer.seek(0)
-        return buffer
+    #     buffer.seek(0)
+    #     return buffer

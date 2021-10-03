@@ -5,10 +5,10 @@ import zipfile
 from datetime import datetime
 from io import BytesIO
 
-import discord
+import nextcord
 from boribay.core import exceptions, utils
 from boribay.core.bot import Boribay
-from discord.ext import commands
+from nextcord.ext import commands
 from humanize import time
 
 from .calculator import CalcLexer, CalcParser
@@ -43,7 +43,7 @@ class Useful(utils.Cog):
 
         await ctx.reply(
             'Sorry for being slow as hell but anyways:',
-            file=discord.File(buffer, filename='emojis.zip')
+            file=nextcord.File(buffer, filename='emojis.zip')
         )
 
     @staticmethod
@@ -467,7 +467,7 @@ class Useful(utils.Cog):
         rgb = color.to_rgb()
 
         embed = ctx.embed(
-            color=discord.Color.from_rgb(*rgb)
+            color=nextcord.Color.from_rgb(*rgb)
         ).set_thumbnail(url='https://kal-byte.co.uk/colour/' + '/'.join(str(i) for i in rgb))
         embed.add_field(name='Hex', value=str(color), inline=False)
         embed.add_field(name='RGB', value=str(rgb), inline=False)

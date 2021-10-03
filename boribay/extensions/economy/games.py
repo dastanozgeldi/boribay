@@ -2,8 +2,8 @@ import asyncio
 import random
 from html import unescape
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 
 class Work:
@@ -21,7 +21,7 @@ class Work:
 
         await ctx.send(start_message + '\nYou have 10 seconds.')
 
-        def check(msg: discord.Message):
+        def check(msg: nextcord.Message):
             return msg.author == ctx.author and msg.channel == ctx.channel
 
         try:
@@ -80,7 +80,7 @@ class Trivia:
 
         return await ctx.reply(f'**Wrong!** The answer was: **{correct}**.')
 
-    async def start(self, user: discord.Member = None):
+    async def start(self, user: nextcord.Member = None):
         embed = self.ctx.embed(title=self.title, description='')
         self.emojis = []
 
@@ -91,7 +91,7 @@ class Trivia:
         self.embed = embed
         return await self._controller(user)
 
-    async def _controller(self, user: discord.Member):
+    async def _controller(self, user: nextcord.Member):
         base = await self.ctx.send(embed=self.embed)
 
         for emoji in self.emojis:

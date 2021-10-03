@@ -1,10 +1,10 @@
 from difflib import get_close_matches
 from typing import List, Union
 
-import discord
+import nextcord
 from boribay.core import utils
 from boribay.core.bot import Boribay
-from discord.ext import commands, menus
+from nextcord.ext import commands, menus
 
 __all__ = ('HelpCommand', 'Help')
 
@@ -13,24 +13,24 @@ class HelpMenu(menus.Menu):
     """The main help menu of the bot."""
 
     def __init__(self, **kwargs):
-        self.embed: discord.Embed = kwargs.pop('embed')
+        self.embed: nextcord.Embed = kwargs.pop('embed')
         super().__init__(timeout=60.0, clear_reactions_after=True, **kwargs)
 
     async def send_initial_message(
-        self, ctx: utils.Context, channel: discord.abc.Messageable
-    ) -> discord.Message:
+        self, ctx: utils.Context, channel: nextcord.abc.Messageable
+    ) -> nextcord.Message:
         """Sends the initial message for the help-menu.
 
         Parameters
         ------------
         ctx: :class:`utils.Context`
             The invocation context to use.
-        channel: :class:`discord.abc.Messageable`
+        channel: :class:`nextcord.abc.Messageable`
             The messageable to send the message to.
 
         Returns
         --------
-        :class:`discord.Message`
+        :class:`nextcord.Message`
             The message that has been sent initially.
         """
         return await channel.send(embed=self.embed)
@@ -92,7 +92,7 @@ class GroupHelp(menus.ListPageSource):
         self.prefix = prefix
         self.description = '```fix\n<> ← required argument\n[] ← optional argument```'
 
-    async def format_page(self, menu: menus.Menu, cmds) -> discord.Embed:
+    async def format_page(self, menu: menus.Menu, cmds) -> nextcord.Embed:
         g = self.group
 
         if isinstance(g, commands.Cog):

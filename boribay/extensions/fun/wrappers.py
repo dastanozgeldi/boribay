@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import Any, Optional
 
 import aiohttp
-import discord
+import nextcord
 
 
 class BaseWrapper:
@@ -21,7 +21,7 @@ class BaseWrapper:
         self.loop = loop or asyncio.get_event_loop()
         self.session = session or aiohttp.ClientSession(loop=loop)
 
-    def make_image(self, path: str, filename: Optional[str] = None) -> discord.File:
+    def make_image(self, path: str, filename: Optional[str] = None) -> nextcord.File:
         # Should be overridden.
         raise NotImplementedError
 
@@ -32,7 +32,7 @@ class AlexFlipnoteWrapper(BaseWrapper):
     def __init__(self, *args: Any) -> None:
         super().__init__(*args)
 
-    def make_image(self, path: str, filename: Optional[str] = None) -> discord.File:
+    def make_image(self, path: str, filename: Optional[str] = None) -> nextcord.File:
         resp = await self.session.get(
             self.BASE_URL + path,
             headers={'Authorization': self.token}
@@ -41,7 +41,7 @@ class AlexFlipnoteWrapper(BaseWrapper):
             ...  # Raise something good
 
         fp = BytesIO(await resp.read())
-        return discord.File(fp, filename or 'alexflipnote.png')
+        return nextcord.File(fp, filename or 'alexflipnote.png')
 
 
 class DagpiWrapper(BaseWrapper):
@@ -50,7 +50,7 @@ class DagpiWrapper(BaseWrapper):
     def __init__(self, *args: Any) -> None:
         super().__init__(*args)
 
-    def make_image(self, path: str, filename: Optional[str] = None) -> discord.File:
+    def make_image(self, path: str, filename: Optional[str] = None) -> nextcord.File:
         resp = await self.session.get(
             self.BASE_URL + path,
             headers={'Authorization': self.token}
@@ -59,4 +59,4 @@ class DagpiWrapper(BaseWrapper):
             ...
 
         fp = BytesIO(await resp.read())
-        return discord.File(fp, filename or 'dagpi.png')
+        return nextcord.File(fp, filename or 'dagpi.png')

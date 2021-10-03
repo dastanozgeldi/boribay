@@ -2,9 +2,9 @@ import re
 from contextlib import suppress
 from typing import Any, List, Tuple
 
-import discord
+import nextcord
 from boribay.core.exceptions import UserError
-from discord.ext import menus
+from nextcord.ext import menus
 
 
 class OptionsNotInRange(UserError):
@@ -131,7 +131,7 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
 
         return ret
 
-    async def format_page(self, menu, entry) -> discord.Embed:
+    async def format_page(self, menu, entry) -> nextcord.Embed:
         mx = self.get_max_pages()
 
         embed = self.ctx.embed(
@@ -157,7 +157,7 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
         embed.add_field(name='Votes:', value=f'👍 {up} | 👎 {down}', inline=False)
 
         with suppress(KeyError, ValueError):
-            date = discord.utils.parse_time(entry['written_on'][0:-1])
+            date = nextcord.utils.parse_time(entry['written_on'][0:-1])
 
         embed.timestamp = date
         return embed

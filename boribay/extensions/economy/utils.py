@@ -2,7 +2,7 @@ import re
 from typing import Union
 
 from boribay.core.exceptions import NotAnInteger, NotEnough, PastMinimum
-from discord.ext import commands
+from nextcord.ext import commands
 
 __all__ = ('CasinoConverter',)
 

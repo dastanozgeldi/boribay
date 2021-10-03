@@ -1,6 +1,6 @@
 from typing import Dict, Tuple
 
-from discord.ext import commands
+from nextcord.ext import commands
 
 __all__ = (
     'Cog',
@@ -14,7 +14,7 @@ __all__ = (
 class Command(commands.Command):
     """The customized command instance for Boribay.
 
-    This class inherits from `discord.ext.commands.Command`.
+    This class inherits from `nextcord.ext.commands.Command`.
     """
 
     def __init__(self, *args, **kwargs):
@@ -37,7 +37,7 @@ class Cog(commands.Cog, metaclass=commands.CogMeta):
 
     All cogs of this bot will be of this type.
 
-    This class inherits from `discord.ext.commands.Cog`.
+    This class inherits from `nextcord.ext.commands.Cog`.
     """
 
     __cog_commands__: Tuple[Command]

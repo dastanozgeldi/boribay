@@ -1,9 +1,9 @@
 import asyncio
 from typing import Optional
 
-import discord
+import nextcord
 from boribay.core import utils
-from discord.ext import commands
+from nextcord.ext import commands
 from humanize import naturaldate
 
 
@@ -28,12 +28,12 @@ class Moderation(utils.Cog):
     @member.command(name='nick')
     @commands.bot_has_guild_permissions(manage_nicknames=True)
     async def _member_nick(
-        self, ctx: utils.Context, member: discord.Member, *, new_nick: str
+        self, ctx: utils.Context, member: nextcord.Member, *, new_nick: str
     ) -> None:
         """Changes the member's nickname in the current server.
 
         Args:
-            member (discord.Member): A member whose nickname you want to change.
+            member (nextcord.Member): A member whose nickname you want to change.
             new_nick (str): A new nickname for the member.
         """
         await member.edit(nick=new_nick)
@@ -95,7 +95,7 @@ class Moderation(utils.Cog):
 
     @category.command(name='info')
     async def _category_info(
-        self, ctx: utils.Context, *, category: Optional[discord.CategoryChannel]
+        self, ctx: utils.Context, *, category: Optional[nextcord.CategoryChannel]
     ) -> None:
         """Get some information about the specified category.
 
@@ -105,7 +105,7 @@ class Moderation(utils.Cog):
             **{p}category info Voice Channels**
 
         Args:
-            category (Optional[discord.CategoryChannel]): The category name/ID.
+            category (Optional[nextcord.CategoryChannel]): The category name/ID.
         """
         category = category or ctx.channel.category
 
@@ -130,8 +130,8 @@ class Moderation(utils.Cog):
             name (str): The name of the category.
         """
         overwrites = {
-            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            ctx.guild.me: discord.PermissionOverwrite(read_messages=True)
+            ctx.guild.default_role: nextcord.PermissionOverwrite(read_messages=False),
+            ctx.guild.me: nextcord.PermissionOverwrite(read_messages=True)
         }
 
         await ctx.guild.create_category(name=name, overwrites=overwrites)
@@ -141,14 +141,14 @@ class Moderation(utils.Cog):
     async def _delete_category(
         self,
         ctx: utils.Context,
-        category: discord.CategoryChannel,
+        category: nextcord.CategoryChannel,
         *,
         reason: Optional[str]
     ) -> None:
         """Deletes the specified category.
 
         Args:
-            category (discord.CategoryChannel): ID or the name of a category.
+            category (nextcord.CategoryChannel): ID or the name of a category.
             reason (str, optional): Reason of deleting category.
         """
         await category.delete(reason=reason or 'Reason not specified')
@@ -178,23 +178,23 @@ class Moderation(utils.Cog):
             raise commands.BadArgument('That is too big amount. The maximum is 100')
         try:
             await ctx.channel.purge(limit=limit)
-        except discord.HTTPException:
+        except nextcord.HTTPException:
             await ctx.send(f'Failed to purge {limit} messages.')
 
     @channel.command(name='create')
     async def _create_channel(
-        self, ctx: utils.Context, role: discord.Role, *, name: str
+        self, ctx: utils.Context, role: nextcord.Role, *, name: str
     ) -> None:
         """Add a category for the current guild.
 
         Args:
-            role (discord.Role): A role that will be able to see this channel.
+            role (nextcord.Role): A role that will be able to see this channel.
             name (str): The name of the channel.
         """
         overwrites = {
-            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            ctx.guild.me: discord.PermissionOverwrite(read_messages=True),
-            role: discord.PermissionOverwrite(read_messages=True)
+            ctx.guild.default_role: nextcord.PermissionOverwrite(read_messages=False),
+            ctx.guild.me: nextcord.PermissionOverwrite(read_messages=True),
+            role: nextcord.PermissionOverwrite(read_messages=True)
         }
 
         await ctx.guild.create_text_channel(name=name, overwrites=overwrites)
@@ -202,12 +202,12 @@ class Moderation(utils.Cog):
 
     @channel.command(name='delete')
     async def _delete_channel(
-        self, ctx: utils.Context, channel: discord.TextChannel, *, reason: str
+        self, ctx: utils.Context, channel: nextcord.TextChannel, *, reason: str
     ) -> None:
         """Deletes the specified channel.
 
         Args:
-            channel (discord.TextChannel): A channel you want to delete.
+            channel (nextcord.TextChannel): A channel you want to delete.
             reason (str, optional): Reason of deleting channel.
         """
         await channel.delete(reason=reason or 'Reason not specified')
@@ -235,7 +235,7 @@ class Moderation(utils.Cog):
         ctx: utils.Context,
         content: str,
         timeout: float = 20.0,
-        message: discord.Message = None
+        message: nextcord.Message = None
     ) -> str:
         """A wait-for message function to replace repetitions of code.
 
@@ -247,7 +247,7 @@ class Moderation(utils.Cog):
             Content of a message that is sent beforehand.
         timeout : float, optional
             Time-limit of wait-for, by default 20.0
-        message : discord.Message, optional
+        message : nextcord.Message, optional
             To be able to edit a message if it does already exist, by default None
 
         Returns
@@ -303,24 +303,24 @@ class Moderation(utils.Cog):
             role = await ctx.guild.create_role(name=role_name, color=color, reason=reason)
             await ctx.send(f'Great. Created a new role {role.mention}. Now, edit for your purposes.')
 
-        except discord.HTTPException:
+        except nextcord.HTTPException:
             await ctx.send('Failed to create the role.')
 
     @role.command(name='give')
     async def _give_role(
-        self, ctx: utils.Context, role: discord.Role, user: discord.Member
+        self, ctx: utils.Context, role: nextcord.Role, user: nextcord.Member
     ) -> None:
         """Give the specified role to a user.
 
         Args:
-            role (discord.Role): The role going to be given.
-            user (discord.Member): A member you want to give a role to.
+            role (nextcord.Role): The role going to be given.
+            user (nextcord.Member): A member you want to give a role to.
         """
         try:
             await user.add_roles(role)
             await ctx.message.add_reaction('✅')
 
-        except discord.Forbidden:
+        except nextcord.Forbidden:
             await ctx.send(
                 f'I am unable to give **{user}** a role.\n'
                 f'It is probably caused that {role.mention} is above my role.'
@@ -328,19 +328,19 @@ class Moderation(utils.Cog):
 
     @role.command(name='take')
     async def _take_role(
-        self, ctx: utils.Context, role: discord.Role, user: discord.Member
+        self, ctx: utils.Context, role: nextcord.Role, user: nextcord.Member
     ) -> None:
         """Take the specified role from a user.
 
         Args:
-            role (discord.Role): A role you want to take.
-            user (discord.Member): A member you want to take a role from.
+            role (nextcord.Role): A role you want to take.
+            user (nextcord.Member): A member you want to take a role from.
         """
         try:
             await user.remove_roles(role)
             await ctx.message.add_reaction('✅')
 
-        except discord.Forbidden:
+        except nextcord.Forbidden:
             await ctx.send(
                 f'I am unable to take a role from **{user}**.\n'
                 f'It is probably caused that {role.mention} is above my role.'
@@ -349,7 +349,7 @@ class Moderation(utils.Cog):
     @role.command(name='delete')
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def _delete_role(
-        self, ctx: utils.Context, role: discord.Role, *, reason: str
+        self, ctx: utils.Context, role: nextcord.Role, *, reason: str
     ) -> None:
         """Delete a guild role through this command.
 
@@ -357,12 +357,12 @@ class Moderation(utils.Cog):
             **{p}role delete @Muted We no longer need this role.**
 
         Args:
-            role (discord.Role): A role to delete (Name/ID/Mention).
+            role (nextcord.Role): A role to delete (Name/ID/Mention).
             reason (str, optional): The reason of deleting.
         """
         try:
             await role.delete(reason=reason or 'Reason not specified.')
             await ctx.message.add_reaction('✅')
 
-        except discord.HTTPException:
+        except nextcord.HTTPException:
             await ctx.send(f'Failed to delete the role ({role.mention}).')

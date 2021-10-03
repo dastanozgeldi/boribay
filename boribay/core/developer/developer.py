@@ -6,9 +6,9 @@ from io import BytesIO, StringIO
 from textwrap import indent
 from typing import Optional
 
-import discord
+import nextcord
 from boribay.core import utils
-from discord.ext import commands
+from nextcord.ext import commands
 
 from jishaku.codeblocks import codeblock_converter
 
@@ -49,13 +49,13 @@ class Developer(utils.Cog):
         """Take a screenshot of the URL you give to the bot.
 
         Example:
-            **{p}screenshot https://discord.com/**
+            **{p}screenshot https://nextcord.com/**
 
         Args:
             url (str): A URL you want to get a screenshot from.
         """
         r = await ctx.bot.session.get('https://image.thum.io/get/width/1920/crop/675/maxAge/1/noanimate/' + url)
-        file = discord.File(fp=BytesIO(await r.read()), filename='screenshot.png')
+        file = nextcord.File(fp=BytesIO(await r.read()), filename='screenshot.png')
         await ctx.send(file=file)
 
     @utils.group()
@@ -65,7 +65,7 @@ class Developer(utils.Cog):
 
     @blacklist.command(name='add')
     async def _blacklist_add(
-        self, ctx: utils.Context, users: commands.Greedy[discord.Member]
+        self, ctx: utils.Context, users: commands.Greedy[nextcord.Member]
     ) -> None:
         """Blacklist a user.
 
@@ -75,7 +75,7 @@ class Developer(utils.Cog):
             **{p}blacklist add @Dosek**
 
         Args:
-            users (commands.Greedy[discord.Member]): Blacklist several users.
+            users (commands.Greedy[nextcord.Member]): Blacklist several users.
         """
         query = 'UPDATE users SET blacklisted = true WHERE user_id = $1'
 
@@ -87,7 +87,7 @@ class Developer(utils.Cog):
 
     @blacklist.command(name='remove')
     async def _blacklist_remove(
-        self, ctx: utils.Context, users: commands.Greedy[discord.Member]
+        self, ctx: utils.Context, users: commands.Greedy[nextcord.Member]
     ) -> None:
         """Remove a user from blacklist.
 
@@ -97,7 +97,7 @@ class Developer(utils.Cog):
             **{p}blacklist remove @Dosek**
 
         Args:
-            users (commands.Greedy[discord.Member]): Unblacklist several users.
+            users (commands.Greedy[nextcord.Member]): Unblacklist several users.
         """
         query = 'UPDATE users SET blacklisted = false WHERE user_id = $1'
 
@@ -108,7 +108,7 @@ class Developer(utils.Cog):
         await ctx.user_cache.refresh()
 
     @utils.command()
-    async def leave(self, ctx: utils.Context, guild: Optional[discord.Guild]) -> None:
+    async def leave(self, ctx: utils.Context, guild: Optional[nextcord.Guild]) -> None:
         """Make the bot leave a specific guild.
 
         This takes the current guild if ID was not given.
@@ -117,7 +117,7 @@ class Developer(utils.Cog):
             **{p}leave 789654321**
 
         Args:
-            guild (Optional[discord.Guild]): A guild to leave.
+            guild (Optional[nextcord.Guild]): A guild to leave.
         """
         guild = guild or ctx.guild
 
@@ -125,7 +125,7 @@ class Developer(utils.Cog):
             await guild.leave()
             return await ctx.message.add_reaction('✅')
 
-        except discord.HTTPException:
+        except nextcord.HTTPException:
             return await ctx.send(
                 f'❌ Could not leave the guild: {guild} | {guild.id}'
             )
@@ -134,7 +134,7 @@ class Developer(utils.Cog):
     async def shutdown(self, ctx: utils.Context, silently: bool = False) -> None:
         """Shutdown command.
 
-        This makes the bot close all its instances in order to log out from discord.
+        This makes the bot close all its instances in order to log out from nextcord.
 
         Parameters
         ----------
@@ -195,10 +195,10 @@ class Developer(utils.Cog):
             if not result:
                 return await ctx.message.add_reaction('✅')
 
-            if isinstance(result, discord.File):
+            if isinstance(result, nextcord.File):
                 return await ctx.send(file=result)
 
-            elif isinstance(result, discord.Embed):
+            elif isinstance(result, nextcord.Embed):
                 return await ctx.send(embed=result)
 
             elif isinstance(result, (str, int)):
@@ -309,7 +309,7 @@ class Developer(utils.Cog):
 
     @utils.command(name='as')
     async def _run_as(
-        self, ctx: utils.Context, member: discord.Member, *, command: str
+        self, ctx: utils.Context, member: nextcord.Member, *, command: str
     ) -> None:
         """Execute commands as someone else.
 
@@ -317,7 +317,7 @@ class Developer(utils.Cog):
             **{p}as @Yerassyl ping** - runs the ping command as Yerassyl.
 
         Args:
-            member (discord.Member): A member to get the utils.Context from.
+            member (nextcord.Member): A member to get the utils.Context from.
             command (str): A command to execute.
         """
         message = copy.copy(ctx.message)
@@ -333,7 +333,7 @@ class Developer(utils.Cog):
 
     async def _get_information(
         self, ctx: utils.Context, element_id: int, *, return_author: bool = False
-    ) -> discord.Embed:
+    ) -> nextcord.Embed:
         try:
             data = dict(await ctx.bot.pool.fetchrow(
                 'SELECT * FROM ideas WHERE id = $1', element_id

@@ -4,7 +4,7 @@ from typing import Optional
 
 import boribay
 from boribay.core import utils
-from discord.ext import commands
+from nextcord.ext import commands
 from humanize import naturaldate, naturaltime
 
 LOADING = '<a:loading:837049644462374935>'
@@ -75,7 +75,7 @@ class Miscellaneous(utils.Cog):
             'Development': {
                 ('Developer', str(bot.owner)),
                 ('Language', 'Python'),
-                ('Library', 'Discord.py')
+                ('Library', 'nextcord.py')
             },
             'General': {
                 ('Currently in', f'{len(bot.guilds)} servers'),
@@ -203,7 +203,7 @@ class Miscellaneous(utils.Cog):
         """See what reactions are there in a message, i.e reaction statistics.
 
         Example:
-            **{p}mrs https://discord.com/channels/12345/54321/32451**
+            **{p}mrs https://nextcord.com/channels/12345/54321/32451**
 
         Args:
             link (str): An URL of a message.

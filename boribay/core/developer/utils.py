@@ -1,5 +1,5 @@
 from boribay.core import utils
-from discord.ext import menus
+from nextcord.ext import menus
 
 
 class IdeaPageSource(menus.ListPageSource):
