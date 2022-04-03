@@ -1,0 +1,27 @@
+{
+    "bot": {
+      "beta": false,
+      "errors_log": 12345678,
+      "token": "",
+      "exts": [
+        "boribay.cogs.help",
+        "boribay.cogs.economy",
+        "boribay.cogs.fun",
+        "boribay.cogs.images",
+        "boribay.cogs.misc",
+        "boribay.cogs.moderation",
+        "boribay.cogs.settings",
+        "boribay.cogs.useful"
+      ]
+    },
+    "database": {
+      "user": "",
+      "password": "",
+      "host": "localhost",
+      "database": "boribay"
+    },
+    "api": {
+      "weather": "API key from https://openweathermap.org/",
+      "dagpi": "API key from https://dagpi.xyz/"
+    }
+}
