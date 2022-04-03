@@ -1,30 +1,31 @@
-from decimal import Decimal
 import math
+from decimal import Decimal
 from functools import lru_cache
 
-from boribay.core import exceptions
 from sly import Lexer, Parser
 
-__all__ = ('CalcLexer', 'CalcParser')
+from boribay.core import exceptions
+
+__all__ = ("CalcLexer", "CalcParser")
 
 
 class CalcLexer(Lexer):
     tokens = {NUMBER, NEWLINE_CHAR, NAME}
-    ignore = ' \t'
-    literals = {'+', '-', '*', '/', '%', '!', '^', '(', ')', '='}
-    NAME = '[a-zA-Z_][a-zA-Z0-9_]*'
+    ignore = " \t"
+    literals = {"+", "-", "*", "/", "%", "!", "^", "(", ")", "="}
+    NAME = "[a-zA-Z_][a-zA-Z0-9_]*"
 
     def error(self, t):
         raise exceptions.CalcError(t.value[0])
 
-    @_(r'(\d+(?:\.\d+)?)')
+    @_(r"(\d+(?:\.\d+)?)")
     def NUMBER(self, t):
         t.value = Decimal(t.value)
         return t
 
-    @_(r'\n+|;+')
+    @_(r"\n+|;+")
     def NEWLINE_CHAR(self, t):
-        self.lineno = t.value.count('\n') + t.value.count(';')
+        self.lineno = t.value.count("\n") + t.value.count(";")
         return t
 
 
@@ -42,31 +43,31 @@ class CalcParser(Parser):
     tokens = CalcLexer.tokens
 
     precedence = (
-        ('left', '+', '-'),
-        ('left', '*', '/', '%'),
-        ('left', '^'),
-        ('left', '!'),
-        ('right', UMINUS)
+        ("left", "+", "-"),
+        ("left", "*", "/", "%"),
+        ("left", "^"),
+        ("left", "!"),
+        ("right", UMINUS),
     )
     funcs = {
-        'round': round,
-        'sin': math.sin,
-        'cos': math.cos,
-        'tan': math.tan,
-        'sqrt': lambda x: x.sqrt(),
-        'abs': lambda x: x.copy_abs(),
-        'fib': fib
+        "round": round,
+        "sin": math.sin,
+        "cos": math.cos,
+        "tan": math.tan,
+        "sqrt": lambda x: x.sqrt(),
+        "abs": lambda x: x.copy_abs(),
+        "fib": fib,
     }
     constants = {
-        'pi': Decimal(math.pi),
-        'e': Decimal(math.e),
-        'tau': Decimal(math.tau),
-        'inf': Decimal(math.inf),
-        'nan': Decimal(math.nan)
+        "pi": Decimal(math.pi),
+        "e": Decimal(math.e),
+        "tau": Decimal(math.tau),
+        "inf": Decimal(math.inf),
+        "nan": Decimal(math.nan),
     }
 
-    @_('statement')
-    @_('statements NEWLINE_CHAR statement')
+    @_("statement")
+    @_("statements NEWLINE_CHAR statement")
     def statements(self, p):
         self.result.append(p.statement)
 
@@ -76,9 +77,9 @@ class CalcParser(Parser):
             raise exceptions.KeywordAlreadyTaken
 
         self.variables[p.NAME] = p.expression
-        return f'{p.NAME} = {p.expression}'
+        return f"{p.NAME} = {p.expression}"
 
-    @_('expression')
+    @_("expression")
     def statement(self, p):
         return p.expression
 
@@ -106,7 +107,7 @@ class CalcParser(Parser):
     def expression(self, p):
         if p.expression0 > 200 or p.expression1 > 200:
             raise exceptions.Overflow
-        return p.expression0 ** p.expression1
+        return p.expression0**p.expression1
 
     @_('expression "!"')
     def expression(self, p):
@@ -129,11 +130,11 @@ class CalcParser(Parser):
         except KeyError:
             raise exceptions.UndefinedVariable(p.NAME)
 
-    @_('NUMBER')
+    @_("NUMBER")
     def expression(self, p):
         return p.NUMBER
 
-    @_('NAME')
+    @_("NAME")
     def expression(self, p):
         try:
             try:
@@ -144,7 +145,7 @@ class CalcParser(Parser):
             raise exceptions.UndefinedVariable(p.NAME)
 
     def error(self, p):
-        raise exceptions.CalcError(getattr(p, 'value', 'EOF'))
+        raise exceptions.CalcError(getattr(p, "value", "EOF"))
 
     def __init__(self):
         self.variables = {}
@@ -152,7 +153,7 @@ class CalcParser(Parser):
         super().__init__()
 
     def match(self, expression):
-        o, c = tuple('({['), tuple(')}]')
+        o, c = tuple("({["), tuple(")}]")
         mapping = dict(zip(o, c))
         lis = []
 

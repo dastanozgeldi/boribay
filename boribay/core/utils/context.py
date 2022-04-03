@@ -11,7 +11,7 @@ from discord.ext import commands
 if TYPE_CHECKING:
     from ..bot import Boribay
 
-__all__ = ('Context',)
+__all__ = ("Context",)
 
 
 class Context(commands.Context):
@@ -31,7 +31,7 @@ class Context(commands.Context):
     @property
     async def db_latency(self) -> float:
         start = perf_counter()
-        await self.bot.pool.fetchval('SELECT 1;')
+        await self.bot.pool.fetchval("SELECT 1;")
         end = perf_counter()
 
         return end - start
@@ -60,15 +60,15 @@ class Context(commands.Context):
             await message.delete(**kwargs)
 
     # idea: https://github.com/jay3332/ShrimpMaster/blob/master/core/bot.py#L320-L331
-    async def getch(self, method: str, object_id: int, obj: str = 'bot') -> None:
+    async def getch(self, method: str, object_id: int, obj: str = "bot") -> None:
         if not object_id:
             return None
 
         obj = getattr(self, obj)
 
         try:
-            _result = getattr(obj, 'get_' + method)(object_id) or await getattr(
-                obj, 'fetch_' + method
+            _result = getattr(obj, "get_" + method)(object_id) or await getattr(
+                obj, "fetch_" + method
             )(object_id)
         except (discord.Forbidden, discord.HTTPException, discord.NotFound):
             return None
@@ -77,13 +77,13 @@ class Context(commands.Context):
 
     async def confirm(self, message: discord.Message, timeout: float = 10.0):
         msg = await self.send(message)
-        emojis = {'✅': True, '❌': False}
+        emojis = {"✅": True, "❌": False}
 
         for e in emojis:
             await msg.add_reaction(e)
 
         payload = await self.bot.wait_for(
-            'raw_reaction_add',
+            "raw_reaction_add",
             check=lambda p: str(p.emoji) in emojis.keys()
             and p.user_id == self.author.id
             and p.message_id == msg.id,
@@ -95,7 +95,7 @@ class Context(commands.Context):
                 return True
 
             await self.try_delete(msg)
-            await self.message.reply('The confirmation session was closed.')
+            await self.message.reply("The confirmation session was closed.")
 
 
 class Timer(ContextDecorator):
@@ -111,7 +111,7 @@ class Timer(ContextDecorator):
 
     async def __aexit__(self, *args: Any):
         self.end = perf_counter()
-        await self.ctx.send(f'Done in `{self.end - self.start:.2f}s`')
+        await self.ctx.send(f"Done in `{self.end - self.start:.2f}s`")
 
 
 class Loading(ContextDecorator):
@@ -120,14 +120,14 @@ class Loading(ContextDecorator):
     This class inherits from `contextlib.ContextDecorator`.
     """
 
-    def __init__(self, ctx: Context, content: str = 'Loading...'):
+    def __init__(self, ctx: Context, content: str = "Loading..."):
         self.ctx = ctx
         self.message = None
         self.content = content
 
     async def __aenter__(self):
         self.message = await self.ctx.send(
-            f'<a:loading:837049644462374935> {self.content}'
+            f"<a:loading:837049644462374935> {self.content}"
         )
 
     async def __aexit__(self, *args):

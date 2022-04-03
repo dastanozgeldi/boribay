@@ -1,4 +1,3 @@
-
 class TabularData:
     """Taken from RoboDanny.
 
@@ -42,14 +41,14 @@ class TabularData:
             +-------+-----+
         """
 
-        sep = '+'.join('-' * w for w in self._widths)
-        sep = f'+{sep}+'
+        sep = "+".join("-" * w for w in self._widths)
+        sep = f"+{sep}+"
 
         to_draw = [sep]
 
         def get_entry(d):
-            elem = '|'.join(f'{e:^{self._widths[i]}}' for i, e in enumerate(d))
-            return f'|{elem}|'
+            elem = "|".join(f"{e:^{self._widths[i]}}" for i, e in enumerate(d))
+            return f"|{elem}|"
 
         to_draw.append(get_entry(self._columns))
         to_draw.append(sep)
@@ -58,4 +57,4 @@ class TabularData:
             to_draw.append(get_entry(row))
 
         to_draw.append(sep)
-        return '\n'.join(to_draw)
+        return "\n".join(to_draw)

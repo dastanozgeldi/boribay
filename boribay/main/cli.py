@@ -11,7 +11,7 @@ def parse_single_flags(flags: argparse.Namespace) -> None:
         The given namespace of parsed arguments.
     """
     if flags.version:
-        print(f'Boribay is running on version: v2')
+        print("Boribay is running on version: v2")
         sys.exit(0)
 
 
@@ -29,36 +29,27 @@ def parse_flags(args: argparse.Namespace = None) -> argparse.Namespace:
         The namespace of the parsed arguments.
     """
     parser = argparse.ArgumentParser(
-        description='Boribay - Discord Bot',
-        usage='boribay [arguments]'
+        description="Boribay - Discord Bot", usage="boribay [arguments]"
     )
     parser.add_argument(
-        '-e',
-        '--exclude',
-        nargs='+',
-        help="Specify cogs you want to exclude on startup."
+        "-e",
+        "--exclude",
+        nargs="+",
+        help="Specify cogs you want to exclude on startup.",
     )
     parser.add_argument(
-        '--token',
-        type=str,
-        help='Specify the token you want to launch the bot with.'
+        "--token", type=str, help="Specify the token you want to launch the bot with."
     )
     parser.add_argument(
-        '-v',
-        '--version',
-        action='store_true',
-        help="See Boribay's current version."
+        "-v", "--version", action="store_true", help="See Boribay's current version."
     )
     parser.add_argument(
-        '-nc',
-        '--no-cogs',
-        action='store_true',
-        help='Runs the bot with no cogs loaded, only the bot itself.'
+        "-nc",
+        "--no-cogs",
+        action="store_true",
+        help="Runs the bot with no cogs loaded, only the bot itself.",
     )
     parser.add_argument(
-        '-d',
-        '--developer',
-        action='store_true',
-        help='Turns on the developer mode.'
+        "-d", "--developer", action="store_true", help="Turns on the developer mode."
     )
     return parser.parse_args(args)

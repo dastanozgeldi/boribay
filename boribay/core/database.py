@@ -50,11 +50,7 @@ class DatabaseManager(Pool):
         self.pool = bot.pool
 
     async def _operate(
-        self,
-        op: str,
-        column: str,
-        user: discord.Member,
-        amount: Union[int, float]
+        self, op: str, column: str, user: discord.Member, amount: Union[int, float]
     ) -> None:
         """The operate method made to ease up database manipulation.
 
@@ -70,7 +66,7 @@ class DatabaseManager(Pool):
         await self.pool.execute(
             f'UPDATE "users" SET "{column}" = "{column}" {op} $1 WHERE "user_id" = $2;',
             amount,
-            user.id
+            user.id,
         )
         await self.bot.user_cache.refresh()
 
@@ -85,7 +81,7 @@ class DatabaseManager(Pool):
         Returns:
             None: Means that the method returns nothing.
         """
-        await self._operate('+', *args)
+        await self._operate("+", *args)
 
     async def take(self, *args) -> None:
         """Database Manager take method to ease up mostly Economics manipulation.
@@ -98,7 +94,7 @@ class DatabaseManager(Pool):
         Returns:
             None: Means that the method returns nothing.
         """
-        await self._operate('-', *args)
+        await self._operate("-", *args)
 
     async def push(self, query: str, *args, **kwargs):
         """Just a method to save up 1 line in the code.
@@ -112,11 +108,7 @@ class DatabaseManager(Pool):
         await self.bot.user_cache.refresh()
 
     async def double(
-        self,
-        choice: str,
-        amount: int,
-        reducer: discord.Member,
-        adder: discord.Member
+        self, choice: str, amount: int, reducer: discord.Member, adder: discord.Member
     ) -> None:
         """The "double" method to ease up database manipulation.
 
@@ -129,8 +121,8 @@ class DatabaseManager(Pool):
         Returns:
             None: Means that the method returns nothing.
         """
-        reducer_query = f'UPDATE users SET {choice} = {choice} - $1 WHERE user_id = $2'
-        adder_query = f'UPDATE users SET {choice} = {choice} + $1 WHERE user_id = $2'
+        reducer_query = f"UPDATE users SET {choice} = {choice} - $1 WHERE user_id = $2"
+        adder_query = f"UPDATE users SET {choice} = {choice} + $1 WHERE user_id = $2"
 
         await self.pool.execute(reducer_query, amount, reducer.id)
         await self.pool.execute(adder_query, amount, adder.id)
@@ -150,7 +142,7 @@ class DatabaseManager(Pool):
         Returns:
             None: Means that the method returns nothing.
         """
-        dirs = {'users': 'user', 'guild_config': 'guild'}
+        dirs = {"users": "user", "guild_config": "guild"}
         query = f'UPDATE "{table}" SET "{column}" = $1 WHERE "{dirs[table]}_id" = $2'
         await self.pool.execute(query, value, user.id)
         await self.bot.user_cache.refresh()

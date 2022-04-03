@@ -1,4 +1,3 @@
-
 class BoribayError(Exception):
     """The base exception class of the bot."""
 
@@ -10,7 +9,7 @@ class UserError(BoribayError):
         self.message = message
 
     def __str__(self):
-        return f'❌ {self.message}'
+        return f"❌ {self.message}"
 
 
 class EconomyError(BoribayError):
@@ -36,7 +35,7 @@ class NotEnough(EconomyError):
         self.argument = argument
 
     def __str__(self):
-        return f'You have not enough batyrs ({self.argument} given).'
+        return f"You have not enough batyrs ({self.argument} given)."
 
 
 class PastMinimum(EconomyError):
@@ -47,7 +46,7 @@ class PastMinimum(EconomyError):
         self.minimum = minimum
 
     def __str__(self):
-        return f'The minimum bet for this command: {self.minimum} batyrs.'
+        return f"The minimum bet for this command: {self.minimum} batyrs."
 
 
 class CalcError(UserError):
@@ -58,39 +57,39 @@ class InadmissableChar(CalcError):
     """Raised when parsing the task was unsuccessful."""
 
     def __init__(self, char):
-        super().__init__(f'Inadmissable character in the task: `{char}`')
+        super().__init__(f"Inadmissable character in the task: `{char}`")
 
 
 class UndefinedVariable(CalcError):
     """Raised when the called variable does not exist."""
 
     def __init__(self, variable):
-        super().__init__(f'Wrong variable name given: `{variable}`.')
+        super().__init__(f"Wrong variable name given: `{variable}`.")
 
 
 class KeywordAlreadyTaken(CalcError):
     """Raised when the keyword that is created by user is already taken."""
 
     def __str__(self):
-        return 'The given variable name is shadowing a reserved keyword argument.'
+        return "The given variable name is shadowing a reserved keyword argument."
 
 
 class Overflow(CalcError):
     """Raised when the given expression output was too big."""
 
     def __str__(self):
-        return 'Too big number was given.'
+        return "Too big number was given."
 
 
 class UnclosedBrackets(CalcError):
     """Raised when the given expression has unclosed brackets."""
 
     def __str__(self):
-        return 'Given expression has unclosed brackets.'
+        return "Given expression has unclosed brackets."
 
 
 class EmptyBrackets(CalcError):
     """Raised when the given expression has empty or unused brackets."""
 
     def __str__(self):
-        return 'Given expression has empty brackets.'
+        return "Given expression has empty brackets."

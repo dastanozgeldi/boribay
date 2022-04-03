@@ -1,4 +1,5 @@
 import discord
+
 from boribay.core import utils
 
 
@@ -9,12 +10,12 @@ class Settings(utils.Cog):
     """
 
     def __init__(self):
-        self.icon = '⚙'
+        self.icon = "⚙"
         self.default_settings = {
-            'prefix': '.',
-            'welcome_channel': None,
-            'embed_color': 3553598,
-            'autorole': None
+            "prefix": ".",
+            "welcome_channel": None,
+            "embed_color": 3553598,
+            "autorole": None,
         }
 
     async def cog_check(self, ctx) -> bool:
@@ -33,7 +34,7 @@ class Settings(utils.Cog):
         """
         # Initializing variables.
         guild = ctx.guild.id
-        query = f'UPDATE guild_config SET {key} = $1 WHERE guild_id = $2'
+        query = f"UPDATE guild_config SET {key} = $1 WHERE guild_id = $2"
 
         # Doing the stuff.
         await ctx.bot.pool.execute(query, value, guild)
@@ -55,11 +56,11 @@ class Settings(utils.Cog):
         """
         for check in self.default_settings.values():
             if ctx.guild_cache[ctx.guild.id][key] == check:
-                return '<:crossmark:814742130190712842>'
+                return "<:crossmark:814742130190712842>"
 
-        return '<:tick:814838692459446293>'
+        return "<:tick:814838692459446293>"
 
-    @utils.command(aliases=('gs', 'settings'))
+    @utils.command(aliases=("gs", "settings"))
     async def guildsettings(self, ctx: utils.Context):
         """The settings command. Shows the settings of the current server.
 
@@ -79,22 +80,22 @@ class Settings(utils.Cog):
 
         creds = await sc.convert(g, ctx.guild_cache)
         embed = ctx.embed(
-            description='\n'.join(
+            description="\n".join(
                 f'**{self.on_or_off(ctx, k)} {k.replace("_", " ").title()}:** {v}'
                 for k, v in creds.items()
             )
-        ).set_author(name=f'Settings for {g}', icon_url=g.icon_url)
+        ).set_author(name=f"Settings for {g}", icon_url=g.icon_url)
 
         await ctx.send(embed=embed)
 
-    @utils.group(aliases=('wc',))
+    @utils.group(aliases=("wc",))
     async def welcomechannel(self, ctx: utils.Context) -> None:
         """
         The welcome channel setting parent command.
         """
-        await ctx.send_help('welcomechannel')
+        await ctx.send_help("welcomechannel")
 
-    @welcomechannel.command(name='set')
+    @welcomechannel.command(name="set")
     async def _set_welcome_channel(
         self, ctx: utils.Context, channel: discord.TextChannel
     ) -> None:
@@ -106,16 +107,16 @@ class Settings(utils.Cog):
         Args:
             channel (discord.TextChannel): A channel you would like to set.
         """
-        await self._update(ctx, 'welcome_channel', channel.id)
-        await ctx.send(f'✅ Set {channel} as a welcoming channel.')
+        await self._update(ctx, "welcome_channel", channel.id)
+        await ctx.send(f"✅ Set {channel} as a welcoming channel.")
 
-    @welcomechannel.command(name='disable')
+    @welcomechannel.command(name="disable")
     async def _disable_welcome_channel(self, ctx: utils.Context) -> None:
         """
         Disable the welcoming channel with this command.
         """
-        await self._disable(ctx, 'welcome_channel')
-        await ctx.send('✅ Disabled the welcoming channel.')
+        await self._disable(ctx, "welcome_channel")
+        await ctx.send("✅ Disabled the welcoming channel.")
 
     @utils.group()
     async def prefix(self, ctx: utils.Context):
@@ -125,9 +126,9 @@ class Settings(utils.Cog):
 
         The default prefix is '.'
         """
-        await ctx.send_help('prefix')
+        await ctx.send_help("prefix")
 
-    @prefix.command(name='set')
+    @prefix.command(name="set")
     async def _set_prefix(self, ctx: utils.Context, new_prefix: str) -> None:
         """Set the custom prefix to your server.
 
@@ -137,28 +138,26 @@ class Settings(utils.Cog):
         Args:
             new_prefix (str): A new prefix that you want to set.
         """
-        await self._update(ctx, 'prefix', new_prefix)
-        await ctx.send(f'✅ Prefix has been changed to: `{new_prefix}`')
+        await self._update(ctx, "prefix", new_prefix)
+        await ctx.send(f"✅ Prefix has been changed to: `{new_prefix}`")
 
-    @prefix.command(name='default', aliases=('disable',))
+    @prefix.command(name="default", aliases=("disable",))
     async def _default_prefix(self, ctx: utils.Context) -> None:
         """
         Bring back the default bot prefix with this command.
         """
-        await self._update(ctx, 'prefix', '.')
-        await ctx.send('✅ Prefix has been set to the default one.')
+        await self._update(ctx, "prefix", ".")
+        await ctx.send("✅ Prefix has been set to the default one.")
 
-    @utils.group(aliases=('embedcolour', 'ec'))
+    @utils.group(aliases=("embedcolour", "ec"))
     async def embedcolor(self, ctx: utils.Context) -> None:
         """
         The color setting parent command.
         """
-        await ctx.send_help('embedcolor')
+        await ctx.send_help("embedcolor")
 
-    @embedcolor.command(name='set')
-    async def _set_color(
-        self, ctx: utils.Context, color: utils.ColorConverter
-    ) -> None:
+    @embedcolor.command(name="set")
+    async def _set_color(self, ctx: utils.Context, color: utils.ColorConverter) -> None:
         """Set the custom color to your server.
 
         Example:
@@ -168,22 +167,24 @@ class Settings(utils.Cog):
             color (ColorConverter): The color you would like to set.
             It can be hex, a word (e.g blurple) or an integer.
         """
-        color = int(str(color).replace('#', ''), 16)  # The hex value of a color.
-        await self._update(ctx, 'embed_color', color)
+        color = int(str(color).replace("#", ""), 16)  # The hex value of a color.
+        await self._update(ctx, "embed_color", color)
 
         # Making an embed since the user has to see color changes.
-        embed = ctx.embed(description='✅ As of now, the embed color will look like this.')
+        embed = ctx.embed(
+            description="✅ As of now, the embed color will look like this."
+        )
         await ctx.send(embed=embed)
 
-    @embedcolor.command(name='default', aliases=('disable',))
+    @embedcolor.command(name="default", aliases=("disable",))
     async def _default_color(self, ctx: utils.Context) -> None:
         """
         Bring back the default color for your guild with this command.
         """
-        await self._update(ctx, 'embed_color', 3553599)
+        await self._update(ctx, "embed_color", 3553599)
 
         # Making an embed since the user has to see color changes.
-        embed = ctx.embed(description='✅ Embed color has been set to the default one.')
+        embed = ctx.embed(description="✅ Embed color has been set to the default one.")
         await ctx.send(embed=embed)
 
     # Autorole Settings Part
@@ -192,9 +193,9 @@ class Settings(utils.Cog):
         """
         The autorole setting parent command.
         """
-        await ctx.send_help('autorole')
+        await ctx.send_help("autorole")
 
-    @autorole.command(name='set')
+    @autorole.command(name="set")
     async def _set_autorole(self, ctx: utils.Context, role: discord.Role) -> None:
         """Set the autorole feature in your server.
 
@@ -204,13 +205,13 @@ class Settings(utils.Cog):
         Args:
             role (discord.Role): A role you would like to set.
         """
-        await self._update(ctx, 'autorole', role.id)
-        await ctx.send(f'✅ Set {role.mention} as an autorole.')
+        await self._update(ctx, "autorole", role.id)
+        await ctx.send(f"✅ Set {role.mention} as an autorole.")
 
-    @autorole.command(name='disable')
+    @autorole.command(name="disable")
     async def _disable_autorole(self, ctx: utils.Context) -> None:
         """
         Disable the autorole feature for your guild.
         """
-        await self._disable(ctx, 'autorole')
-        await ctx.send('✅ Disabled autorole.')
+        await self._disable(ctx, "autorole")
+        await ctx.send("✅ Disabled autorole.")

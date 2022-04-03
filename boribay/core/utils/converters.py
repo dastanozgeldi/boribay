@@ -9,11 +9,11 @@ from discord.ext import commands
 from PIL import ImageColor
 
 __all__ = (
-    'AuthorCheckConverter',
-    'TimeConverter',
-    'ImageConverter',
-    'ColorConverter',
-    'SettingsConverter'
+    "AuthorCheckConverter",
+    "TimeConverter",
+    "ImageConverter",
+    "ColorConverter",
+    "SettingsConverter",
 )
 
 
@@ -23,14 +23,14 @@ async def is_valid_url(url: str, session):
 
 
 def codepoint(codes: List[str]):
-    if '200d' not in codes:
-        return '-'.join(c for c in codes if c != 'fe0f')
-    return '-'.join(codes)
+    if "200d" not in codes:
+        return "-".join(c for c in codes if c != "fe0f")
+    return "-".join(codes)
 
 
 async def emoji_to_url(char, *, session):
-    path = codepoint([f'{ord(c):x}' for c in char])
-    url = f'https://twemoji.maxcdn.com/v/latest/72x72/{path}.png'
+    path = codepoint([f"{ord(c):x}" for c in char])
+    url = f"https://twemoji.maxcdn.com/v/latest/72x72/{path}.png"
 
     if await is_valid_url(url, session):
         return url
@@ -41,9 +41,11 @@ async def emoji_to_url(char, *, session):
 class Regex(Enum):
     """Enumeration of regexes to help us with converting."""
 
-    RGB = r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?'
-    EMOJI = r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>'
-    URL = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    RGB = r"\(?(\d+),?\s*(\d+),?\s*(\d+)\)?"
+    EMOJI = r"<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>"
+    URL = (
+        r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+    )
 
 
 class ColorConverter(commands.Converter):
@@ -51,9 +53,10 @@ class ColorConverter(commands.Converter):
 
     This class inherits from `commands.Converter`.
     """
+
     async def convert(self, ctx, arg: str):
         with suppress(AttributeError):
-            match = re.match(r'\(?(\d+),?\s*(\d+),?\s*(\d+)\)?', arg)
+            match = re.match(r"\(?(\d+),?\s*(\d+),?\s*(\d+)\)?", arg)
             check = all(0 <= int(x) <= 255 for x in match.groups())
 
         if match and check:
@@ -72,7 +75,9 @@ class ColorConverter(commands.Converter):
         if result:
             return result
 
-        raise commands.BadArgument(f'Could not find any color that matches this: `{arg}`.')
+        raise commands.BadArgument(
+            f"Could not find any color that matches this: `{arg}`."
+        )
 
 
 class SettingsConverter(commands.Converter):
@@ -80,13 +85,13 @@ class SettingsConverter(commands.Converter):
         data = copy(settings[guild.id])
 
         for k, v in data.items():
-            if k == 'autorole':
+            if k == "autorole":
                 data[k] = guild.get_role(v)
 
-            elif k == 'embed_color':
+            elif k == "embed_color":
                 data[k] = hex(v)
 
-            elif k == 'welcome_channel':
+            elif k == "welcome_channel":
                 data[k] = guild.get_channel(v)
 
         return data
@@ -103,7 +108,7 @@ class AuthorCheckConverter(commands.Converter):
         member = await commands.MemberConverter().convert(ctx, argument)
 
         if ctx.author == member:
-            raise commands.BadArgument('❌ Mentioning yourself is not the way.')
+            raise commands.BadArgument("❌ Mentioning yourself is not the way.")
 
         return member
 
@@ -111,8 +116,8 @@ class AuthorCheckConverter(commands.Converter):
 class TimeConverter(commands.Converter):
     async def convert(self, ctx, argument):
         time = 0
-        time_dict = {'h': 3600, 's': 1, 'm': 60, 'd': 86400}
-        matches = re.findall(r'(?:(\d{1,5})(h|s|m|d))+?', argument.lower())
+        time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
+        matches = re.findall(r"(?:(\d{1,5})(h|s|m|d))+?", argument.lower())
 
         for v, k in matches:
             try:
@@ -120,10 +125,11 @@ class TimeConverter(commands.Converter):
 
             except KeyError:
                 raise commands.BadArgument(
-                    f'{k} is an invalid time-key! h/m/s/d are valid.')
+                    f"{k} is an invalid time-key! h/m/s/d are valid."
+                )
 
             except ValueError:
-                raise commands.BadArgument(f'{v} is not a number!')
+                raise commands.BadArgument(f"{v} is not a number!")
 
         return time
 
@@ -133,12 +139,9 @@ class ImageConverter(commands.Converter):
 
     This class inherits from `commands.Converter`.
     """
+
     async def convert(
-        self,
-        ctx,
-        argument: Union[discord.Emoji, str],
-        *,
-        return_url: bool = False
+        self, ctx, argument: Union[discord.Emoji, str], *, return_url: bool = False
     ) -> Union[bytes, str]:
         """The function that does the actual thing we are expecting from this class.
 
@@ -160,7 +163,7 @@ class ImageConverter(commands.Converter):
         try:
             mc = commands.MemberConverter()
             member = await mc.convert(ctx, argument)
-            avatar = member.avatar_url_as(static_format='png', format='png', size=512)
+            avatar = member.avatar_url_as(static_format="png", format="png", size=512)
             if return_url:
                 return str(avatar)
             return await avatar.read()

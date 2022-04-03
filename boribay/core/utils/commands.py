@@ -2,13 +2,7 @@ from typing import Dict, Tuple
 
 from discord.ext import commands
 
-__all__ = (
-    'Cog',
-    'Group',
-    'Command',
-    'group',
-    'command'
-)
+__all__ = ("Cog", "Group", "Command", "group", "command")
 
 
 class Command(commands.Command):
@@ -19,17 +13,17 @@ class Command(commands.Command):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.translator = kwargs.pop('i18n', None)
+        self.translator = kwargs.pop("i18n", None)
 
         if len(self.qualified_name) > 50:
             raise RuntimeError(
                 f'"{self.qualified_name}" cannot be set as a command name, the name '
-                'length is too big. That may cause issues with some other utilities.'
+                "length is too big. That may cause issues with some other utilities."
             )
 
     @property
     def oneline_help(self):
-        return self.help.split('\n')[0]
+        return self.help.split("\n")[0]
 
 
 class Cog(commands.Cog, metaclass=commands.CogMeta):
@@ -43,8 +37,8 @@ class Cog(commands.Cog, metaclass=commands.CogMeta):
     __cog_commands__: Tuple[Command]
 
     def __str__(self):
-        if hasattr(self, 'icon'):
-            return f'{self.icon} {self.qualified_name}'
+        if hasattr(self, "icon"):
+            return f"{self.icon} {self.qualified_name}"
 
         return self.qualified_name
 
@@ -61,7 +55,7 @@ class GroupMixin(commands.GroupMixin):
 
     def command(self, *args, **kwargs):
         def deco(func):
-            kwargs.setdefault('parent', self)
+            kwargs.setdefault("parent", self)
             result = command(*args, **kwargs)(func)
             self.add_command(result)
             return result
@@ -70,7 +64,7 @@ class GroupMixin(commands.GroupMixin):
 
     def group(self, *args, **kwargs):
         def deco(func):
-            kwargs.setdefault('parent', self)
+            kwargs.setdefault("parent", self)
             result = group(*args, **kwargs)(func)
             self.add_command(result)
             return result

@@ -9,8 +9,8 @@ from wand.image import Image as WI
 
 from .converters import ImageConverter
 
-FONT_PATH = './data/fonts'
-IMAGE_PATH = './data/layouts'
+FONT_PATH = "./data/fonts"
+IMAGE_PATH = "./data/layouts"
 
 
 def executor(func):
@@ -48,10 +48,7 @@ def color_exists(color: str) -> bool:
 
 
 async def make_image(
-    ctx,
-    argument: str,
-    *,
-    return_url: bool = False
+    ctx, argument: str, *, return_url: bool = False
 ) -> Union[bytes, str]:
     converter = ImageConverter()
     image = await converter.convert(ctx, argument, return_url=return_url)
@@ -61,7 +58,9 @@ async def make_image(
             attachment = ctx.message.attachments[0]
             image = attachment.url if return_url else await attachment.read()
         else:
-            avatar = ctx.author.avatar_url_as(static_format='png', format='png', size=512)
+            avatar = ctx.author.avatar_url_as(
+                static_format="png", format="png", size=512
+            )
             image = str(avatar) if return_url else await avatar.read()
 
     return image
@@ -73,14 +72,14 @@ class Manip:
     @staticmethod
     @executor
     def typeracer(txt: str):
-        font = ImageFont.truetype(f'{FONT_PATH}/monoid.ttf', size=30)
+        font = ImageFont.truetype(f"{FONT_PATH}/monoid.ttf", size=30)
         w, h = font.getsize_multiline(txt)
 
-        with Image.new('RGB', (w + 10, h + 10)) as base:
+        with Image.new("RGB", (w + 10, h + 10)) as base:
             canvas = ImageDraw.Draw(base)
             canvas.multiline_text((5, 5), txt, font=font)
             buffer = BytesIO()
-            base.save(buffer, 'png', optimize=True)
+            base.save(buffer, "png", optimize=True)
 
         buffer.seek(0)
         return buffer
@@ -88,16 +87,18 @@ class Manip:
     @staticmethod
     @executor
     def welcome(top_text: str, bottom_text: str, member_avatar: BytesIO):
-        font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=20)
+        font = ImageFont.truetype(f"{FONT_PATH}/arial_bold.ttf", size=20)
         join_w, member_w = font.getsize(bottom_text)[0], font.getsize(top_text)[0]
 
-        with Image.new('RGB', (600, 400)) as card:
+        with Image.new("RGB", (600, 400)) as card:
             card.paste(Image.open(member_avatar).resize((263, 263)), (170, 32))
             draw = ImageDraw.Draw(card)
-            draw.text(((600 - join_w) / 2, 309), bottom_text, (255, 255, 255), font=font)
+            draw.text(
+                ((600 - join_w) / 2, 309), bottom_text, (255, 255, 255), font=font
+            )
             draw.text(((600 - member_w) / 2, 1), top_text, (169, 169, 169), font=font)
             buffer = BytesIO()
-            card.save(buffer, 'png', optimize=True)
+            card.save(buffer, "png", optimize=True)
 
         buffer.seek(0)
         return buffer
@@ -109,7 +110,7 @@ class Manip:
             small = im.resize((32, 32), resample=Image.BILINEAR)
             result = small.resize(im.size, Image.NEAREST)
             buffer = BytesIO()
-            result.save(buffer, 'png')
+            result.save(buffer, "png")
 
         buffer.seek(0)
         return buffer
@@ -119,11 +120,11 @@ class Manip:
     def whyareyougae(author: BytesIO, member: BytesIO):
         author = Image.open(author)
 
-        with Image.open(f'{IMAGE_PATH}/wayg.jpg') as img:
+        with Image.open(f"{IMAGE_PATH}/wayg.jpg") as img:
             img.paste(author, (507, 103))
             img.paste(Image.open(member).resize((128, 128)), (77, 120))
             buffer = BytesIO()
-            img.save(buffer, 'png', optimize=True)
+            img.save(buffer, "png", optimize=True)
 
         buffer.seek(0)
         return buffer
@@ -133,14 +134,14 @@ class Manip:
     def fiveguysonegirl(author: BytesIO, member: BytesIO):
         author = Image.open(author)
 
-        with Image.open(f'{IMAGE_PATH}/5g1g.png') as img:
+        with Image.open(f"{IMAGE_PATH}/5g1g.png") as img:
             img.paste(Image.open(member).resize((128, 128)), (500, 275))
 
             for i in [(31, 120), (243, 53), (438, 85), (637, 90), (815, 20)]:
                 img.paste(author, i)
 
             buffer = BytesIO()
-            img.save(buffer, 'png', optimize=True)
+            img.save(buffer, "png", optimize=True)
 
         buffer.seek(0)
         return buffer
@@ -150,10 +151,10 @@ class Manip:
     def wanted(image: BytesIO):
         image = Image.open(image).resize((189, 205))
 
-        with Image.open(f'{IMAGE_PATH}/wanted.png') as img:
+        with Image.open(f"{IMAGE_PATH}/wanted.png") as img:
             img.paste(image, (73, 185))
             buffer = BytesIO()
-            img.save(buffer, 'png')
+            img.save(buffer, "png")
 
         buffer.seek(0)
         return buffer
@@ -164,11 +165,11 @@ class Manip:
         winner = Image.open(winner).resize((40, 40))
         knocked_out = Image.open(knocked_out).resize((60, 60))
 
-        with Image.open(f'{IMAGE_PATH}/fight.jpg') as img:
+        with Image.open(f"{IMAGE_PATH}/fight.jpg") as img:
             img.paste(winner, (236, 50))
             img.paste(knocked_out.rotate(-90), (395, 206))
             buffer = BytesIO()
-            img.save(buffer, 'png')
+            img.save(buffer, "png")
 
         buffer.seek(0)
         return buffer
@@ -176,13 +177,13 @@ class Manip:
     @staticmethod
     @executor
     def clyde(txt: str):
-        font = ImageFont.truetype(f'{FONT_PATH}/whitneybook.otf', 18)
+        font = ImageFont.truetype(f"{FONT_PATH}/whitneybook.otf", 18)
 
-        with Image.open(f'{IMAGE_PATH}/clyde.png') as img:
+        with Image.open(f"{IMAGE_PATH}/clyde.png") as img:
             draw = ImageDraw.Draw(img)
             draw.text((72, 33), txt, (255, 255, 255), font=font)
             buffer = BytesIO()
-            img.save(buffer, 'png')
+            img.save(buffer, "png")
 
         buffer.seek(0)
         return buffer
@@ -192,14 +193,14 @@ class Manip:
     def drake(no: str, yes: str):
         no_wrapped = textwrap.wrap(text=no, width=13)
         yes_wrapped = textwrap.wrap(text=yes, width=13)
-        font = ImageFont.truetype(f'{FONT_PATH}/arial_bold.ttf', size=28)
+        font = ImageFont.truetype(f"{FONT_PATH}/arial_bold.ttf", size=28)
 
-        with Image.open(f'{IMAGE_PATH}/drake.jpg') as img:
+        with Image.open(f"{IMAGE_PATH}/drake.jpg") as img:
             draw = ImageDraw.Draw(img)
-            draw.text((270, 10), '\n'.join(no_wrapped), (0, 0, 0), font=font)
-            draw.text((270, 267), '\n'.join(yes_wrapped), (0, 0, 0), font=font)
+            draw.text((270, 10), "\n".join(no_wrapped), (0, 0, 0), font=font)
+            draw.text((270, 267), "\n".join(yes_wrapped), (0, 0, 0), font=font)
             buffer = BytesIO()
-            img.save(buffer, 'png')
+            img.save(buffer, "png")
 
         buffer.seek(0)
         return buffer
@@ -207,7 +208,7 @@ class Manip:
     @staticmethod
     @executor
     def jail(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/jailbars.png')
+        layout = WI(filename=f"{IMAGE_PATH}/jailbars.png")
 
         with WI(file=image) as img:
             w, h = img.size
@@ -222,7 +223,7 @@ class Manip:
     @staticmethod
     @executor
     def press_f(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/f.png')
+        layout = WI(filename=f"{IMAGE_PATH}/f.png")
 
         with WI(file=image) as img:
             img.resize(52, 87)
@@ -237,7 +238,7 @@ class Manip:
     @staticmethod
     @executor
     def rainbow(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/rainbow.png')
+        layout = WI(filename=f"{IMAGE_PATH}/rainbow.png")
 
         with WI(file=image) as img:
             w, h = img.size
@@ -252,7 +253,7 @@ class Manip:
     @staticmethod
     @executor
     def communist(image: BytesIO):
-        layout = WI(filename=f'{IMAGE_PATH}/communist-flag.jpg')
+        layout = WI(filename=f"{IMAGE_PATH}/communist-flag.jpg")
 
         with WI(file=image) as img:
             w, h = img.size
@@ -286,7 +287,7 @@ class Manip:
     def achievement(title: str, ach: str, colour=(255, 255, 0, 255)):
         front = Image.open(f"{IMAGE_PATH}/achievement/achievement.png")
         txt = Image.new("RGBA", (len(ach) * 15, 64))
-        fnt = ImageFont.truetype('data/fonts/minecraft.ttf', 16)
+        fnt = ImageFont.truetype("data/fonts/minecraft.ttf", 16)
         d = ImageDraw.Draw(txt)
 
         w, h = d.textsize(ach, font=fnt)

@@ -5,10 +5,11 @@ from datetime import datetime
 from io import BytesIO
 
 import discord
-from boribay.core import exceptions, utils
-from boribay.core.bot import Boribay
 from discord.ext import commands
 from humanize import time
+
+from boribay.core import exceptions, utils
+from boribay.core.bot import Boribay
 
 from .calculator import CalcLexer, CalcParser
 from .utils import Poll, TodoPageSource, UrbanDictionaryPageSource
@@ -21,7 +22,7 @@ class Useful(utils.Cog):
     """
 
     def __init__(self, bot: Boribay):
-        self.icon = '✨'
+        self.icon = "✨"
         self.bot = bot
 
     @utils.command()
@@ -34,15 +35,17 @@ class Useful(utils.Cog):
         buffer = BytesIO()
 
         async with ctx.typing():
-            with zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED) as f:
+            with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as f:
                 for emoji in ctx.guild.emojis:
                     bts = await emoji.url.read()
-                    f.writestr(f'{emoji.name}.{"gif" if emoji.animated else "png"}', bts)
+                    f.writestr(
+                        f'{emoji.name}.{"gif" if emoji.animated else "png"}', bts
+                    )
             buffer.seek(0)
 
         await ctx.reply(
-            'Sorry for being slow as hell but anyways:',
-            file=discord.File(buffer, filename='emojis.zip')
+            "Sorry for being slow as hell but anyways:",
+            file=discord.File(buffer, filename="emojis.zip"),
         )
 
     @utils.command()
@@ -55,37 +58,44 @@ class Useful(utils.Cog):
         Args:
             anime (str): An anime that you want to get info about.
         """
-        anime = anime.replace(' ', '%20')
-        r = await ctx.bot.session.get(f'https://kitsu.io/api/edge/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres')
+        anime = anime.replace(" ", "%20")
+        r = await ctx.bot.session.get(
+            f"https://kitsu.io/api/edge/anime?page[limit]=1&page[offset]=0&filter[text]={anime}&include=genres"
+        )
         js = await r.json()
-        attributes = js['data'][0]['attributes']
+        attributes = js["data"][0]["attributes"]
 
         try:
-            rl = js['included']
-            rl = ' • '.join([rl[i]['attributes']['name'] for i in range(len(rl))])
+            rl = js["included"]
+            rl = " • ".join([rl[i]["attributes"]["name"] for i in range(len(rl))])
 
         except KeyError:
-            rl = 'No genres specified.'
+            rl = "No genres specified."
 
         fields = [
-            ('Rank', attributes['ratingRank']),
-            ('Rating', f"{attributes['averageRating']}/100⭐"),
-            ('Status', attributes['status']),
-            ('Started', attributes['startDate']),
-            ('Ended', attributes['endDate']),
-            ('Episodes', attributes['episodeCount']),
-            ('Duration', f"{attributes['episodeLength']} min"),
-            ('Age Rate', attributes['ageRatingGuide']),
-            ('Genres', rl)
+            ("Rank", attributes["ratingRank"]),
+            ("Rating", f"{attributes['averageRating']}/100⭐"),
+            ("Status", attributes["status"]),
+            ("Started", attributes["startDate"]),
+            ("Ended", attributes["endDate"]),
+            ("Episodes", attributes["episodeCount"]),
+            ("Duration", f"{attributes['episodeLength']} min"),
+            ("Age Rate", attributes["ageRatingGuide"]),
+            ("Genres", rl),
         ]
-        title = attributes['titles']['en_jp']
+        title = attributes["titles"]["en_jp"]
         embed = ctx.embed(
             title=f"{title} ({attributes['titles']['ja_jp']})",
-            url=f"https://kitsu.io/anime/{js['data'][0]['id']}"
-        ).set_thumbnail(url=attributes['posterImage']['small'])
+            url=f"https://kitsu.io/anime/{js['data'][0]['id']}",
+        ).set_thumbnail(url=attributes["posterImage"]["small"])
 
-        embed.add_field(name='Statistics', value='\n'.join(f'**{name}:** {value}' for name, value in fields))
-        embed.add_field(name='Description', value=attributes['description'][:300] + '...')
+        embed.add_field(
+            name="Statistics",
+            value="\n".join(f"**{name}:** {value}" for name, value in fields),
+        )
+        embed.add_field(
+            name="Description", value=attributes["description"][:300] + "..."
+        )
 
         await ctx.send(embed=embed)
 
@@ -99,36 +109,43 @@ class Useful(utils.Cog):
         Args:
             manga (str): A manga that you want to get info about.
         """
-        manga = manga.replace(' ', '%20')
-        r = await ctx.bot.session.get(f'https://kitsu.io/api/edge/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres')
+        manga = manga.replace(" ", "%20")
+        r = await ctx.bot.session.get(
+            f"https://kitsu.io/api/edge/manga?page[limit]=1&page[offset]=0&filter[text]={manga}&include=genres"
+        )
         js = await r.json()
-        attributes = js['data'][0]['attributes']
+        attributes = js["data"][0]["attributes"]
 
         try:
-            rl = js['included']
-            rl = ' • '.join([rl[i]['attributes']['name'] for i in range(len(rl))])
+            rl = js["included"]
+            rl = " • ".join([rl[i]["attributes"]["name"] for i in range(len(rl))])
 
         except KeyError:
-            rl = 'No genres specified.'
+            rl = "No genres specified."
 
         fields = [
-            ('Rank', attributes['ratingRank']),
-            ('Rating', f"{attributes['averageRating']}/100⭐"),
-            ('Status', attributes['status']),
-            ('Started', attributes['startDate']),
-            ('Ended', attributes['endDate']),
-            ('Chapters', attributes['chapterCount']),
-            ('Volume', attributes['volumeCount']),
-            ('Age Rate', attributes['ageRatingGuide']),
-            ('Genres', rl)
+            ("Rank", attributes["ratingRank"]),
+            ("Rating", f"{attributes['averageRating']}/100⭐"),
+            ("Status", attributes["status"]),
+            ("Started", attributes["startDate"]),
+            ("Ended", attributes["endDate"]),
+            ("Chapters", attributes["chapterCount"]),
+            ("Volume", attributes["volumeCount"]),
+            ("Age Rate", attributes["ageRatingGuide"]),
+            ("Genres", rl),
         ]
 
         embed = ctx.embed(
             title=f"{attributes['titles']['en_jp']} ({attributes['titles']['ja_jp']})",
-            url=f'https://kitsu.io/manga/{manga}'
-        ).set_thumbnail(url=attributes['posterImage']['small'])
-        embed.add_field(name='Statistics', value='\n'.join([f'**{name}:** {value}' for name, value in fields]))
-        embed.add_field(name='Description', value=attributes['description'][:300] + '...')
+            url=f"https://kitsu.io/manga/{manga}",
+        ).set_thumbnail(url=attributes["posterImage"]["small"])
+        embed.add_field(
+            name="Statistics",
+            value="\n".join([f"**{name}:** {value}" for name, value in fields]),
+        )
+        embed.add_field(
+            name="Description", value=attributes["description"][:300] + "..."
+        )
 
         await ctx.send(embed=embed)
 
@@ -136,14 +153,11 @@ class Useful(utils.Cog):
     async def todo(self, ctx: utils.Context) -> None:
         """To-do commands parent. Sends help for its subcommands.
         Kind of pro-tip to use this instead of **{p}help todo**"""
-        await ctx.send_help('todo')
+        await ctx.send_help("todo")
 
-    @todo.command(name='show', aliases=('list',))
+    @todo.command(name="show", aliases=("list",))
     async def _todo_show(
-        self,
-        ctx: utils.Context,
-        show_count: bool = False,
-        dm: bool = False
+        self, ctx: utils.Context, show_count: bool = False, dm: bool = False
     ) -> None:
         """To-do show command, a visual way to manipulate with your list.
 
@@ -154,21 +168,23 @@ class Useful(utils.Cog):
         dm : bool, optional
             Whether to DM your list, by default False
         """
-        query = 'SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at'
-        todos = [(todo['content'], todo['jump_url'])
-                 for todo in await ctx.bot.pool.fetch(query, ctx.author.id)]
+        query = (
+            "SELECT content, jump_url FROM todos WHERE user_id = $1 ORDER BY added_at"
+        )
+        todos = [
+            (todo["content"], todo["jump_url"])
+            for todo in await ctx.bot.pool.fetch(query, ctx.author.id)
+        ]
         dest = ctx.author if dm else ctx.channel
 
         if show_count:
             return await dest.send(len(todos))
 
         await utils.Paginate(
-            TodoPageSource(ctx, todos),
-            clear_reactions_after=True,
-            timeout=60.0
+            TodoPageSource(ctx, todos), clear_reactions_after=True, timeout=60.0
         ).start(ctx, channel=dest)
 
-    @todo.command(name='add')
+    @todo.command(name="add")
     async def _todo_add(self, ctx: utils.Context, *, content: str) -> None:
         """Add anything you think you have to-do to your list.
 
@@ -178,14 +194,16 @@ class Useful(utils.Cog):
         Args:
             content (str): A to-do content which is going to be added.
         """
-        query = '''
+        query = """
         INSERT INTO todos(user_id, content, added_at, jump_url)
         VALUES($1, $2, $3, $4)
-        '''
-        await ctx.bot.pool.execute(query, ctx.author.id, content, datetime.utcnow(), ctx.message.jump_url)
-        await ctx.message.add_reaction('✅')
+        """
+        await ctx.bot.pool.execute(
+            query, ctx.author.id, content, datetime.utcnow(), ctx.message.jump_url
+        )
+        await ctx.message.add_reaction("✅")
 
-    @todo.command(name='remove', aliases=('rm', 'delete'))
+    @todo.command(name="remove", aliases=("rm", "delete"))
     async def _todo_remove(
         self, ctx: utils.Context, numbers: commands.Greedy[int]
     ) -> None:
@@ -199,18 +217,18 @@ class Useful(utils.Cog):
         Args:
             numbers: Range of to-do indexes you want to remove.
         """
-        query = '''
+        query = """
         WITH enumerated AS (SELECT todos.content, row_number()
         OVER (ORDER BY added_at ASC) AS count FROM todos WHERE user_id = $1)
         DELETE FROM todos WHERE user_id = $1 AND content IN (
             SELECT enumerated.content FROM enumerated
             WHERE enumerated.count=ANY($2::bigint[])
         ) RETURNING content
-        '''
+        """
         await ctx.bot.pool.execute(query, ctx.author.id, numbers)
-        await ctx.message.add_reaction('✅')
+        await ctx.message.add_reaction("✅")
 
-    @todo.command(name='info')
+    @todo.command(name="info")
     async def _todo_info(self, ctx: utils.Context, number: int) -> None:
         """Shows some useful information about the specified to-do.
         Returns the jump-url, the time to-do was added.
@@ -221,33 +239,36 @@ class Useful(utils.Cog):
         Args:
             number (int): The index of to-do you want to see info about.
         """
-        query = '''
+        query = """
         WITH enumerated AS (SELECT todos.content, todos.added_at, todos.jump_url, row_number()
         OVER (ORDER BY added_at ASC) as count FROM todos WHERE user_id = $1)
         SELECT * FROM enumerated WHERE enumerated.count = $2
-        '''
+        """
         row = await ctx.bot.pool.fetchrow(query, ctx.author.id, number)
 
         values = [
-            ('Added', f'{time.naturaltime(row["added_at"])} by UTC'),
-            ('Jump URL', f'[click here]({row["jump_url"]})')
+            ("Added", f'{time.naturaltime(row["added_at"])} by UTC'),
+            ("Jump URL", f'[click here]({row["jump_url"]})'),
         ]
 
         embed = ctx.embed(
-            title=f'Todo #{number}', description=row['content']
-        ).add_field(name='Additional Information', value='\n'.join(f'{n}: **{v}**' for n, v in values))
+            title=f"Todo #{number}", description=row["content"]
+        ).add_field(
+            name="Additional Information",
+            value="\n".join(f"{n}: **{v}**" for n, v in values),
+        )
 
         await ctx.send(embed=embed)
 
-    @todo.command(name='clear', aliases=('reset',))
+    @todo.command(name="clear", aliases=("reset",))
     async def _todo_clear(self, ctx: utils.Context) -> None:
         """Clear your to-do list up using this command."""
-        query = 'DELETE FROM todos WHERE user_id = $1'
+        query = "DELETE FROM todos WHERE user_id = $1"
 
-        confirmation = await ctx.confirm('Are you sure? All to-do\'s will be dropped.')
+        confirmation = await ctx.confirm("Are you sure? All to-do's will be dropped.")
         if confirmation:
             await ctx.bot.pool.execute(query, ctx.author.id)
-            return await ctx.message.add_reaction('✅')
+            return await ctx.message.add_reaction("✅")
 
     @utils.command()
     async def poll(self, ctx: utils.Context, *, options: str) -> None:
@@ -263,7 +284,7 @@ class Useful(utils.Cog):
             options: Title + Options for your poll. Separate by `|`.
         """
         # Variable assignment.
-        options = list(map(str.strip, options.split('|')))
+        options = list(map(str.strip, options.split("|")))
         description = options.pop(0)  # Getting the first one as the poll title.
 
         menu = Poll(ctx, options=options, description=description)
@@ -284,23 +305,23 @@ class Useful(utils.Cog):
             NSFWChannelRequired: If the post is NSFW and the channel isn't.
         """
         try:
-            url = f'https://www.reddit.com/r/{subreddit}/hot.json'
+            url = f"https://www.reddit.com/r/{subreddit}/hot.json"
             r = await ctx.bot.session.get(url)
             js = await r.json()
-            data = js['data']['children'][random.randint(0, 10)]['data']
+            data = js["data"]["children"][random.randint(0, 10)]["data"]
         except IndexError:
-            raise commands.BadArgument(f'There is no subreddit called: {subreddit}.')
+            raise commands.BadArgument(f"There is no subreddit called: {subreddit}.")
 
-        if not ctx.channel.is_nsfw() and data['over_18']:  # no need in "is True"
+        if not ctx.channel.is_nsfw() and data["over_18"]:  # no need in "is True"
             raise commands.NSFWChannelRequired(ctx.channel)
 
-        embed = ctx.embed().set_image(url=data['url'])
-        embed.set_author(name=data['title'], icon_url='https://tinyurl.com/yhkdozxx')
+        embed = ctx.embed().set_image(url=data["url"])
+        embed.set_author(name=data["title"], icon_url="https://tinyurl.com/yhkdozxx")
         embed.set_footer(text=f'from {data["subreddit_name_prefixed"]}')
 
         await ctx.send(embed=embed)
 
-    @utils.command(aliases=('ud', 'urban'))
+    @utils.command(aliases=("ud", "urban"))
     async def urbandictionary(self, ctx: utils.Context, *, word: str) -> None:
         """Search for word definitions from urban dictionary.
 
@@ -311,21 +332,19 @@ class Useful(utils.Cog):
             word (str): Your word to search for.
         """
         r = await ctx.bot.session.get(
-            'http://api.urbandictionary.com/v0/define?term=' + word
+            "http://api.urbandictionary.com/v0/define?term=" + word
         )
         if (stat := r.status) != 200:
-            return await ctx.send(f'Facing some issues: {stat} {r.reason}')
+            return await ctx.send(f"Facing some issues: {stat} {r.reason}")
 
         js = await r.json()
-        if not (source := js.get('list', [])):
-            return await ctx.send(f'No definitions found for `{word}`.')
+        if not (source := js.get("list", [])):
+            return await ctx.send(f"No definitions found for `{word}`.")
 
         # Everything is done, paginating...
-        await utils.Paginate(
-            UrbanDictionaryPageSource(ctx, source)
-        ).start(ctx)
+        await utils.Paginate(UrbanDictionaryPageSource(ctx, source)).start(ctx)
 
-    @utils.command(aliases=('calc',))
+    @utils.command(aliases=("calc",))
     async def calculate(self, ctx: utils.Context, *, expression: str) -> None:
         """A simple calculator command that supports useful features.
 
@@ -347,14 +366,14 @@ class Useful(utils.Cog):
         """
         lexer = CalcLexer()
         parser = CalcParser()
-        reg = ''.join(i for i in expression if i in '()')
+        reg = "".join(i for i in expression if i in "()")
 
         try:
             if not parser.match(reg):
                 raise exceptions.UnclosedBrackets
 
             for i in range(len(expression) - 1):
-                if expression[i] == '(' and expression[i + 1] == ')':
+                if expression[i] == "(" and expression[i + 1] == ")":
                     raise exceptions.EmptyBrackets
 
             result = parser.parse(lexer.tokenize(expression))
@@ -363,16 +382,16 @@ class Useful(utils.Cog):
             return await ctx.send(e.exc)
 
         except (decimal.InvalidOperation, decimal.DivisionByZero):
-            return await ctx.send('Invalid expression provided.')
+            return await ctx.send("Invalid expression provided.")
 
-        res = '\n'.join(str(i) for i in result)
+        res = "\n".join(str(i) for i in result)
         embed = ctx.embed()
-        for n, v in (('Input', expression), ('Output', res)):
-            embed.add_field(name=n, value=f'```\n{v}\n```', inline=False)
+        for n, v in (("Input", expression), ("Output", res)):
+            embed.add_field(name=n, value=f"```\n{v}\n```", inline=False)
 
         await ctx.send(embed=embed)
 
-    @utils.command(aliases=('temp', 'temperature'))
+    @utils.command(aliases=("temp", "temperature"))
     async def weather(self, ctx: utils.Context, *, city: str.capitalize) -> None:
         """Simply gets the weather statistics for a city | region.
         Returns: description, temperature, humidity%, atmospheric pressure.
@@ -384,18 +403,20 @@ class Useful(utils.Cog):
             city: The city you want to get weather data of.
         """
         key = ctx.config.api.weather
-        r = await ctx.bot.session.get(f'http://api.openweathermap.org/data/2.5/weather?appid={key}&q={city}')
+        r = await ctx.bot.session.get(
+            f"http://api.openweathermap.org/data/2.5/weather?appid={key}&q={city}"
+        )
         x = await r.json()
 
-        if x['cod'] != '404':
-            embed = ctx.embed(title=f'Weather in {city}')
-            embed.set_thumbnail(url='https://i.ibb.co/CMrsxdX/weather.png')
+        if x["cod"] != "404":
+            embed = ctx.embed(title=f"Weather in {city}")
+            embed.set_thumbnail(url="https://i.ibb.co/CMrsxdX/weather.png")
 
             fields = [
-                ('Description', f'**{x["weather"][0]["description"]}**', False),
-                ('Temperature', f'**{x["main"]["temp"] - 273.15:.0f}°C**', False),
-                ('Humidity', f'**{x["main"]["humidity"]}%**', False),
-                ('Atmospheric Pressure', f'**{x["main"]["pressure"]}hPa**', False)
+                ("Description", f'**{x["weather"][0]["description"]}**', False),
+                ("Temperature", f'**{x["main"]["temp"] - 273.15:.0f}°C**', False),
+                ("Humidity", f'**{x["main"]["humidity"]}%**', False),
+                ("Atmospheric Pressure", f'**{x["main"]["pressure"]}hPa**', False),
             ]
 
             for name, value, inline in fields:
@@ -403,4 +424,4 @@ class Useful(utils.Cog):
 
             return await ctx.send(embed=embed)
 
-        await ctx.send(f'City `{city}` not found.')
+        await ctx.send(f"City `{city}` not found.")

@@ -3,21 +3,22 @@ from contextlib import suppress
 from typing import Any, List, Tuple
 
 import discord
-from boribay.core.exceptions import UserError
 from discord.ext import menus
+
+from boribay.core.exceptions import UserError
 
 
 class OptionsNotInRange(UserError):
     """Raised when there were more than 10 options on a poll."""
 
     def __init__(self):
-        super().__init__('Please keep poll options range (min 2 : max 10).')
+        super().__init__("Please keep poll options range (min 2 : max 10).")
 
 
 class Poll:
     def __init__(self, ctx, **kwargs: Any) -> None:
         self.ctx = ctx
-        self.options: List[str] = kwargs.pop('options')
+        self.options: List[str] = kwargs.pop("options")
         self.embed = ctx.embed(**kwargs)
 
     def get_reactions(self) -> Tuple[str]:
@@ -30,15 +31,13 @@ class Poll:
         Tuple[str]
             A tuple of reactions to add below the poll in the future.
         """
-        if len(self.options) == 2 and self.options[0] in ('y', 'yes'):
+        if len(self.options) == 2 and self.options[0] in ("y", "yes"):
             return (
-                '<:thumbs_up:746352051717406740>',
-                '<:thumbs_down:746352095510265881>'
+                "<:thumbs_up:746352051717406740>",
+                "<:thumbs_down:746352095510265881>",
             )
 
-        return (
-            '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'
-        )
+        return ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
 
     async def start(self) -> None:
         ctx = self.ctx
@@ -50,10 +49,10 @@ class Poll:
 
         # Adding reactions on an embed field.
         self.embed.add_field(
-            name='📊 Options',
-            value='\n'.join(
-                f'{reactions[x]} {option}' for x, option in enumerate(self.options)
-            )
+            name="📊 Options",
+            value="\n".join(
+                f"{reactions[x]} {option}" for x, option in enumerate(self.options)
+            ),
         )
 
         # Attempting to delete a message sent by user.
@@ -80,17 +79,17 @@ class TodoPageSource(menus.ListPageSource):
         embed = self.ctx.embed()
 
         if len(entries) < 1:
-            embed.description = 'Currently, you have no to-do\'s.\n'
-            'To set them use **todo add** command.'
+            embed.description = "Currently, you have no to-do's.\n"
+            "To set them use **todo add** command."
 
         else:
             maximum = self.get_max_pages()
             embed.set_author(
-                name=f'Page {menu.current_page + 1} of {maximum} ({len(self.entries)} todos)',
-                icon_url=self.ctx.author.avatar_url
+                name=f"Page {menu.current_page + 1} of {maximum} ({len(self.entries)} todos)",
+                icon_url=self.ctx.author.avatar_url,
             )
-            embed.description = '\n'.join(
-                f'[{i}]({v[1]}). {v[0]}' for i, v in enumerate(entries, start=offset)
+            embed.description = "\n".join(
+                f"[{i}]({v[1]}). {v[0]}" for i, v in enumerate(entries, start=offset)
             )
 
         return embed
@@ -120,14 +119,14 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
         str
             Formatted string we are able to use in embed.
         """
-        brackets = re.compile(r'(\[(.+?)\])')
+        brackets = re.compile(r"(\[(.+?)\])")
 
         def func(m) -> str:
             word = m.group(2)
             return f'[{word}](http://{word.replace(" ", "-")}.urbanup.com)'
 
         if len(ret := brackets.sub(func, definition)) >= limit:
-            return ret[0:2000] + ' [...]'
+            return ret[0:2000] + " [...]"
 
         return ret
 
@@ -135,29 +134,31 @@ class UrbanDictionaryPageSource(menus.ListPageSource):
         mx = self.get_max_pages()
 
         embed = self.ctx.embed(
-            description=self.cleanup(entry['definition'], limit=2048),
+            description=self.cleanup(entry["definition"], limit=2048),
         ).set_footer(text=f'by {entry["author"]}')
 
         embed.set_author(
-            name=f'{entry["word"]} ({menu.current_page + 1} of {mx})' if mx else entry['word'],
-            url=entry['permalink'],
-            icon_url='https://is4-ssl.mzstatic.com/image/thumb/Purple111/v4/7e/49/85/7e498571-a905-d7dc-26c5-33dcc0dc04a8/source/512x512bb.jpg'
+            name=f'{entry["word"]} ({menu.current_page + 1} of {mx})'
+            if mx
+            else entry["word"],
+            url=entry["permalink"],
+            icon_url="https://is4-ssl.mzstatic.com/image/thumb/Purple111/v4/7e/49/85/7e498571-a905-d7dc-26c5-33dcc0dc04a8/source/512x512bb.jpg",
         )
 
         embed.add_field(
-            name='Example:',
+            name="Example:",
             # Examples can be not given (null) so we should handle this.
-            value=self.cleanup(entry['example'], limit=1024) or 'No examples given.',
-            inline=False  # We don't really need this.
+            value=self.cleanup(entry["example"], limit=1024) or "No examples given.",
+            inline=False,  # We don't really need this.
         )
 
         with suppress(KeyError):
-            up, down = entry['thumbs_up'], entry['thumbs_down']
+            up, down = entry["thumbs_up"], entry["thumbs_down"]
 
-        embed.add_field(name='Votes:', value=f'👍 {up} | 👎 {down}', inline=False)
+        embed.add_field(name="Votes:", value=f"👍 {up} | 👎 {down}", inline=False)
 
         with suppress(KeyError, ValueError):
-            date = discord.utils.parse_time(entry['written_on'][0:-1])
+            date = discord.utils.parse_time(entry["written_on"][0:-1])
 
         embed.timestamp = date
         return embed

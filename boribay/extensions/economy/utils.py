@@ -1,17 +1,14 @@
 import re
 from typing import Union
 
-from boribay.core.exceptions import NotAnInteger, NotEnough, PastMinimum
 from discord.ext import commands
 
-__all__ = ('CasinoConverter',)
+from boribay.core.exceptions import NotAnInteger, NotEnough, PastMinimum
+
+__all__ = ("CasinoConverter",)
 
 
-def get_number(
-    argument: str.lower,
-    *,
-    integer: bool = True
-) -> Union[int, float]:
+def get_number(argument: str.lower, *, integer: bool = True) -> Union[int, float]:
     """Sometimes not all users want to specify exact numbers on their bets.
 
     Arguments like `5k` could lead to the RuntimeError and we want to handle
@@ -37,22 +34,22 @@ def get_number(
     ValueError
         If the argument does not look like a number at all.
     """
-    if not (argument := argument.replace(',', '').replace('+', '').strip()):
+    if not (argument := argument.replace(",", "").replace("+", "").strip()):
         raise ValueError()
 
-    if argument.endswith('k'):
-        argument = str(float(argument.rstrip('k')) * 1_000)
+    if argument.endswith("k"):
+        argument = str(float(argument.rstrip("k")) * 1_000)
 
-    elif argument.endswith('m'):
-        argument = str(float(argument.rstrip('m')) * 1_000_000)
+    elif argument.endswith("m"):
+        argument = str(float(argument.rstrip("m")) * 1_000_000)
 
-    elif argument.endswith('b'):
-        argument = str(float(argument.rstrip('b')) * 1_000_000_000)
+    elif argument.endswith("b"):
+        argument = str(float(argument.rstrip("b")) * 1_000_000_000)
 
-    if re.match(r'\de\d+', argument):
-        number, expression = argument.split('e')
+    if re.match(r"\de\d+", argument):
+        number, expression = argument.split("e")
         number, expression = float(number), round(float(expression))
-        argument = float(f'{number}e{expression}') if expression < 24 else 1e24
+        argument = float(f"{number}e{expression}") if expression < 24 else 1e24
 
     argument = float(argument)
     return argument if not integer else round(argument)
@@ -66,14 +63,14 @@ def get_amount(_all: float, minimum: int, maximum: int, argument):
     """
     argument = argument.lower().strip()
 
-    if argument == 'all':
+    if argument == "all":
         amount = round(_all)
 
-    elif argument == 'half':
+    elif argument == "half":
         amount = round(_all / 2)
 
-    elif argument.endswith('%'):
-        percent = argument.rstrip('%')
+    elif argument.endswith("%"):
+        percent = argument.rstrip("%")
         try:
             percent = float(percent) / 100
 
@@ -109,8 +106,7 @@ def CasinoConverter(minimum: int = 100, maximum: int = 100_000):
     class _Wrapper(commands.Converter, int):
         async def convert(self, ctx, argument):
             _all = await ctx.bot.pool.fetchval(
-                'SELECT wallet FROM users WHERE user_id = $1',
-                ctx.author.id
+                "SELECT wallet FROM users WHERE user_id = $1", ctx.author.id
             )
             amount = get_amount(_all, minimum, maximum, argument)
             return amount

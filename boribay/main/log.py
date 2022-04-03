@@ -29,24 +29,24 @@ from rich.text import Text
 from rich.theme import Theme
 from rich.traceback import PathHighlighter, Traceback
 
-__all__ = ('init_logging',)
+__all__ = ("init_logging",)
 
 SYNTAX_THEME = {
     Token: Style(),
-    Comment: Style(color='bright_black'),
-    Keyword: Style(color='cyan', bold=True),
-    Keyword.Constant: Style(color='bright_magenta'),
-    Keyword.Namespace: Style(color='bright_red'),
+    Comment: Style(color="bright_black"),
+    Keyword: Style(color="cyan", bold=True),
+    Keyword.Constant: Style(color="bright_magenta"),
+    Keyword.Namespace: Style(color="bright_red"),
     Operator: Style(bold=True),
-    Operator.Word: Style(color='cyan', bold=True),
+    Operator.Word: Style(color="cyan", bold=True),
     Name.Builtin: Style(bold=True),
-    Name.Builtin.Pseudo: Style(color='bright_red'),
+    Name.Builtin.Pseudo: Style(color="bright_red"),
     Name.Exception: Style(bold=True),
-    Name.Class: Style(color='bright_green'),
-    Name.Function: Style(color='bright_green'),
-    String: Style(color='yellow'),
-    Number: Style(color='cyan'),
-    Error: Style(bgcolor='red'),
+    Name.Class: Style(color="bright_green"),
+    Name.Function: Style(color="bright_green"),
+    String: Style(color="yellow"),
+    Number: Style(color="cyan"),
+    Error: Style(bgcolor="red"),
 }
 
 
@@ -55,6 +55,7 @@ class FixedMonokaiStyle(MonokaiStyle):
 
     This class inherits from `pygments.styles.monokai.MonokaiStyle`.
     """
+
     styles = {**MonokaiStyle.styles, Token: "#f8f8f2"}
 
 
@@ -67,7 +68,7 @@ class CustomLogRender(LogRender):
         renderables,
         log_time: datetime = None,
         time_format: datetime = None,
-        level: str = '',
+        level: str = "",
         path: str = None,
         line_no: int = None,
         link_path: str = None,
@@ -76,13 +77,13 @@ class CustomLogRender(LogRender):
         output = Table.grid(padding=(0, 1))
         output.expand = True
         if self.show_time:
-            output.add_column(style='log.time')
+            output.add_column(style="log.time")
         if self.show_level:
-            output.add_column(style='log.level', width=self.level_width)
+            output.add_column(style="log.level", width=self.level_width)
 
-        output.add_column(ratio=1, style='log.message', overflow='fold')
+        output.add_column(ratio=1, style="log.message", overflow="fold")
         if self.show_path and path:
-            output.add_column(style='log.path')
+            output.add_column(style="log.path")
 
         if logger_name:
             output.add_column()
@@ -93,7 +94,7 @@ class CustomLogRender(LogRender):
             log_time_display = log_time.strftime(time_format or self.time_format)
 
             if log_time_display == self._last_time:
-                row.append(Text(' ' * len(log_time_display)))
+                row.append(Text(" " * len(log_time_display)))
 
             else:
                 row.append(Text(log_time_display))
@@ -105,15 +106,17 @@ class CustomLogRender(LogRender):
         row.append(Renderables(renderables))
         if self.show_path and path:
             path_text = Text()
-            path_text.append(path, style=f'link file://{link_path}' if link_path else '')
+            path_text.append(
+                path, style=f"link file://{link_path}" if link_path else ""
+            )
 
             if line_no:
-                path_text.append(f':{line_no}')
+                path_text.append(f":{line_no}")
             row.append(path_text)
 
         if logger_name:
             logger_name_text = Text()
-            logger_name_text.append(f'[{logger_name}]', style='bright_black')
+            logger_name_text.append(f"[{logger_name}]", style="bright_black")
             row.append(logger_name_text)
 
         output.add_row(*row)
@@ -146,7 +149,7 @@ class CustomRichHandler(RichHandler):
             A tuple of the level name.
         """
         level_text = super().get_level_text(record)
-        level_text.stylize('bold')
+        level_text.stylize("bold")
         return level_text
 
     def emit(self, record: logging.LogRecord) -> None:
@@ -164,7 +167,11 @@ class CustomRichHandler(RichHandler):
         log_time = datetime.fromtimestamp(record.created)
 
         traceback = None
-        if self.rich_tracebacks and record.exc_info and record.exc_info != (None, None, None):
+        if (
+            self.rich_tracebacks
+            and record.exc_info
+            and record.exc_info != (None, None, None)
+        ):
             exc_type, exc_value, exc_traceback = record.exc_info
             assert exc_type is not None
             assert exc_value is not None
@@ -183,7 +190,7 @@ class CustomRichHandler(RichHandler):
             )
             message = record.getMessage()
 
-        use_markup = record.markup if hasattr(record, 'markup') else self.markup
+        use_markup = record.markup if hasattr(record, "markup") else self.markup
         if use_markup:
             message_text = Text.from_markup(message)
         else:
@@ -192,7 +199,7 @@ class CustomRichHandler(RichHandler):
         if self.highlighter:
             message_text = self.highlighter(message_text)
         if self.KEYWORDS:
-            message_text.highlight_words(self.KEYWORDS, 'logging.keyword')
+            message_text.highlight_words(self.KEYWORDS, "logging.keyword")
 
         self.console.print(
             self._log_render(
@@ -221,23 +228,27 @@ def init_logging(level: int = logging.INFO) -> None:
     """
     root_logger = logging.getLogger()
 
-    base_logger = logging.getLogger('bot')
+    base_logger = logging.getLogger("bot")
     base_logger.setLevel(level)
-    dpy_logger = logging.getLogger('discord')
+    dpy_logger = logging.getLogger("discord")
     dpy_logger.setLevel(logging.WARNING)
-    warnings_logger = logging.getLogger('py.warnings')
+    warnings_logger = logging.getLogger("py.warnings")
     warnings_logger.setLevel(logging.WARNING)
 
     rich_console = rich.get_console()
     rich.reconfigure(tab_size=4)
     rich_console.push_theme(
-        Theme({
-            'log.time': Style(dim=True),
-            'logging.level.warning': Style(color='yellow'),
-            'logging.level.critical': Style(color='white', bgcolor='red'),
-            'repr.number': Style(color='cyan'),
-            'repr.url': Style(underline=True, italic=True, bold=False, color='cyan'),
-        })
+        Theme(
+            {
+                "log.time": Style(dim=True),
+                "logging.level.warning": Style(color="yellow"),
+                "logging.level.critical": Style(color="white", bgcolor="red"),
+                "repr.number": Style(color="cyan"),
+                "repr.url": Style(
+                    underline=True, italic=True, bold=False, color="cyan"
+                ),
+            }
+        )
     )
     rich_console.file = sys.stdout
     PathHighlighter.highlights = []
@@ -248,12 +259,12 @@ def init_logging(level: int = logging.INFO) -> None:
         enable_rich_logging = True
 
     file_formatter = logging.Formatter(
-        '[{asctime}] [{levelname}] {name}: {message}',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        style='{'
+        "[{asctime}] [{levelname}] {name}: {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        style="{",
     )
     if enable_rich_logging:
-        rich_formatter = logging.Formatter('{message}', datefmt='[%X]', style='{')
+        rich_formatter = logging.Formatter("{message}", datefmt="[%X]", style="{")
 
         stdout_handler = CustomRichHandler(
             rich_tracebacks=True,
@@ -263,7 +274,7 @@ def init_logging(level: int = logging.INFO) -> None:
             tracebacks_show_locals=True,
             tracebacks_theme=(
                 PygmentsSyntaxTheme(FixedMonokaiStyle)
-                if rich_console.color_system == 'truecolor'
+                if rich_console.color_system == "truecolor"
                 else ANSISyntaxTheme(SYNTAX_THEME)
             ),
         )
