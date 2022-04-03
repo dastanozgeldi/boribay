@@ -13,24 +13,12 @@ class BotPart:
         self.errors_log = data.get('errors_log')
 
 
-class LinksPart:
-    __slots__ = {'webhook', 'invite', 'github', 'support', 'top_gg'}
-
-    def __init__(self, data: dict):
-        self.webhook = data.get('webhook')
-        self.invite = data.get('invite')
-        self.github = data.get('github')
-        self.support = data.get('support')
-        self.top_gg = data.get('top_gg')
-
-
 class ApiPart:
-    __slots__ = {'weather', 'dagpi', 'alex'}
+    __slots__ = {'weather', 'dagpi'}
 
     def __init__(self, data: dict):
         self.weather = data.get('weather')
         self.dagpi = data.get('dagpi')
-        self.alex = data.get('alex')
 
 
 class Config:
@@ -38,7 +26,7 @@ class Config:
 
     All file-configuration stuff is controlled here using `.json` files.
     """
-    __slots__ = {'path', 'values', 'main', 'database', 'links', 'api'}
+    __slots__ = {'path', 'values', 'main', 'database', 'api'}
 
     def __init__(self, path: str):
         self.path = path
@@ -53,5 +41,4 @@ class Config:
     def set_attributes(self):
         self.main = BotPart(self.values['bot'])
         self.database = self.values.get('database', {})
-        self.links = LinksPart(self.values.get('links', {}))
         self.api = ApiPart(self.values.get('api', {}))
