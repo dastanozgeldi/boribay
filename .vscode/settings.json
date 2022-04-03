@@ -1,8 +1,5 @@
 {
     "autoDocstring.docstringFormat": "numpy",
-    "files.exclude": {
-        "**/__pycache__": true
-    },
-    "python.linting.enabled": true,
-    "python.linting.flake8Enabled": true
+    "python.autoComplete.extraPaths": ["__pypackages__/3.9/lib"],
+    "python.analysis.extraPaths": ["__pypackages__/3.9/lib"]
 }
