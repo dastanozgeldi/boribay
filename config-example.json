@@ -4,14 +4,14 @@
       "errors_log": 12345678,
       "token": "",
       "exts": [
-        "boribay.cogs.help",
-        "boribay.cogs.economy",
-        "boribay.cogs.fun",
-        "boribay.cogs.images",
-        "boribay.cogs.misc",
-        "boribay.cogs.moderation",
-        "boribay.cogs.settings",
-        "boribay.cogs.useful"
+        "boribay.extensions.help",
+        "boribay.extensions.economy",
+        "boribay.extensions.fun",
+        "boribay.extensions.images",
+        "boribay.extensions.misc",
+        "boribay.extensions.moderation",
+        "boribay.extensions.settings",
+        "boribay.extensions.useful"
       ]
     },
     "database": {
