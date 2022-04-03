@@ -19,7 +19,6 @@ from pygments.styles.monokai import MonokaiStyle
 from pygments.token import (Comment, Error, Keyword, Name, Number, Operator,
                             String, Token)
 from rich._log_render import LogRender
-from rich.console import render_group
 from rich.containers import Renderables
 from rich.highlighter import NullHighlighter
 from rich.logging import RichHandler
@@ -57,16 +56,6 @@ class FixedMonokaiStyle(MonokaiStyle):
     This class inherits from `pygments.styles.monokai.MonokaiStyle`.
     """
     styles = {**MonokaiStyle.styles, Token: "#f8f8f2"}
-
-
-class CustomTraceback(Traceback):
-    """The custom version of `rich.traceback.Traceback`."""
-
-    @render_group()
-    def _render_stack(self, stack):
-        for obj in super()._render_stack.__wrapped__(self, stack):
-            if obj != '':
-                yield obj
 
 
 class CustomLogRender(LogRender):
@@ -179,7 +168,7 @@ class CustomRichHandler(RichHandler):
             exc_type, exc_value, exc_traceback = record.exc_info
             assert exc_type is not None
             assert exc_value is not None
-            traceback = CustomTraceback.from_exception(
+            traceback = Traceback.from_exception(
                 exc_type,
                 exc_value,
                 exc_traceback,

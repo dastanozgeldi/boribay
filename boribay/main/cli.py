@@ -1,8 +1,6 @@
 import argparse
 import sys
 
-import boribay
-
 
 def parse_single_flags(flags: argparse.Namespace) -> None:
     """Here we handle all flags that should be parsed as single.
@@ -13,7 +11,7 @@ def parse_single_flags(flags: argparse.Namespace) -> None:
         The given namespace of parsed arguments.
     """
     if flags.version:
-        print(f'Boribay is running on version: {boribay.__version__}')
+        print(f'Boribay is running on version: v2')
         sys.exit(0)
 
 
