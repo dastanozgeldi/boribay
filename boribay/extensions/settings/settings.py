@@ -1,4 +1,4 @@
-import nextcord
+import discord
 from boribay.core import utils
 
 
@@ -96,7 +96,7 @@ class Settings(utils.Cog):
 
     @welcomechannel.command(name='set')
     async def _set_welcome_channel(
-        self, ctx: utils.Context, channel: nextcord.TextChannel
+        self, ctx: utils.Context, channel: discord.TextChannel
     ) -> None:
         """Set the welcome channel to your server.
 
@@ -104,7 +104,7 @@ class Settings(utils.Cog):
             **{p}welcomechannel set #welcomes** - sets channel 'welcomes'
 
         Args:
-            channel (nextcord.TextChannel): A channel you would like to set.
+            channel (discord.TextChannel): A channel you would like to set.
         """
         await self._update(ctx, 'welcome_channel', channel.id)
         await ctx.send(f'✅ Set {channel} as a welcoming channel.')
@@ -195,14 +195,14 @@ class Settings(utils.Cog):
         await ctx.send_help('autorole')
 
     @autorole.command(name='set')
-    async def _set_autorole(self, ctx: utils.Context, role: nextcord.Role) -> None:
+    async def _set_autorole(self, ctx: utils.Context, role: discord.Role) -> None:
         """Set the autorole feature in your server.
 
         Example:
             **{p}autorole set @Members** - sets @Members role.
 
         Args:
-            role (nextcord.Role): A role you would like to set.
+            role (discord.Role): A role you would like to set.
         """
         await self._update(ctx, 'autorole', role.id)
         await ctx.send(f'✅ Set {role.mention} as an autorole.')

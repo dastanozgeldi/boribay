@@ -1,10 +1,10 @@
 from difflib import get_close_matches
 from typing import List, Union
 
-import nextcord
+import discord
 from boribay.core import utils
 from boribay.core.bot import Boribay
-from nextcord.ext import commands, menus
+from discord.ext import commands, menus
 
 __all__ = ('HelpCommand', 'Help')
 
@@ -13,24 +13,24 @@ class HelpMenu(menus.Menu):
     """The main help menu of the bot."""
 
     def __init__(self, **kwargs):
-        self.embed: nextcord.Embed = kwargs.pop('embed')
+        self.embed: discord.Embed = kwargs.pop('embed')
         super().__init__(timeout=60.0, clear_reactions_after=True, **kwargs)
 
     async def send_initial_message(
-        self, ctx: utils.Context, channel: nextcord.abc.Messageable
-    ) -> nextcord.Message:
+        self, ctx: utils.Context, channel: discord.abc.Messageable
+    ) -> discord.Message:
         """Sends the initial message for the help-menu.
 
         Parameters
         ------------
         ctx: :class:`utils.Context`
             The invocation context to use.
-        channel: :class:`nextcord.abc.Messageable`
+        channel: :class:`discord.abc.Messageable`
             The messageable to send the message to.
 
         Returns
         --------
-        :class:`nextcord.Message`
+        :class:`discord.Message`
             The message that has been sent initially.
         """
         return await channel.send(embed=self.embed)
@@ -92,7 +92,7 @@ class GroupHelp(menus.ListPageSource):
         self.prefix = prefix
         self.description = '```fix\n<> ← required argument\n[] ← optional argument```'
 
-    async def format_page(self, menu: menus.Menu, cmds) -> nextcord.Embed:
+    async def format_page(self, menu: menus.Menu, cmds) -> discord.Embed:
         g = self.group
 
         if isinstance(g, commands.Cog):
@@ -110,8 +110,7 @@ class GroupHelp(menus.ListPageSource):
             embed.add_field(
                 name=f'{self.prefix}{cmd} {cmd.signature}',
                 value=cmd_help.split('\n')[0] + '..',
-                # trying to mean that this help ↑ has its continuation.
-                inline=False
+                inline=False,
             )
 
         if (maximum := self.get_max_pages()) > 1:
@@ -134,21 +133,14 @@ class HelpCommand(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         ctx = self.context
-        links = ctx.config.links
         cats = []
-
         for cog, cmds in mapping.items():
             if cog:
                 if await self.filter_commands(cmds, sort=True):
                     cats.append(str(cog))
 
-        embed = ctx.embed(
-            description=f'[Invite]({links.invite}) | [Support]({links.support}) | [Source]({links.github}) | [Vote]({links.top_gg})'
-        ).set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
-
-        embed.add_field(name='Modules:', value='\n'.join(cats))
-        # embed.set_footer(text=self.get_ending_note())
-
+        embed = ctx.embed().set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
+        embed.add_field(name='Plugins:', value='\n'.join(cats))
         await HelpMenu(embed=embed).start(ctx)
 
     async def send_cog_help(self, cog: commands.Cog):

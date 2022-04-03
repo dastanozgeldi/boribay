@@ -8,8 +8,8 @@ from datetime import datetime
 
 import aiohttp
 import asyncpg
-import nextcord
-from nextcord.ext import commands
+import discord
+from discord.ext import commands
 
 from .config import Config
 from .database import Cache, DatabaseManager
@@ -25,22 +25,22 @@ Output = namedtuple('Output', 'stdout stderr returncode')
 class Boribay(commands.Bot):
     """The main bot class - Boribay.
 
-    This class inherits from `nextcord.ext.commands.Bot`.
+    This class inherits from `discord.ext.commands.Bot`.
     """
 
     def __init__(self, *, cli_flags, **kwargs):
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.cli = cli_flags
         self.counter = Counter()
-        self.config = Config('./data/config.json')
+        self.config = Config('config.json')
 
         self._launch_time = datetime.now()
 
-        def get_prefix(bot: Boribay, msg: nextcord.Message) -> str:
+        def get_prefix(bot: Boribay, msg: discord.Message) -> str:
             # prefix = '.' if not msg.guild else bot.guild_cache[msg.guild.id]['prefix']
             return commands.when_mentioned_or('.')(bot, msg)
 
-        intents = nextcord.Intents.default()
+        intents = discord.Intents.default()
         intents.members = True
         super().__init__(
             command_prefix=get_prefix,
@@ -50,22 +50,22 @@ class Boribay(commands.Bot):
             case_insensitive=True,
             owner_ids={682950658671902730},
             chunk_guilds_at_startup=False,
-            activity=nextcord.Game(name='.help'),
-            member_cache_flags=nextcord.flags.MemberCacheFlags.from_intents(intents),
-            allowed_mentions=nextcord.AllowedMentions(
+            activity=discord.Game(name='.help'),
+            member_cache_flags=discord.flags.MemberCacheFlags.from_intents(intents),
+            allowed_mentions=discord.AllowedMentions(
                 everyone=False, roles=False, replied_user=False
             ),
             **kwargs
         )
 
     @property
-    def owner(self) -> nextcord.User:
+    def owner(self) -> discord.User:
         return self.get_user(682950658671902730)
 
     @property
     async def invite_url(self) -> str:
         app_info = await self.application_info()
-        return nextcord.utils.oauth_url(app_info.id)
+        return discord.utils.oauth_url(app_info.id)
 
     @property
     def uptime(self) -> int:
@@ -89,7 +89,7 @@ class Boribay(commands.Bot):
         stdout, stderr = await process.communicate()
         return Output(stdout, stderr, str(process.returncode))
 
-    def embed(self, ctx: Context, **kwargs) -> nextcord.Embed:
+    def embed(self, ctx: Context, **kwargs) -> discord.Embed:
         """The way to manipulate with Embeds.
 
         This method adds features like:
@@ -100,13 +100,13 @@ class Boribay(commands.Bot):
             ctx (Context): To get current guild configuration.
 
         Returns:
-            nextcord.Embed: Embed that already has useful features.
+            discord.Embed: Embed that already has useful features.
         """
         embed_color = 0x36393e if ctx.guild is None else self.guild_cache[ctx.guild.id]['embed_color']
         kwargs.update(timestamp=datetime.utcnow(), color=kwargs.pop('color', embed_color))
-        return nextcord.Embed(**kwargs)
+        return discord.Embed(**kwargs)
 
-    async def on_message(self, message: nextcord.Message) -> None:
+    async def on_message(self, message: discord.Message) -> None:
         if not self.is_ready():
             return
 
@@ -118,12 +118,12 @@ class Boribay(commands.Bot):
         await self.process_commands(message)
 
     async def get_context(
-        self, message: nextcord.Message, *, cls=Context
+        self, message: discord.Message, *, cls=Context
     ) -> Context:
         """The same get_context but with the custom context class.
 
         Args:
-            message (nextcord.Message): A message object to get the context from.
+            message (discord.Message): A message object to get the context from.
             cls (optional): The classmethod variable. Defaults to Context.
 
         Returns:
@@ -136,11 +136,7 @@ class Boribay(commands.Bot):
         await self.session.close()
 
     async def setup(self):
-        # Session-related.
         self.session = aiohttp.ClientSession(loop=self.loop)
-        self.webhook = nextcord.Webhook.from_url(
-            self.config.links.webhook, session=self.session
-        )
 
         # Data-related.
         self.pool = await asyncpg.create_pool(**self.config.database)
@@ -180,19 +176,18 @@ class Boribay(commands.Bot):
                 # loading all extensions before running the bot.
                 self.load_extension(ext)
 
-            logger.info('Loaded extensions: ' + ', '.join(self.cogs.keys()))
+            logger.info('Loaded extensions: ' + ', '.join(self.extensions.keys()))
 
     def run(self, **kwargs) -> None:
         """An overridden run method to make the launcher file smaller."""
-        # Getting the token.
         token = self.config.main.token
         if self.cli.token:
             logger.info(
                 'Logging in without using the native token. Consider setting '
-                'a token in the configuration file, i.e data/config.json'
+                'a token in the configuration file, i.e config.json'
             )
             token = self.cli.token
 
-        # Finally, booting up the bot instance.
+        # booting up the bot instance
         self.loop.create_task(self.setup())
         super().run(token, **kwargs)

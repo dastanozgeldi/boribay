@@ -2,9 +2,8 @@ from collections import Counter
 from glob import glob
 from typing import Optional
 
-import boribay
 from boribay.core import utils
-from nextcord.ext import commands
+from discord.ext import commands
 from humanize import naturaldate, naturaltime
 
 LOADING = '<a:loading:837049644462374935>'
@@ -68,14 +67,14 @@ class Miscellaneous(utils.Cog):
         """See some kind of information about Boribay (such as command usage)."""
         bot = ctx.bot
         embed = ctx.embed().set_author(
-            name=f'{bot.user} - v{boribay.__version__}',
+            name=f'{bot.user} - v2',
             icon_url=bot.user.avatar_url
         )
         fields = {
             'Development': {
                 ('Developer', str(bot.owner)),
                 ('Language', 'Python'),
-                ('Library', 'nextcord.py')
+                ('Library', 'discord.py')
             },
             'General': {
                 ('Currently in', f'{len(bot.guilds)} servers'),
@@ -160,16 +159,6 @@ class Miscellaneous(utils.Cog):
         await ctx.send(message, tts=tts)
 
     @utils.command()
-    async def links(self, ctx: utils.Context):
-        """Some useful invites (support server, bot invite and voting URL)."""
-        links = ctx.config.links
-        embed = ctx.embed(description=f'Invite me [here]({links.invite})\n'
-                          f'Support server [here]({links.support})'
-                          f'Vote on TopGG [here]({links.top_gg})')
-
-        await ctx.send(embed=embed)
-
-    @utils.command()
     async def ping(self, ctx: utils.Context) -> None:
         """Check latency of the bot and its system."""
         fields = (
@@ -203,7 +192,7 @@ class Miscellaneous(utils.Cog):
         """See what reactions are there in a message, i.e reaction statistics.
 
         Example:
-            **{p}mrs https://nextcord.com/channels/12345/54321/32451**
+            **{p}mrs https://discord.com/channels/12345/54321/32451**
 
         Args:
             link (str): An URL of a message.

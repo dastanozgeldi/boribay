@@ -1,14 +1,13 @@
 import decimal
 import random
-import string
 import zipfile
 from datetime import datetime
 from io import BytesIO
 
-import nextcord
+import discord
 from boribay.core import exceptions, utils
 from boribay.core.bot import Boribay
-from nextcord.ext import commands
+from discord.ext import commands
 from humanize import time
 
 from .calculator import CalcLexer, CalcParser
@@ -43,85 +42,8 @@ class Useful(utils.Cog):
 
         await ctx.reply(
             'Sorry for being slow as hell but anyways:',
-            file=nextcord.File(buffer, filename='emojis.zip')
+            file=discord.File(buffer, filename='emojis.zip')
         )
-
-    @staticmethod
-    def _generate_password(
-        length: int, numbers: bool, uppercase: bool, special: bool
-    ) -> str:
-        """Generates a random password using given parameters.
-
-        Parameters
-        ----------
-        length : int
-            Length of the password.
-        numbers : bool
-            Include numbers.
-        uppercase : bool
-            Include uppercase characters.
-        special : bool
-            Include special characters.
-
-        Returns
-        -------
-        str
-            Randomly generated password.
-        """
-        RESULT = string.ascii_lowercase
-
-        if numbers:
-            RESULT += string.digits
-        if uppercase:
-            RESULT += string.ascii_uppercase
-        if special:
-            RESULT += string.punctuation
-
-        result = random.choices(RESULT, k=length)
-        return ''.join(result)
-
-    @utils.command(aliases=('pw',))
-    async def password(
-        self,
-        ctx: utils.Context,
-        length: int = 25,
-        numbers: bool = False,
-        uppercase: bool = False,
-        special: bool = False
-    ) -> None:
-        """The password creator. Get a safe password using this command.
-
-        Examples
-        --------
-            **{p}password 40** - sends the generated password 40 characters long.
-            **{p}password 25 y y y - 25 character-long password
-            within numbers, uppercase and special characters included.
-
-        Parameters
-        ----------
-        length : int, optional
-            Length of the password, by default 25
-        numbers : bool, optional
-            Include numbers in the password, by default False
-        uppercase : bool, optional
-            Include uppercase characters, by default False
-        special : bool, optional
-            Include special characters, by default False
-
-        Raises
-        ------
-        commands.BadArgument
-            If too big password length was provided, like why would you need it?
-        """
-        if length > 50:
-            raise commands.BadArgument(
-                f'Too big length was given ({length}) while the limit is 50 characters.'
-            )
-
-        result = self._generate_password(length, numbers, uppercase, special)
-        await ctx.reply('✅ Generated you the password.')
-        # To make people sure this is working. ↑
-        await ctx.author.send(f'Here is your password: ```{result}```')
 
     @utils.command()
     async def anime(self, ctx: utils.Context, *, anime: str) -> None:
@@ -447,30 +369,6 @@ class Useful(utils.Cog):
         embed = ctx.embed()
         for n, v in (('Input', expression), ('Output', res)):
             embed.add_field(name=n, value=f'```\n{v}\n```', inline=False)
-
-        await ctx.send(embed=embed)
-
-    @utils.command(aliases=('colour',))
-    async def color(
-        self, ctx: utils.Context, *, color: utils.ColorConverter
-    ) -> None:
-        """Color visualizer command. Get HEX & RHB values of a color.
-
-        Argument can be either RGB, HEX, or even a human-friendly word.
-
-        Example:
-            **{p}color orange** - sends the data for color 'orange'.
-
-        Args:
-            color (ColorConverter): Color that you have specified.
-        """
-        rgb = color.to_rgb()
-
-        embed = ctx.embed(
-            color=nextcord.Color.from_rgb(*rgb)
-        ).set_thumbnail(url='https://kal-byte.co.uk/colour/' + '/'.join(str(i) for i in rgb))
-        embed.add_field(name='Hex', value=str(color), inline=False)
-        embed.add_field(name='RGB', value=str(rgb), inline=False)
 
         await ctx.send(embed=embed)
 

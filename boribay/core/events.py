@@ -3,9 +3,9 @@ from contextlib import suppress
 from io import BytesIO
 
 import boribay
-import nextcord
+import discord
 from boribay.core import exceptions, utils
-from nextcord.ext import commands
+from discord.ext import commands
 from rich import box, get_console
 from rich.columns import Columns
 from rich.panel import Panel
@@ -29,7 +29,6 @@ start_screen = r'''
 def set_events(bot):
     """Initializing bot events required to live."""
 
-    # Bot-related events.
     @bot.event
     async def on_connect():
         logger.info('Connected to Discord successfully.')
@@ -39,8 +38,8 @@ def set_events(bot):
         """The bot is ready, telling the developer."""
         guilds = len(bot.guilds)
         general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        general_info.add_row('Boribay version', boribay.__version__)
-        general_info.add_row('Library version', nextcord.__version__)
+        general_info.add_row('Boribay version', "v2")
+        general_info.add_row('Library version', discord.__version__)
 
         counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         counts.add_row('Servers', str(guilds))
@@ -68,34 +67,24 @@ def set_events(bot):
         console.print(f'Client latency: {bot.latency * 1000:.2f} ms')
 
     @bot.event
-    async def on_message_edit(before: nextcord.Message, after: nextcord.Message) -> None:
-        # making able to process commands on message edit only for owner.
+    async def on_message_edit(before: discord.Message, after: discord.Message) -> None:
+        # reprocess a command if the owner edited their message
         if before.content != after.content and after.author.id in bot.owner_ids:
             return await bot.process_commands(after)
 
-        # on_message_edit gets tracked twice when a message gets edited, god knows why.
+        # on_message_edit gets tracked twice when a message gets edited
         if before.embeds:
             return
 
-    # Guild logging.
     @bot.event
-    async def on_guild_join(guild: nextcord.Guild) -> None:
+    async def on_guild_join(guild: discord.Guild) -> None:
         """Gets triggered whenever the bot joins a guild.
 
         Parameters
         ----------
-        guild : nextcord.Guild
+        guild : discord.Guild
             The new guild.
         """
-        embed = bot.embed(
-            title=f'Joined a server: {guild}🎉',
-            description=f'Member count: {guild.member_count}'
-            f'Guild ID: {guild.id}'
-            f'Now in {len(bot.guilds)} guilds.',
-            color=0x2ecc71
-        ).set_thumbnail(url=guild.icon_url)
-
-        await bot.webhook.send(embed=embed)
         await bot.pool.execute(
             'INSERT INTO guild_config(guild_id) VALUES($1);',
             guild.id
@@ -103,23 +92,14 @@ def set_events(bot):
         await bot.guild_cache.refresh()
 
     @bot.event
-    async def on_guild_remove(guild: nextcord.Guild) -> None:
+    async def on_guild_remove(guild: discord.Guild) -> None:
         """Gets triggered whenever the bot loses a guild.
 
         Parameters
         ----------
-        guild : nextcord.Guild
+        guild : discord.Guild
             The lost guild.
         """
-        embed = bot.embed(
-            title=f'Lost a server: {guild}💔',
-            description=f'Member count: {guild.member_count}'
-            f'Guild ID: {guild.id}'
-            f'Now in {len(bot.guilds)} guilds.',
-            color=0xff0000
-        ).set_thumbnail(url=guild.icon_url)
-
-        await bot.webhook.send(embed=embed)
         await bot.pool.execute(
             'DELETE FROM guild_config WHERE guild_id = $1;',
             guild.id
@@ -140,8 +120,8 @@ def set_events(bot):
 
     # Member-logging.
     @bot.event
-    async def on_member_join(member: nextcord.Member) -> None:
-        g: nextcord.Guild = member.guild
+    async def on_member_join(member: discord.Member) -> None:
+        g: discord.Guild = member.guild
         # Member-logging feature.
         if wc := bot.guild_cache[g.id].get('welcome_channel', False):
             image = await utils.Manip.welcome(
@@ -150,23 +130,23 @@ def set_events(bot):
                 member_avatar=BytesIO(await member.avatar_url.read())
             )
             channel = g.get_channel(wc)
-            file = nextcord.File(image, f'{member}.png')
+            file = discord.File(image, f'{member}.png')
             await channel.send(file=file)
 
         # Autorole feature may get triggered according to the guild settings.
         if role_id := bot.guild_cache[g.id].get('autorole', False):
             await member.add_roles(g.get_role(role_id), reason='Autorole')
 
-    # And finally, error handling.
+    # error handling.
     async def send(ctx, exc: str = None, *args, **kwargs) -> None:
         try:
             return await ctx.reply(exc, *args, **kwargs)
 
-        except nextcord.Forbidden:
-            with suppress(nextcord.Forbidden):
+        except discord.Forbidden:
+            with suppress(discord.Forbidden):
                 return await ctx.author.send(exc, *args, **kwargs)
 
-        except nextcord.NotFound:
+        except discord.NotFound:
             pass
 
     @bot.event
@@ -190,13 +170,11 @@ def set_events(bot):
                 commands.MissingPermissions
             )
         ) and ctx.original_author_id in ctx.bot.owner_ids:
-            # Those errors need to be reinvoked.
             return await ctx.reinvoke()
 
         elif isinstance(
             error,
             (
-                # nextcord-py.
                 commands.NotOwner,
                 commands.BadArgument,
                 commands.RoleNotFound,

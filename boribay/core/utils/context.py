@@ -5,8 +5,8 @@ from contextlib import ContextDecorator, suppress
 from time import perf_counter
 from typing import TYPE_CHECKING, Any
 
-import nextcord
-from nextcord.ext import commands
+import discord
+from discord.ext import commands
 
 if TYPE_CHECKING:
     from ..bot import Boribay
@@ -19,7 +19,7 @@ class Context(commands.Context):
 
     Any usage case of context in the bot will be of this type.
 
-    This class inherits from `nextcord.ext.commands.Context`.
+    This class inherits from `discord.ext.commands.Context`.
     """
 
     def __init__(self, **kwargs: Any):
@@ -55,8 +55,8 @@ class Context(commands.Context):
     def embed(self, **kwargs: Any):
         return self.bot.embed(self, **kwargs)
 
-    async def try_delete(self, message: nextcord.Message, **kwargs: Any):
-        with suppress(AttributeError, nextcord.Forbidden, nextcord.NotFound):
+    async def try_delete(self, message: discord.Message, **kwargs: Any):
+        with suppress(AttributeError, discord.Forbidden, discord.NotFound):
             await message.delete(**kwargs)
 
     # idea: https://github.com/jay3332/ShrimpMaster/blob/master/core/bot.py#L320-L331
@@ -70,12 +70,12 @@ class Context(commands.Context):
             _result = getattr(obj, 'get_' + method)(object_id) or await getattr(
                 obj, 'fetch_' + method
             )(object_id)
-        except (nextcord.Forbidden, nextcord.HTTPException, nextcord.NotFound):
+        except (discord.Forbidden, discord.HTTPException, discord.NotFound):
             return None
 
         return _result
 
-    async def confirm(self, message: nextcord.Message, timeout: float = 10.0):
+    async def confirm(self, message: discord.Message, timeout: float = 10.0):
         msg = await self.send(message)
         emojis = {'✅': True, '❌': False}
 

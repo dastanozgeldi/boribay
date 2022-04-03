@@ -4,8 +4,8 @@ from copy import copy
 from enum import Enum
 from typing import List, Union
 
-import nextcord
-from nextcord.ext import commands
+import discord
+from discord.ext import commands
 from PIL import ImageColor
 
 __all__ = (
@@ -57,7 +57,7 @@ class ColorConverter(commands.Converter):
             check = all(0 <= int(x) <= 255 for x in match.groups())
 
         if match and check:
-            return nextcord.Color.from_rgb([int(i) for i in match.groups()])
+            return discord.Color.from_rgb([int(i) for i in match.groups()])
 
         converter = commands.ColorConverter()
         try:
@@ -65,7 +65,7 @@ class ColorConverter(commands.Converter):
         except commands.BadColourArgument:
             try:
                 color = ImageColor.getrgb(arg)
-                result = nextcord.Color.from_rgb(*color)
+                result = discord.Color.from_rgb(*color)
             except ValueError:
                 result = None
 
@@ -76,7 +76,7 @@ class ColorConverter(commands.Converter):
 
 
 class SettingsConverter(commands.Converter):
-    async def convert(self, guild: nextcord.Guild, settings: dict):
+    async def convert(self, guild: discord.Guild, settings: dict):
         data = copy(settings[guild.id])
 
         for k, v in data.items():
@@ -136,7 +136,7 @@ class ImageConverter(commands.Converter):
     async def convert(
         self,
         ctx,
-        argument: Union[nextcord.Emoji, str],
+        argument: Union[discord.Emoji, str],
         *,
         return_url: bool = False
     ) -> Union[bytes, str]:
@@ -146,7 +146,7 @@ class ImageConverter(commands.Converter):
         ----------
         ctx
             The context instance.
-        argument : Union[nextcord.Emoji, str]
+        argument : Union[discord.Emoji, str]
             The argument to convert into an image.
         return_url : bool, optional
             Whether to return URL for the image, by default False

@@ -1,7 +1,7 @@
 from contextlib import suppress
 
-import nextcord
-from nextcord.ext import menus
+import discord
+from discord.ext import menus
 
 
 class Paginate(menus.MenuPages):
@@ -16,7 +16,7 @@ class Paginate(menus.MenuPages):
         super().__init__(source, check_embeds=True, **kwargs)
 
     async def finalize(self, timed_out: bool):
-        with suppress(nextcord.HTTPException):
+        with suppress(discord.HTTPException):
             if timed_out:
                 return await self.message.clear_reactions()
 

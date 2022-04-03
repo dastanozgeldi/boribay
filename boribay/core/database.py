@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Union
 
-import nextcord
+import discord
 from asyncpg.pool import Pool
 
 
@@ -53,7 +53,7 @@ class DatabaseManager(Pool):
         self,
         op: str,
         column: str,
-        user: nextcord.Member,
+        user: discord.Member,
         amount: Union[int, float]
     ) -> None:
         """The operate method made to ease up database manipulation.
@@ -61,7 +61,7 @@ class DatabaseManager(Pool):
         Args:
             op (str): An operator to use in the SQL query.
             column (str): Column name to use in the query consequently.
-            user (nextcord.Member): The user to use in the query.
+            user (discord.Member): The user to use in the query.
             amount (Union[int, float]): Amount of currency to manipulate with.
 
         Returns:
@@ -79,7 +79,7 @@ class DatabaseManager(Pool):
 
         Args:
             column (str): The table-column name.
-            user (nextcord.Member): The user to specify in WHERE clause.
+            user (discord.Member): The user to specify in WHERE clause.
             amount (Union[int, float]): Amount of (xp/money) to add.
 
         Returns:
@@ -92,7 +92,7 @@ class DatabaseManager(Pool):
 
         Args:
             column (str): The table-column name.
-            user (nextcord.Member): The user to specify in WHERE clause.
+            user (discord.Member): The user to specify in WHERE clause.
             amount (Union[int, float]): Amount of (xp/money) to take.
 
         Returns:
@@ -115,16 +115,16 @@ class DatabaseManager(Pool):
         self,
         choice: str,
         amount: int,
-        reducer: nextcord.Member,
-        adder: nextcord.Member
+        reducer: discord.Member,
+        adder: discord.Member
     ) -> None:
         """The "double" method to ease up database manipulation.
 
         Args:
             choice (str): The column value.
             amount (int): Amount of currency to manipulate.
-            reducer (nextcord.Member): The user the money will be taken from.
-            adder (nextcord.Member): The user the money will be added to.
+            reducer (discord.Member): The user the money will be taken from.
+            adder (discord.Member): The user the money will be added to.
 
         Returns:
             None: Means that the method returns nothing.
@@ -137,14 +137,14 @@ class DatabaseManager(Pool):
         await self.bot.user_cache.refresh()
 
     async def set(
-        self, table: str, column: str, user: nextcord.Member, value: str
+        self, table: str, column: str, user: discord.Member, value: str
     ) -> None:
         """Database Manager set method that is attainable for all tables.
 
         Args:
             table (str): The table name.
             column (str): The column name of the table.
-            user (nextcord.Member): The user to specify in WHERE clause.
+            user (discord.Member): The user to specify in WHERE clause.
             value (str): A new value to replace old one with.
 
         Returns:

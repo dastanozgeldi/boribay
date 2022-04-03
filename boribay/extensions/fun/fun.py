@@ -5,9 +5,9 @@ from io import BytesIO
 from time import time
 from typing import Optional
 
-import nextcord
+import discord
 from boribay.core import Boribay, utils
-from nextcord.ext import commands
+from discord.ext import commands
 
 
 class Fun(utils.Cog):
@@ -17,25 +17,7 @@ class Fun(utils.Cog):
         self.icon = '🎉'
         self.bot = bot
 
-    async def alex_image(self, url: str, fn: str = None) -> nextcord.File:
-        """Quick-Alex-image making function.
-
-        Args:
-            url (str): The URL of an image.
-            fn (str, optional): Filename to take. Defaults to None.
-
-        Returns:
-            nextcord.File: A done to send file.
-        """
-        key = self.bot.config.api.alex
-        r = await self.bot.session.get(
-            'https://api.alexflipnote.dev/' + url,
-            headers={'Authorization': key}
-        )
-        fp = BytesIO(await r.read())
-        return nextcord.File(fp, fn or 'alex.png')
-
-    async def dagpi_image(self, url: str, fn: str = None) -> nextcord.File:
+    async def dagpi_image(self, url: str, fn: str = None) -> discord.File:
         """Quick-Dagpi-image making function.
 
         Args:
@@ -43,7 +25,7 @@ class Fun(utils.Cog):
             fn (str, optional): Filename to take. Defaults to None.
 
         Returns:
-            nextcord.File: A done to send file.
+            discord.File: A done to send file.
         """
         key = self.bot.config.api.dagpi
         r = await self.bot.session.get(
@@ -51,7 +33,7 @@ class Fun(utils.Cog):
             headers={'Authorization': key}
         )
         fp = BytesIO(await r.read())
-        return nextcord.File(fp, fn or 'dagpi.png')
+        return discord.File(fp, fn or 'dagpi.png')
 
     @utils.command(aliases=('rps',))
     async def rockpaperscissors(self, ctx: utils.Context) -> None:
@@ -125,7 +107,7 @@ class Fun(utils.Cog):
         ).set_image(url='attachment://typeracer.png')
         embed.set_footer(text=f'© {quote["author"]}')
 
-        race = await ctx.send(file=nextcord.File(buffer, 'typeracer.png'), embed=embed)
+        race = await ctx.send(file=discord.File(buffer, 'typeracer.png'), embed=embed)
         await race.add_reaction('🗑')
         start = time()
 
@@ -144,7 +126,7 @@ class Fun(utils.Cog):
 
             stuff = done.pop().result()
 
-            if isinstance(stuff, nextcord.RawReactionActionEvent):
+            if isinstance(stuff, discord.RawReactionActionEvent):
                 return await race.delete()
 
             final = round(time() - start, 2)
@@ -172,26 +154,6 @@ class Fun(utils.Cog):
         embed = ctx.embed(title='Here is yo joke:', description=joke)
         await ctx.send(embed=embed)
 
-    @utils.command(aliases=('ph',))
-    async def pornhub(
-        self, ctx: utils.Context, left_text: str, right_text: str = 'Hub'
-    ) -> None:
-        """PornHub logo maker.
-
-        Example:
-            **{p}ph Dosek** - a logo "DosekHub".**
-            **{p}ph Bori bay** - Bori and bay in the orange box.**
-
-        Args:
-            left_text (str): Text for the left side
-            right_text (str, optional): Text to the right side. Defaults to 'Hub'.
-        """
-        left_text = left_text.replace(' ', '%20')
-        right_text = right_text.replace(' ', '%20')
-
-        file = await self.alex_image(f'pornhub?text={left_text}&text2={right_text}')
-        await ctx.send(file=file)
-
     @utils.command()
     async def qr(self, ctx: utils.Context, url: Optional[str]) -> None:
         """Make QR-code from a given URL.
@@ -208,7 +170,7 @@ class Fun(utils.Cog):
             'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + url
         )
         io = BytesIO(await r.read())
-        await ctx.send(file=nextcord.File(io, 'qr.png'))
+        await ctx.send(file=discord.File(io, 'qr.png'))
 
     @utils.command()
     async def caption(self, ctx: utils.Context, image: Optional[str]) -> None:
@@ -228,52 +190,6 @@ class Fun(utils.Cog):
         )
         embed = ctx.embed(title=await r.text())
         await ctx.send(embed=embed.set_image(url=image))
-
-    @utils.command(aliases=('dym',))
-    async def didyoumean(self, ctx: utils.Context, search: str, did_you_mean: str) -> None:
-        """Google search "Did you mean" meme.
-
-        Example:
-            **{p}didyoumean "looping" "recursion"**
-
-        Args:
-            search (str): The "searched" query.
-            did_you_mean (str): Query not found, the "did you mean" text.
-        """
-        file = await self.alex_image(f'didyoumean?top={search}&bottom={did_you_mean}')
-        await ctx.send(file=file)
-
-    @utils.command()
-    async def achieve(self, ctx: utils.Context, *, text: str) -> None:
-        """Minecraft "Achievement Get!" meme maker.
-
-        Example:
-            **{p}achieve sleep more than 6 hours**
-
-        Args:
-            text (str): A text for the achievement.
-        """
-        text = text.replace(' ', '%20')
-        icon = random.randint(1, 44)
-
-        file = await self.alex_image(f'achievement?text={text}&icon={icon}')
-        await ctx.send(file=file)
-
-    @utils.command()
-    async def challenge(self, ctx: utils.Context, *, text: str) -> None:
-        """Minecraft "Challenge Complete!" meme maker.
-
-        Example:
-            **{p}challenge slept more than 6 hours**
-
-        Args:
-            text (str): A text for the challenge.
-        """
-        text = text.replace(' ', '%20')
-        icon = random.randint(1, 45)
-
-        file = await self.alex_image(f'challenge?text={text}&icon={icon}')
-        await ctx.send(file=file)
 
     @utils.command()
     async def triggered(self, ctx: utils.Context, image: Optional[str]) -> None:
@@ -359,11 +275,11 @@ class Fun(utils.Cog):
         io = BytesIO(await r.read())
 
         # Sending to the utils.Contextual channel.
-        await ctx.send(file=nextcord.File(fp=io, filename='ejected.png'))
+        await ctx.send(file=discord.File(fp=io, filename='ejected.png'))
 
     @utils.command(name='pp', aliases=('peepee',))
     async def command_pp(
-        self, ctx: utils.Context, member: Optional[nextcord.Member]
+        self, ctx: utils.Context, member: Optional[discord.Member]
     ) -> None:
         """Get the random size of your PP.
 
@@ -371,7 +287,7 @@ class Fun(utils.Cog):
             **{p}pp @Dosek** - sends Dosek's pp size.
 
         Args:
-            member (Optional[nextcord.Member]): A member to check the pp size of.
+            member (Optional[discord.Member]): A member to check the pp size of.
             Takes you as the member if no one was mentioned.
         """
         member = member or ctx.author
