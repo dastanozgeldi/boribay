@@ -281,7 +281,9 @@ class Manip:
         buffer.seek(0)
         return buffer
 
-    def achievement(title: str, ach: str, colour=(255, 255, 0, 255), icon: int = None):
+    # https://github.com/AlexFlipnote/alex_api_archive/blob/master/render/achievement.py
+    # thanks a lot!
+    def achievement(title: str, ach: str, colour=(255, 255, 0, 255)):
         front = Image.open(f"{IMAGE_PATH}/achievement/achievement.png")
         txt = Image.new("RGBA", (len(ach) * 15, 64))
         fnt = ImageFont.truetype('data/fonts/minecraft.ttf', 16)

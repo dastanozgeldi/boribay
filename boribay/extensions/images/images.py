@@ -2,10 +2,10 @@ import random
 from io import BytesIO
 from typing import Optional
 
-import nextcord
+import discord
 from boribay.core import utils
-from boribay.core.utils.manipulation import Manip, make_image, polaroid_filter
-from nextcord.ext import commands
+from boribay.core.utils.manipulation import Manip, make_image
+from discord.ext import commands
 
 
 class Images(utils.Cog):
@@ -19,107 +19,14 @@ class Images(utils.Cog):
     icon = '🖼'
 
     @utils.command()
-    async def invert(self, ctx, image: Optional[str]) -> None:
-        """Invert an image.
-
-        Example:
-            **{p}invert @Dosek** - sends Dosek's inverted avatar.
-
-        Args:
-            image (Optional[str]): Accordingly an image you want to invert.
-        """
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = polaroid_filter(image, method='invert')
-
-        await ctx.send(file=file)
-
-    @utils.command()
-    async def grayscale(self, ctx, image: Optional[str]) -> None:
-        """Add the grayscale filter to an image.
-
-        Example:
-            **{p}grayscale @Dosek** - sends Dosek's grayscaled avatar.
-
-        Args:
-            image (Optional[str]): Accordingly an image you want to grayscalize.
-        """
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = polaroid_filter(image, method='grayscale')
-
-        await ctx.send(file=file)
-
-    @utils.command()
-    async def monochrome(
-        self, ctx, rgb: commands.Greedy[int], image: Optional[str]
-    ) -> None:
-        """Add the monochrome filter to an image.
-
-        Takes absolutely random colors if any of r, g, b not specified.
-
-        Example:
-            **{p}monochrome @Dosek** - sends Dosek's monochromed avatar.
-
-        Args:
-            image (Optional[str]): Accordingly an image you want to monochromize.
-        """
-        if 0 < len(rgb) < 3:
-            raise commands.BadArgument('❌ Not enough colors were given.')
-
-        r, g, b = (rgb := rgb[:3])
-
-        if not rgb:
-            r, g, b = random.choices(range(0, 255), k=3)
-
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = polaroid_filter(image, method='monochrome',
-                                   kwargs={'r_offset': r, 'g_offset': g, 'b_offset': b})
-
-        await ctx.send(f'Taken RGB parameters: {r, g, b}', file=file)
-
-    @utils.command()
-    async def solarize(self, ctx, image: Optional[str]) -> None:
-        """Solarize an image.
-
-        Example:
-            **{p}solarize @Dosek** - sends Dosek's solarized avatar.
-
-        Args:
-            image (Optional[str]): Accordingly an image you want to solarize.
-        """
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = polaroid_filter(image, method='solarize')
-
-        await ctx.send(file=file)
-
-    @utils.command()
-    async def brighten(self, ctx, image: Optional[str]) -> None:
-        """Brighten an image.
-
-        Example:
-            **{p}brighten @Dosek** - sends Dosek's brightened avatar.
-
-        Args:
-            image (Optional[str]): Accordingly an image you want to brighten.
-        """
-        async with ctx.timer:
-            image = await make_image(ctx, image)
-            file = polaroid_filter(image, method='brighten', kwargs={'treshold': 69})
-
-        await ctx.send(file=file)
-
-    @utils.command()
-    async def avatar(self, ctx, member: Optional[nextcord.Member]) -> None:
+    async def avatar(self, ctx, member: Optional[discord.Member]) -> None:
         """Sends either author or member avatar if specified.
 
         Example:
             **{p}avatar @Dosek** - sends Dosek's avatar.
 
         Args:
-            member (Optional[nextcord.Member]): A member you want to grab avatar from.
+            member (Optional[discord.Member]): A member you want to grab avatar from.
         """
         member = member or ctx.author
         await ctx.send(str(member.avatar_url))
@@ -138,7 +45,16 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.pixelate(BytesIO(image))
 
-        file = nextcord.File(buffer, 'pixelated.png')
+        file = discord.File(buffer, 'pixelated.png')
+        await ctx.send(file=file)
+
+    @utils.command()
+    async def achievement(self, ctx: utils.Context, *, text: str):
+        async with ctx.loading:
+            image = await make_image(ctx, image)
+            buffer = await Manip.achievement(BytesIO(image))
+
+        file = discord.File(buffer, 'achievement.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -155,7 +71,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.wanted(BytesIO(image))
 
-        file = nextcord.File(buffer, 'wanted.png')
+        file = discord.File(buffer, 'wanted.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -172,7 +88,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.jail(BytesIO(image))
 
-        file = nextcord.File(buffer, 'jail.png')
+        file = discord.File(buffer, 'jail.png')
         await ctx.send(file=file)
 
     @utils.command(name='f')
@@ -189,7 +105,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.press_f(BytesIO(image))
 
-        file = nextcord.File(buffer, 'f.png')
+        file = discord.File(buffer, 'f.png')
         message = await ctx.send(file=file)
         await message.add_reaction('<:press_f:796264575065653248>')
 
@@ -208,7 +124,7 @@ class Images(utils.Cog):
             member = await make_image(ctx, member)
             buffer = await Manip.fiveguysonegirl(BytesIO(author), BytesIO(member))
 
-        file = nextcord.File(buffer, '5g1g.png')
+        file = discord.File(buffer, '5g1g.png')
         await ctx.send(file=file)
 
     @utils.command(aliases=('ko',))
@@ -226,7 +142,7 @@ class Images(utils.Cog):
             knocked_out = await make_image(ctx, member)
             buffer = await Manip.fight(BytesIO(winner), BytesIO(knocked_out))
 
-        file = nextcord.File(buffer, 'fight.png')
+        file = discord.File(buffer, 'fight.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -250,7 +166,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.swirl(degrees, BytesIO(image))
 
-        file = nextcord.File(buffer, 'swirl.png')
+        file = discord.File(buffer, 'swirl.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -267,7 +183,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.communist(BytesIO(image))
 
-        file = nextcord.File(buffer, 'communist.png')
+        file = discord.File(buffer, 'communist.png')
         await ctx.send(file=file)
 
     @utils.command(aliases=('gay', 'gayize'))
@@ -284,7 +200,7 @@ class Images(utils.Cog):
             image = await make_image(ctx, image)
             buffer = await Manip.rainbow(BytesIO(image))
 
-        file = nextcord.File(buffer, 'rainbow.png')
+        file = discord.File(buffer, 'rainbow.png')
         await ctx.send(file=file)
 
     @utils.command(aliases=('wayg',))
@@ -303,7 +219,7 @@ class Images(utils.Cog):
             member = await make_image(ctx, member)
             buffer = await Manip.whyareyougae(BytesIO(author), BytesIO(member))
 
-        file = nextcord.File(buffer, 'wayg.png')
+        file = discord.File(buffer, 'wayg.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -325,7 +241,7 @@ class Images(utils.Cog):
 
         buffer = await Manip.drake(no, yes)
 
-        file = nextcord.File(buffer, 'drake.png')
+        file = discord.File(buffer, 'drake.png')
         await ctx.send(file=file)
 
     @utils.command()
@@ -346,5 +262,5 @@ class Images(utils.Cog):
 
         buffer = await Manip.clyde(text)
 
-        file = nextcord.File(buffer, 'clyde.png')
+        file = discord.File(buffer, 'clyde.png')
         await ctx.send(file=file)
