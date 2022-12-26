@@ -8,6 +8,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
+from boribay.settings import DAGPI_API_KEY
 from boribay.core import Boribay, utils
 
 
@@ -28,9 +29,8 @@ class Fun(utils.Cog):
         Returns:
             discord.File: A done to send file.
         """
-        key = self.bot.config.api.dagpi
         r = await self.bot.session.get(
-            "https://beta.dagpi.xyz/image/" + url, headers={"Authorization": key}
+            "https://beta.dagpi.xyz/image/" + url, headers={"Authorization": DAGPI_API_KEY}
         )
         fp = BytesIO(await r.read())
         return discord.File(fp, fn or "dagpi.png")

@@ -335,7 +335,6 @@ class Economics(utils.Cog):
 
         This is useful when you want just to remove your bio without paying.
         """
-        # Avoiding useless database call.
         if not ctx.user_cache[ctx.author.id]["bio"]:
             raise exceptions.DefaultError(
                 "You do not currently have bio set, "

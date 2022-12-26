@@ -287,7 +287,7 @@ class Manip:
     def achievement(title: str, ach: str, colour=(255, 255, 0, 255)):
         front = Image.open(f"{IMAGE_PATH}/achievement/achievement.png")
         txt = Image.new("RGBA", (len(ach) * 15, 64))
-        fnt = ImageFont.truetype("data/fonts/minecraft.ttf", 16)
+        fnt = ImageFont.truetype(f"{FONT_PATH}/minecraft.ttf", 16)
         d = ImageDraw.Draw(txt)
 
         w, h = d.textsize(ach, font=fnt)
@@ -315,7 +315,7 @@ class Manip:
         im.paste(front, (0, 0))
         im.paste(mid, (60, 0))
 
-        bio = BytesIO()
-        im.save(bio, "PNG")
-        bio.seek(0)
-        return bio
+        buffer = BytesIO()
+        im.save(buffer, "PNG")
+        buffer.seek(0)
+        return buffer

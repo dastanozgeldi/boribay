@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 from humanize import time
 
+from boribay.settings import WEATHER_API_KEY
 from boribay.core import exceptions, utils
 from boribay.core.bot import Boribay
 
@@ -402,9 +403,8 @@ class Useful(utils.Cog):
         Args:
             city: The city you want to get weather data of.
         """
-        key = ctx.config.api.weather
         r = await ctx.bot.session.get(
-            f"http://api.openweathermap.org/data/2.5/weather?appid={key}&q={city}"
+            f"http://api.openweathermap.org/data/2.5/weather?appid={WEATHER_API_KEY}&q={city}"
         )
         x = await r.json()
 

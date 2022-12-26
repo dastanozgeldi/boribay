@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import asyncio
 import logging
 import re
@@ -11,7 +12,7 @@ import asyncpg
 import discord
 from discord.ext import commands
 
-from .config import Config
+from boribay.settings import DEVELOPMENT
 from .database import Cache, DatabaseManager
 from .events import set_events
 from .utils import Context, is_blacklisted
@@ -32,7 +33,6 @@ class Boribay(commands.Bot):
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.cli = cli_flags
         self.counter = Counter()
-        self.config = Config("config.json")
 
         self._launch_time = datetime.now()
 
@@ -42,6 +42,7 @@ class Boribay(commands.Bot):
 
         intents = discord.Intents.default()
         intents.members = True
+        intents.messages = True
         super().__init__(
             command_prefix=get_prefix,
             description="A Discord Bot created to make people smile.",
@@ -114,6 +115,10 @@ class Boribay(commands.Bot):
         if not self.is_ready():
             return
 
+        if message.content == "gcache":
+            ctx = await self.get_context(message)
+            await ctx.send(self.guild_cache)
+
         # checking if a message was the clean mention of the bot.
         if re.fullmatch(f"<@(!)?{self.user.id}>", message.content):
             ctx = await self.get_context(message)
@@ -139,9 +144,9 @@ class Boribay(commands.Bot):
 
     async def setup(self):
         self.session = aiohttp.ClientSession(loop=self.loop)
-
+        
         # Data-related.
-        self.pool = await asyncpg.create_pool(**self.config.database)
+        self.pool = await asyncpg.create_pool("postgresql://postgres:@localhost:6543/postgres")
         self.db = DatabaseManager(self)
         self.guild_cache = await Cache(
             "SELECT * FROM guild_config", "guild_id", self.pool
@@ -154,8 +159,9 @@ class Boribay(commands.Bot):
         # Initializer functions.
         set_events(self)
 
+        
         # Check for flags.
-        if self.cli.developer or self.config.main.beta:
+        if self.cli.developer or DEVELOPMENT:
             logger.info("Developer mode enabled.")
             self.load_extension("boribay.core.cog_manager")
             self.load_extension("boribay.core.developer")
@@ -164,7 +170,16 @@ class Boribay(commands.Bot):
             logger.info("Booting up with no extensions loaded.")
 
         else:
-            extensions = self.config.main.exts
+            extensions = [
+                "boribay.extensions.help",
+                "boribay.extensions.economy",
+                "boribay.extensions.fun",
+                "boribay.extensions.images",
+                "boribay.extensions.misc",
+                "boribay.extensions.moderation",
+                "boribay.extensions.settings",
+                "boribay.extensions.useful",
+            ]
             if to_exclude := self.cli.exclude:
                 extensions = set(extensions) - set(to_exclude)
 
@@ -176,14 +191,14 @@ class Boribay(commands.Bot):
 
     def run(self, **kwargs) -> None:
         """An overridden run method to make the launcher file smaller."""
-        token = self.config.main.token
+        DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
         if self.cli.token:
             logger.info(
                 "Logging in without using the native token. Consider setting "
                 "a token in the configuration file, i.e config.json"
             )
-            token = self.cli.token
+            DISCORD_TOKEN = self.cli.token
 
         # booting up the bot instance
         self.loop.create_task(self.setup())
-        super().run(token, **kwargs)
+        super().run(DISCORD_TOKEN, **kwargs)

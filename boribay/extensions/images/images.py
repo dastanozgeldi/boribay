@@ -50,11 +50,11 @@ class Images(utils.Cog):
         await ctx.send(file=file)
 
     @utils.command()
-    async def achievement(self, ctx: utils.Context, *, text: str):
-        async with ctx.loading:
-            image = await make_image(ctx, image)
-            buffer = await Manip.achievement(BytesIO(image))
+    async def achievement(self, ctx: utils.Context, *, title: str):
+        if len(title) > 90:
+            raise commands.BadArgument("The text was too long to render.")
 
+        buffer = await Manip.achievement(title, "ema")
         file = discord.File(buffer, "achievement.png")
         await ctx.send(file=file)
 
