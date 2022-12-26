@@ -358,7 +358,7 @@ class Developer(utils.Cog):
 
         if return_author:
             owner = ctx.bot.owner
-            embed.set_author(name=str(owner), icon_url=owner.avatar_url)
+            embed.set_author(name=str(owner), icon_url=owner.avatar)
             return author, embed
 
         return embed

@@ -133,7 +133,7 @@ class Moderation(utils.Cog):
 
         embed = ctx.embed(
             description="\n".join(f"**{n}**: {v}" for n, v in fields)
-        ).set_author(name=f"Information for {category}", icon_url=ctx.guild.icon_url)
+        ).set_author(name=f"Information for {category}", icon_url=ctx.guild.icon)
         await ctx.send(embed=embed)
 
     @category.command(name="create")

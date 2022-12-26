@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from dotenv import load_dotenv
 
@@ -8,13 +9,13 @@ load_dotenv()
 log = logging.getLogger("bot.main")
 
 
-def main() -> None:
+async def main() -> None:
     """The main function of the bot that exactly manages the Boribay app."""
     args = parse_flags()
     parse_single_flags(args)
     bot = Boribay(cli_flags=args)
-    bot.run()
+    await bot.start()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -3,6 +3,6 @@ from .jishaku import Jishaku
 
 
 # Setting up developer extensions.
-def setup(bot):
-    bot.add_cog(Jishaku(bot=bot))
-    bot.add_cog(Developer())
+async def setup(bot):
+    await bot.add_cog(Jishaku(bot=bot))
+    await bot.add_cog(Developer())

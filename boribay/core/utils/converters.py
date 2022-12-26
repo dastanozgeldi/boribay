@@ -163,7 +163,7 @@ class ImageConverter(commands.Converter):
         try:
             mc = commands.MemberConverter()
             member = await mc.convert(ctx, argument)
-            avatar = member.avatar_url_as(static_format="png", format="png", size=512)
+            avatar = member.avatar.replace(static_format="png", format="png", size=512)
             if return_url:
                 return str(avatar)
             return await avatar.read()

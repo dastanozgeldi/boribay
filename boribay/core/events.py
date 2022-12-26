@@ -122,7 +122,7 @@ def set_events(bot):
             image = await utils.Manip.welcome(
                 top_text=f"Member #{g.member_count}",
                 bottom_text=f"{member} just spawned in the server.",
-                member_avatar=BytesIO(await member.avatar_url.read()),
+                member_avatar=BytesIO(await member.avatar.read()),
             )
             channel = g.get_channel(wc)
             file = discord.File(image, f"{member}.png")
