@@ -1,5 +1,0 @@
-{
-    "autoDocstring.docstringFormat": "numpy",
-    "python.autoComplete.extraPaths": ["__pypackages__/3.9/lib"],
-    "python.analysis.extraPaths": ["__pypackages__/3.9/lib"]
-}
