@@ -25,7 +25,7 @@ class IdeaPageSource(menus.ListPageSource):
             )
         ).set_author(
             name=f"Page {menu.current_page + 1} of {self.get_max_pages()} ({len(self.entries)} suggestions).",
-            icon_url=self.ctx.author.avatar_url,
+            icon_url=self.ctx.author.avatar,
         )
 
         return embed

@@ -140,7 +140,8 @@ class HelpCommand(commands.HelpCommand):
         )
 
     def get_ending_note(self):
-        return f"Send {self.clean_prefix}{self.invoked_with} [Category] to get a category help."
+        ctx = self.context
+        return f"Send {ctx.clean_prefix}{self.invoked_with} [Category] to get a category help."
 
     async def send_bot_help(self, mapping):
         ctx = self.context
@@ -151,7 +152,7 @@ class HelpCommand(commands.HelpCommand):
                     cats.append(str(cog))
 
         embed = ctx.embed().set_author(
-            name=str(ctx.author), icon_url=ctx.author.avatar_url
+            name=str(ctx.author), icon_url=ctx.author.avatar
         )
         embed.add_field(name="Plugins:", value="\n".join(cats))
         await HelpMenu(embed=embed).start(ctx)
@@ -161,7 +162,7 @@ class HelpCommand(commands.HelpCommand):
         entries = await self.filter_commands(cog.get_commands(), sort=True)
 
         await utils.Paginate(
-            GroupHelp(ctx, cog, entries, self.clean_prefix),
+            GroupHelp(ctx, cog, entries, ctx.clean_prefix),
             timeout=30.0,
             clear_reactions_after=True,
         ).start(ctx)
@@ -172,7 +173,7 @@ class HelpCommand(commands.HelpCommand):
 
         embed = ctx.embed(
             title=self.get_command_signature(command),
-            description=description.format(p=self.clean_prefix),
+            description=description.format(p=ctx.clean_prefix),
         ).set_footer(text=self.get_ending_note())
 
         if category := str(command.cog):
@@ -184,18 +185,20 @@ class HelpCommand(commands.HelpCommand):
         await self.get_destination().send(embed=embed)
 
     async def send_group_help(self, group: commands.Group):
+        ctx = self.context
         subcommands = group.commands
         cmds = await self.filter_commands(subcommands, sort=True)
         if 0 in (len(subcommands), len(cmds)):
             return await self.send_command_help(group)
 
         await utils.Paginate(
-            GroupHelp(self.context, group, cmds, self.clean_prefix), timeout=30.0
-        ).start(self.context)
+            GroupHelp(ctx, group, cmds, ctx.clean_prefix), timeout=30.0
+        ).start(ctx)
 
     async def command_not_found(self, string: str):
+        ctx = self.context
         message = f"Could not find the command `{string}`. "
-        commands_list = [str(cmd) for cmd in self.context.bot.walk_commands()]
+        commands_list = [str(cmd) for cmd in ctx.bot.walk_commands()]
 
         if dym := "\n".join(get_close_matches(string, commands_list)):
             message += f"Did you mean...\n{dym}"
@@ -203,7 +206,8 @@ class HelpCommand(commands.HelpCommand):
         return message
 
     def get_command_signature(self, command: commands.Command):
-        return f"{self.clean_prefix}{command} {command.signature}"
+        ctx = self.context
+        return f"{ctx.clean_prefix}{command} {command.signature}"
 
 
 class Help(utils.Cog):

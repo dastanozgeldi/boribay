@@ -84,7 +84,7 @@ class Settings(utils.Cog):
                 f'**{self.on_or_off(ctx, k)} {k.replace("_", " ").title()}:** {v}'
                 for k, v in creds.items()
             )
-        ).set_author(name=f"Settings for {g}", icon_url=g.icon_url)
+        ).set_author(name=f"Settings for {g}", icon_url=g.icon)
 
         await ctx.send(embed=embed)
 

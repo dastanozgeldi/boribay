@@ -58,7 +58,7 @@ async def make_image(
             attachment = ctx.message.attachments[0]
             image = attachment.url if return_url else await attachment.read()
         else:
-            avatar = ctx.author.avatar_url_as(
+            avatar = ctx.author.avatar.replace(
                 static_format="png", format="png", size=512
             )
             image = str(avatar) if return_url else await avatar.read()

@@ -42,7 +42,7 @@ class Boribay(commands.Bot):
 
         intents = discord.Intents.default()
         intents.members = True
-        intents.messages = True
+        intents.message_content = True
         super().__init__(
             command_prefix=get_prefix,
             description="A Discord Bot created to make people smile.",
@@ -58,6 +58,9 @@ class Boribay(commands.Bot):
             ),
             **kwargs,
         )
+
+    async def setup_hook(self) -> None:
+        self.session = aiohttp.ClientSession()
 
     @property
     def owner(self) -> discord.User:
@@ -143,8 +146,6 @@ class Boribay(commands.Bot):
         await self.session.close()
 
     async def setup(self):
-        self.session = aiohttp.ClientSession(loop=self.loop)
-        
         # Data-related.
         self.pool = await asyncpg.create_pool("postgresql://postgres:@localhost:6543/postgres")
         self.db = DatabaseManager(self)
@@ -158,13 +159,12 @@ class Boribay(commands.Bot):
 
         # Initializer functions.
         set_events(self)
-
         
         # Check for flags.
         if self.cli.developer or DEVELOPMENT:
             logger.info("Developer mode enabled.")
-            self.load_extension("boribay.core.cog_manager")
-            self.load_extension("boribay.core.developer")
+            await self.load_extension("boribay.core.cog_manager")
+            await self.load_extension("boribay.core.developer")
 
         if self.cli.no_cogs:
             logger.info("Booting up with no extensions loaded.")
@@ -185,11 +185,12 @@ class Boribay(commands.Bot):
 
             for ext in extensions:
                 # loading all extensions before running the bot.
-                self.load_extension(ext)
+                await self.load_extension(ext)
 
             logger.info("Loaded extensions: " + ", ".join(self.extensions.keys()))
 
-    def run(self, **kwargs) -> None:
+
+    async def start(self, **kwargs) -> None:
         """An overridden run method to make the launcher file smaller."""
         DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
         if self.cli.token:
@@ -200,5 +201,5 @@ class Boribay(commands.Bot):
             DISCORD_TOKEN = self.cli.token
 
         # booting up the bot instance
-        self.loop.create_task(self.setup())
-        super().run(DISCORD_TOKEN, **kwargs)
+        await self.setup()
+        await super().start(DISCORD_TOKEN, **kwargs)

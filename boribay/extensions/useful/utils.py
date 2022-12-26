@@ -86,7 +86,7 @@ class TodoPageSource(menus.ListPageSource):
             maximum = self.get_max_pages()
             embed.set_author(
                 name=f"Page {menu.current_page + 1} of {maximum} ({len(self.entries)} todos)",
-                icon_url=self.ctx.author.avatar_url,
+                icon_url=self.ctx.author.avatar,
             )
             embed.description = "\n".join(
                 f"[{i}]({v[1]}). {v[0]}" for i, v in enumerate(entries, start=offset)

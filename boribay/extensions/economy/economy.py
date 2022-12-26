@@ -188,7 +188,7 @@ class Economics(utils.Cog):
         embed = ctx.embed(
             title=f"{member}'s profile card",
             description=data.pop("bio") or "No bio has been set.",
-        ).set_thumbnail(url=member.avatar_url)
+        ).set_thumbnail(url=member.avatar)
 
         embed.add_field(
             name="📊 Statistics",

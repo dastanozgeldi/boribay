@@ -55,7 +55,7 @@ class CogManager(utils.Cog):
             return await ctx.send("Please specify extensions in order to load.")
 
         exts = self.extensions if extensions[0] == "~" else extensions
-        [ctx.bot.unload_extension(ext) for ext in exts]
+        [await ctx.bot.unload_extension(ext) for ext in exts]
         await ctx.send(f'Unloaded extension{"s" if exts else ""}: ' + ", ".join(exts))
 
     @cog.command(name="reload")
@@ -76,9 +76,9 @@ class CogManager(utils.Cog):
             return await ctx.send("Please specify extensions in order to load.")
 
         exts = self.extensions if extensions[0] == "~" else extensions
-        [ctx.bot.reload_extension(ext) for ext in exts]
+        [await ctx.bot.reload_extension(ext) for ext in exts]
         await ctx.send(f'Reloaded extension{"s" if exts else ""}: ' + ", ".join(exts))
 
 
-def setup(bot):
-    bot.add_cog(CogManager(bot))
+async def setup(bot):
+    await bot.add_cog(CogManager(bot))

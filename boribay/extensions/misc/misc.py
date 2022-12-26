@@ -72,7 +72,7 @@ class Miscellaneous(utils.Cog):
         """See some kind of information about Boribay (such as command usage)."""
         bot = ctx.bot
         embed = ctx.embed().set_author(
-            name=f"{bot.user} - v2", icon_url=bot.user.avatar_url
+            name=f"{bot.user} - v2", icon_url=bot.user.avatar
         )
         fields = {
             "Development": {
@@ -116,8 +116,8 @@ class Miscellaneous(utils.Cog):
 
         embed = ctx.embed(
             description="\n".join(f"**{name}:** {value}" for name, value in fields)
-        ).set_thumbnail(url=member.avatar_url)
-        embed.set_author(name=str(member), icon_url=ctx.guild.icon_url)
+        ).set_thumbnail(url=member.avatar)
+        embed.set_author(name=str(member), icon_url=ctx.guild.icon)
 
         await ctx.send(embed=embed)
 
@@ -128,8 +128,7 @@ class Miscellaneous(utils.Cog):
         g = ctx.guild
 
         fields = [
-            ("Region", str(g.region).title()),
-            ("Created", naturaltime(g.created_at)),
+            ("Created", str(g.created_at)),
             ("Members", g.member_count),
             ("Boosts", g.premium_subscription_count),
             ("Roles", len(g.roles)),
@@ -140,7 +139,7 @@ class Miscellaneous(utils.Cog):
 
         embed = ctx.embed(
             description="\n".join(f"**{n}:** {v}" for n, v in fields)
-        ).set_author(name=str(g), icon_url=g.icon_url)
+        ).set_author(name=str(g), icon_url=g.icon)
 
         await ctx.send(embed=embed)
 

@@ -30,7 +30,7 @@ class Images(utils.Cog):
             member (Optional[discord.Member]): A member you want to grab avatar from.
         """
         member = member or ctx.author
-        await ctx.send(str(member.avatar_url))
+        await ctx.send(str(member.avatar))
 
     @utils.command()
     async def pixelate(self, ctx, image: Optional[str]) -> None:
@@ -121,7 +121,7 @@ class Images(utils.Cog):
             member (Optional[str]): A member you would like to 5g1g.
         """
         async with ctx.loading:
-            author = await ctx.author.avatar_url_as(size=128).read()
+            author = await ctx.author.avatar.replace(size=128).read()
             member = await make_image(ctx, member)
             buffer = await Manip.fiveguysonegirl(BytesIO(author), BytesIO(member))
 
@@ -139,7 +139,7 @@ class Images(utils.Cog):
             member (str): A member you would like to knockout.
         """
         async with ctx.loading:
-            winner = await ctx.author.avatar_url_as(size=64).read()
+            winner = await ctx.author.avatar.replace(size=64).read()
             knocked_out = await make_image(ctx, member)
             buffer = await Manip.fight(BytesIO(winner), BytesIO(knocked_out))
 
@@ -212,7 +212,7 @@ class Images(utils.Cog):
         Args:
             member (Optional[str]): A member you would like to "wayg".
         """
-        author = await ctx.author.avatar_url_as(size=128).read()
+        author = await ctx.author.avatar.replace(size=128).read()
 
         async with ctx.loading:
             member = await make_image(ctx, member)
