@@ -291,7 +291,7 @@ class Developer(utils.Cog):
         Args:
             command (Optional[str]): A command to get the source of.
         """
-        base = "https://github.com/Dositan/Boribay"
+        base = "https://github.com/dastanozgeldi/Boribay"
         if not command:
             return await ctx.send(base)
 
